@@ -1,0 +1,16 @@
+{
+  "name": "galatk-retail",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Galatk retail platform — POS, online shop, client credit",
+  "scripts": {
+    "dev:backend": "yarn --cwd backend dev",
+    "dev:frontend": "yarn --cwd front-end dev",
+    "build:backend": "yarn --cwd backend build",
+    "build:frontend": "yarn --cwd front-end build",
+    "test": "yarn --cwd backend test",
+    "db:migrate:dev": "yarn --cwd backend db:migrate:dev",
+    "db:seed": "yarn --cwd backend db:seed"
+  },
+  "packageManager": "yarn@1.22.22"
+}

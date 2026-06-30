@@ -1,0 +1,388 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StaffRole {
+  OWNER
+  MANAGER
+  CASHIER
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+}
+
+enum OnlinePaymentMethod {
+  PAY_ON_PICKUP
+  COD
+}
+
+enum FulfillmentType {
+  PICKUP
+  DELIVERY
+}
+
+enum OrderStatus {
+  PLACED
+  READY_FOR_PICKUP
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELLED
+}
+
+enum SaleStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum InboundTransferStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum OutOfStockDisplay {
+  HIDE
+  SHOW_UNAVAILABLE
+}
+
+enum ClientLedgerEntryType {
+  SALE_CREDIT
+  PAYMENT
+  PAYMENT_VOID
+  SALE_VOID_REVERSAL
+  ADJUSTMENT
+}
+
+enum ClientPaymentStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum ShopChargeStatus {
+  ACTIVE
+  CANCELLED
+}
+
+model Shop {
+  id                String            @id @default(uuid())
+  name              String
+  slug              String            @unique
+  address           String
+  contactPhone      String?
+  serviceCity       String
+  deliveryFee       Decimal           @db.Decimal(10, 2)
+  outOfStockDisplay OutOfStockDisplay @default(SHOW_UNAVAILABLE)
+  creditReminderDays Int              @default(30)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  staffAssignments StaffShopAssignment[]
+  stock            ShopStock[]
+  inboundTransfers InboundTransfer[]
+  sales            Sale[]
+  orders           OnlineOrder[]
+  clients          Client[]
+  clientPayments   ClientPayment[]
+  shopCharges      ShopCharge[]
+}
+
+model StaffUser {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         StaffRole
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  shopAssignments   StaffShopAssignment[]
+  inboundTransfers  InboundTransfer[]     @relation("RecordedBy")
+  salesAsCashier    Sale[]                @relation("Cashier")
+  salesCancelled    Sale[]                @relation("CancelledBy")
+  salesCreditApproved Sale[]              @relation("CreditApprovedBy")
+  ordersCancelled   OnlineOrder[]         @relation("OrderCancelledBy")
+  clientPaymentsRecorded ClientPayment[]  @relation("PaymentRecordedBy")
+  clientPaymentsCancelled ClientPayment[] @relation("PaymentCancelledBy")
+  shopChargesRecorded ShopCharge[]        @relation("ChargeRecordedBy")
+  shopChargesCancelled ShopCharge[]       @relation("ChargeCancelledBy")
+  clientLedgerEntries ClientLedgerEntry[] @relation("LedgerRecordedBy")
+  reminderContacts  CreditReminderContact[] @relation("ReminderContactBy")
+}
+
+model StaffShopAssignment {
+  id      String @id @default(uuid())
+  staffId String
+  shopId  String
+
+  staff StaffUser @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  shop  Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, shopId])
+}
+
+model Product {
+  id               String   @id @default(uuid())
+  name             String
+  description      String?
+  sellPrice        Decimal  @db.Decimal(10, 2)
+  galatkProductRef String?
+  isActive         Boolean  @default(true)
+  availableOnline  Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  stock              ShopStock[]
+  inboundTransferLines InboundTransferLine[]
+  saleLines          SaleLine[]
+  orderLines         OnlineOrderLine[]
+}
+
+model ShopStock {
+  id        String @id @default(uuid())
+  shopId    String
+  productId String
+  quantity  Int    @default(0)
+
+  shop    Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, productId])
+}
+
+model InboundTransfer {
+  id                String                @id @default(uuid())
+  shopId            String
+  galatkTransferRef String?
+  recordedById      String
+  status            InboundTransferStatus @default(COMPLETED)
+  note              String?
+  createdAt         DateTime              @default(now())
+
+  shop       Shop                  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  recordedBy StaffUser             @relation("RecordedBy", fields: [recordedById], references: [id])
+  lines      InboundTransferLine[]
+}
+
+model InboundTransferLine {
+  id         String @id @default(uuid())
+  transferId String
+  productId  String
+  quantity   Int
+
+  transfer InboundTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id])
+}
+
+model Sale {
+  id                 String        @id @default(uuid())
+  shopId             String
+  cashierId          String
+  status             SaleStatus    @default(COMPLETED)
+  paymentMethod      PaymentMethod
+  subtotal           Decimal       @db.Decimal(10, 2)
+  total              Decimal       @db.Decimal(10, 2)
+  amountPaid         Decimal       @default(0) @db.Decimal(10, 2)
+  amountOnCredit     Decimal       @default(0) @db.Decimal(10, 2)
+  clientId           String?
+  creditApprovedById String?
+  onlineOrderId      String?       @unique
+  cancelledById      String?
+  cancelledAt        DateTime?
+  cancelReason       String?
+  createdAt          DateTime      @default(now())
+
+  shop              Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  cashier           StaffUser  @relation("Cashier", fields: [cashierId], references: [id])
+  cancelledBy       StaffUser? @relation("CancelledBy", fields: [cancelledById], references: [id])
+  client            Client?    @relation(fields: [clientId], references: [id])
+  creditApprovedBy  StaffUser? @relation("CreditApprovedBy", fields: [creditApprovedById], references: [id])
+  lines             SaleLine[]
+  creditPortions    ClientCreditPortion[]
+  onlineOrder       OnlineOrder? @relation(fields: [onlineOrderId], references: [id])
+
+  @@index([shopId, createdAt])
+}
+
+model SaleLine {
+  id        String  @id @default(uuid())
+  saleId    String
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  lineTotal Decimal @db.Decimal(10, 2)
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model OnlineOrder {
+  id              String              @id @default(uuid())
+  shopId          String
+  orderNumber     String
+  status          OrderStatus         @default(PLACED)
+  fulfillmentType FulfillmentType
+  customerName    String
+  customerPhone   String
+  customerEmail   String?
+  deliveryAddress String?
+  deliveryCity    String?
+  paymentMethod   OnlinePaymentMethod
+  subtotal        Decimal             @db.Decimal(10, 2)
+  deliveryFee     Decimal             @db.Decimal(10, 2)
+  total           Decimal             @db.Decimal(10, 2)
+  clientId        String?
+  cancelledById   String?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  createdAt       DateTime            @default(now())
+
+  shop        Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  client      Client?           @relation(fields: [clientId], references: [id])
+  fulfillmentSale Sale?
+  cancelledBy StaffUser?        @relation("OrderCancelledBy", fields: [cancelledById], references: [id])
+  lines       OnlineOrderLine[]
+
+  @@unique([shopId, orderNumber])
+  @@index([shopId, status, createdAt])
+  @@index([clientId])
+}
+
+model OnlineOrderLine {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  lineTotal Decimal @db.Decimal(10, 2)
+
+  order   OnlineOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product     @relation(fields: [productId], references: [id])
+}
+
+model Client {
+  id          String   @id @default(uuid())
+  shopId      String
+  name        String
+  phone       String   @unique
+  email       String?
+  address     String?
+  notes       String?
+  creditLimit Decimal? @db.Decimal(10, 2)
+  balance     Decimal  @default(0) @db.Decimal(10, 2)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  shop              Shop                    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  sales             Sale[]
+  onlineOrders      OnlineOrder[]
+  creditPortions    ClientCreditPortion[]
+  payments          ClientPayment[]
+  ledgerEntries     ClientLedgerEntry[]
+  reminderContacts  CreditReminderContact[]
+
+  @@index([shopId, isActive, name])
+}
+
+model ClientCreditPortion {
+  id              String   @id @default(uuid())
+  clientId        String
+  saleId          String
+  originalAmount  Decimal  @db.Decimal(10, 2)
+  remainingAmount Decimal  @db.Decimal(10, 2)
+  createdAt       DateTime @default(now())
+
+  client      Client                    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  sale        Sale                      @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  allocations ClientPaymentAllocation[]
+
+  @@index([clientId, remainingAmount, createdAt])
+}
+
+model ClientPayment {
+  id            String              @id @default(uuid())
+  clientId      String
+  shopId        String
+  amount        Decimal             @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  status        ClientPaymentStatus @default(COMPLETED)
+  recordedById  String
+  cancelledById String?
+  cancelledAt   DateTime?
+  cancelReason  String?
+  createdAt     DateTime            @default(now())
+
+  client      Client                    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  shop        Shop                      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  recordedBy  StaffUser                 @relation("PaymentRecordedBy", fields: [recordedById], references: [id])
+  cancelledBy StaffUser?                @relation("PaymentCancelledBy", fields: [cancelledById], references: [id])
+  allocations ClientPaymentAllocation[]
+
+  @@index([shopId, createdAt])
+}
+
+model ClientPaymentAllocation {
+  id        String  @id @default(uuid())
+  paymentId String
+  portionId String
+  amount    Decimal @db.Decimal(10, 2)
+
+  payment ClientPayment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  portion ClientCreditPortion @relation(fields: [portionId], references: [id], onDelete: Cascade)
+}
+
+model ClientLedgerEntry {
+  id           String                @id @default(uuid())
+  clientId     String
+  type         ClientLedgerEntryType
+  amount       Decimal               @db.Decimal(10, 2)
+  saleId       String?
+  paymentId    String?
+  recordedById String
+  note         String?
+  createdAt    DateTime              @default(now())
+
+  client     Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  recordedBy StaffUser @relation("LedgerRecordedBy", fields: [recordedById], references: [id])
+
+  @@index([clientId, createdAt])
+}
+
+model CreditReminderContact {
+  id            String   @id @default(uuid())
+  clientId      String
+  contactedById String
+  contactedAt   DateTime @default(now())
+  note          String?
+
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  contactedBy StaffUser @relation("ReminderContactBy", fields: [contactedById], references: [id])
+}
+
+model ShopCharge {
+  id           String           @id @default(uuid())
+  shopId       String
+  category     String
+  amount       Decimal          @db.Decimal(10, 2)
+  chargeDate   DateTime
+  note         String?
+  status       ShopChargeStatus @default(ACTIVE)
+  recordedById String
+  cancelledById String?
+  cancelledAt  DateTime?
+  cancelReason String?
+  createdAt    DateTime         @default(now())
+
+  shop        Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  recordedBy  StaffUser  @relation("ChargeRecordedBy", fields: [recordedById], references: [id])
+  cancelledBy StaffUser? @relation("ChargeCancelledBy", fields: [cancelledById], references: [id])
+
+  @@index([shopId, chargeDate])
+}

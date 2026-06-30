@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Build output
+dist/
+dist-ssr/
+coverage/
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+backend/config/.env.local*
+backend/config/.env.dev
+backend/config/.env.*
+!backend/config/.env.example
+front-end/.env
+front-end/.env.*
+!front-end/.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS & editors
+.DS_Store
+.cache/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.vscode/*
+!.vscode/extensions.json
+.eslintcache
+
+# Backend tooling
+backend/cloud-sql-proxy
+backend/cloud-sql-proxy.exe
+
+# Frontend test artifacts
+front-end/cypress/videos/
+front-end/cypress/screenshots/
+front-end/__screenshots__/
+front-end/*.timestamp-*-*.mjs
