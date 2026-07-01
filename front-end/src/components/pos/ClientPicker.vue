@@ -5,12 +5,17 @@ import { listClients } from '@/services/clientApi'
 import type { Client } from '@/types/api'
 
 const props = defineProps<{ modelValue: Client | null }>()
-const emit = defineEmits<{ 'update:modelValue': [client: Client | null] }>()
+const emit = defineEmits<{
+  'update:modelValue': [client: Client | null]
+  confirm: [client: Client | null]
+}>()
 
 const auth = useAuthStore()
 const search = ref('')
 const results = ref<Client[]>([])
 const loading = ref(false)
+const highlight = ref<number | null>(null)
+const inputRef = ref<HTMLInputElement | null>(null)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 async function searchClients(q: string) {
@@ -20,6 +25,7 @@ async function searchClients(q: string) {
   try {
     const { data } = await listClients(shopId, q || undefined, true)
     results.value = data.data
+    highlight.value = results.value.length ? 0 : null
   } finally {
     loading.value = false
   }
@@ -35,6 +41,7 @@ watch(
   () => {
     search.value = ''
     results.value = []
+    highlight.value = null
     emit('update:modelValue', null)
   },
 )
@@ -43,13 +50,37 @@ function selectClient(client: Client) {
   emit('update:modelValue', client)
   search.value = client.name
   results.value = []
+  highlight.value = null
 }
 
 function clearClient() {
   emit('update:modelValue', null)
   search.value = ''
   results.value = []
+  highlight.value = null
 }
+
+function onKeydown(event: KeyboardEvent) {
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    if (!results.value.length) return
+    highlight.value = highlight.value === null ? 0 : Math.min(results.value.length - 1, highlight.value + 1)
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    if (!results.value.length) return
+    highlight.value = highlight.value === null ? 0 : Math.max(0, highlight.value - 1)
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    const chosen = highlight.value !== null ? results.value[highlight.value] ?? null : null
+    if (chosen) selectClient(chosen)
+    emit('confirm', chosen)
+  }
+}
+
+defineExpose({
+  focus: () => inputRef.value?.focus(),
+  clear: clearClient,
+})
 </script>
 
 <template>
@@ -57,10 +88,12 @@ function clearClient() {
     <label class="text-sm font-medium text-gray-700">Client (optional)</label>
     <div class="relative">
       <input
+        ref="inputRef"
         v-model="search"
         placeholder="Search by name or phone…"
         class="input"
         @focus="searchClients(search)"
+        @keydown="onKeydown"
       />
       <button
         v-if="props.modelValue"
@@ -74,9 +107,10 @@ function clearClient() {
     <p v-if="loading" class="text-sm text-gray-500">Searching…</p>
     <ul v-else-if="results.length && !props.modelValue" class="list-panel max-h-40 overflow-y-auto">
       <li
-        v-for="client in results"
+        v-for="(client, i) in results"
         :key="client.id"
         class="list-row cursor-pointer hover:bg-gray-50"
+        :class="i === highlight ? 'bg-gray-100' : ''"
         @click="selectClient(client)"
       >
         <div>

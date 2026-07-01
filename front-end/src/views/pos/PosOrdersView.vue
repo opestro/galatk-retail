@@ -60,7 +60,7 @@ watch(() => auth.selectedShopId, loadOrders)
 </script>
 
 <template>
-  <div class="page-shell max-w-4xl">
+  <div class="page-shell max-w-full">
     <div class="page-header">
       <div>
         <h2 class="page-title">Online orders</h2>

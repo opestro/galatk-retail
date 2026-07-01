@@ -40,7 +40,7 @@ onMounted(loadSales)
 </script>
 
 <template>
-  <div class="page-shell">
+  <div class="page-shell max-w-full">
     <PageHeader title="Sales history" />
 
     <SkeletonList v-if="loading" />
