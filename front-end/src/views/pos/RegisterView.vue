@@ -4,11 +4,13 @@ import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { usePosCartStore } from '@/stores/posCart'
 import { usePosHotkeys } from '@/composables/usePosHotkeys'
-import type { PosProduct } from '@/types/api'
-import type { Client } from '@/types/api'
+import PayLaterConfirm from '@/components/pos/PayLaterConfirm.vue'
+import PosSuccessDialog from '@/components/pos/PosSuccessDialog.vue'
+import { playPosErrorSound, playPosSuccessSound } from '@/composables/usePosSounds'
+import { printPosReceipt, type SaleReceiptData } from '@/utils/printPosReceipt'
+import type { Client, PosProduct, Sale } from '@/types/api'
 import SkeletonProductGrid from '@/components/ui/SkeletonProductGrid.vue'
 import ClientPicker from '@/components/pos/ClientPicker.vue'
-import PayLaterConfirm from '@/components/pos/PayLaterConfirm.vue'
 
 const auth = useAuthStore()
 const cart = usePosCartStore()
@@ -21,6 +23,7 @@ const message = ref('')
 const error = ref('')
 const showConfirm = ref(false)
 const pendingOverride = ref(false)
+const successReceipt = ref<SaleReceiptData | null>(null)
 
 // Keyboard product-grid nav state
 const highlightIndex = ref<number | null>(null)
@@ -84,6 +87,27 @@ function onCheckoutModeChange(mode: 'full' | 'partial' | 'payLater') {
   cart.setCheckoutMode(mode)
 }
 
+function saleToReceipt(sale: Sale): SaleReceiptData {
+  return {
+    type: 'sale',
+    saleId: sale.id,
+    createdAt: sale.createdAt,
+    cashierName: sale.cashier?.name ?? auth.staff?.name ?? 'Staff',
+    paymentMethod: sale.paymentMethod,
+    lines: sale.lines.map((l) => ({
+      name: l.product?.name ?? 'Item',
+      quantity: l.quantity,
+      lineTotal: l.lineTotal,
+    })),
+    subtotal: sale.total,
+    total: sale.total,
+    amountPaid: sale.amountPaid ?? sale.total,
+    amountOnCredit: sale.amountOnCredit ?? '0',
+    clientName: sale.client?.name ?? null,
+    clientPhone: sale.client?.phone ?? null,
+  }
+}
+
 async function executeCheckout(creditLimitOverride = false) {
   const shopId = auth.selectedShopId
   if (!shopId || !cart.lines.length) return
@@ -107,14 +131,17 @@ async function executeCheckout(creditLimitOverride = false) {
     } else {
       body.amountPaid = cart.total
     }
-    await api.post(`/shops/${shopId}/pos/sales`, body)
-    message.value = 'Sale completed'
+    const { data } = await api.post<{ data: Sale }>(`/shops/${shopId}/pos/sales`, body)
+    playPosSuccessSound()
+    successReceipt.value = saleToReceipt(data.data)
     cart.clear()
     showConfirm.value = false
     confirmStage.value = false
+    message.value = ''
     await loadProducts()
   } catch {
     error.value = 'Checkout failed — check stock, client, or credit limit'
+    playPosErrorSound()
   }
 }
 
@@ -379,5 +406,13 @@ onMounted(loadProducts)
     :limit-override="pendingOverride"
     @close="showConfirm = false"
     @confirm="onConfirm"
+  />
+
+  <PosSuccessDialog
+    v-if="successReceipt"
+    title="Sale completed"
+    :message="`Total ${successReceipt.total} DZD — ${successReceipt.amountPaid} DZD collected.`"
+    @close="successReceipt = null"
+    @print="successReceipt && printPosReceipt(successReceipt)"
   />
 </template>

@@ -4,7 +4,10 @@ import { useAuthStore } from '@/stores/auth'
 import { listClients } from '@/services/clientApi'
 import type { Client } from '@/types/api'
 
-const props = defineProps<{ modelValue: Client | null }>()
+const props = defineProps<{
+  modelValue: Client | null
+  debtOnly?: boolean
+}>()
 const emit = defineEmits<{
   'update:modelValue': [client: Client | null]
   confirm: [client: Client | null]
@@ -23,7 +26,7 @@ async function searchClients(q: string) {
   if (!shopId) return
   loading.value = true
   try {
-    const { data } = await listClients(shopId, q || undefined, true)
+    const { data } = await listClients(shopId, q || undefined, true, props.debtOnly ?? false)
     results.value = data.data
     highlight.value = results.value.length ? 0 : null
   } finally {
@@ -85,7 +88,9 @@ defineExpose({
 
 <template>
   <div class="flex flex-col gap-2">
-    <label class="text-sm font-medium text-gray-700">Client (optional)</label>
+    <label class="text-sm font-medium text-gray-700">
+      {{ props.debtOnly ? 'Client with outstanding credit' : 'Client (optional)' }}
+    </label>
     <div class="relative">
       <input
         ref="inputRef"

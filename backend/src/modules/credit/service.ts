@@ -71,12 +71,14 @@ export async function recordPayment(
     orderBy: { createdAt: 'asc' },
   })
 
-  let allocations
-  try {
-    allocations = allocateFifo(portions, amount)
-  } catch {
-    throw new CustomError('VALIDATION_ERROR', 'Payment exceeds open credit portions', 400)
-  }
+  const openPortionsTotal = portions.reduce(
+    (sum, portion) => sum.add(portion.remainingAmount),
+    new Decimal(0),
+  )
+
+  const amountToAllocate = Decimal.min(amount, openPortionsTotal)
+  const allocations =
+    amountToAllocate.gt(0) ? allocateFifo(portions, amountToAllocate) : []
 
   return prisma.$transaction(async (tx) => {
     const payment = await tx.clientPayment.create({
@@ -278,6 +280,16 @@ export async function createAdjustment(
       where: { id: clientId },
       data: { balance: { increment: amount } },
     })
+
+    if (amount.gt(0)) {
+      await tx.clientCreditPortion.create({
+        data: {
+          clientId,
+          originalAmount: amount,
+          remainingAmount: amount,
+        },
+      })
+    }
 
     await tx.clientLedgerEntry.create({
       data: {

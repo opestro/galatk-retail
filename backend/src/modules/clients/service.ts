@@ -12,6 +12,7 @@ export async function listClients(
   shopId: string,
   query?: string,
   activeOnly?: boolean,
+  withBalance?: boolean,
 ) {
   assertShopAccess(staff, shopId)
 
@@ -19,6 +20,10 @@ export async function listClients(
 
   if (activeOnly) {
     where.isActive = true
+  }
+
+  if (withBalance) {
+    where.balance = { gt: 0 }
   }
 
   if (query?.trim()) {

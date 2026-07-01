@@ -15,6 +15,7 @@ import {
   Settings,
 } from 'lucide-vue-next'
 import ClientPaymentModal from '@/components/pos/ClientPaymentModal.vue'
+import type { Client } from '@/types/api'
 
 interface RegisterApi {
   focusSearch: () => void
@@ -23,7 +24,9 @@ interface RegisterApi {
 
 const auth = useAuthStore()
 const route = useRoute()
+
 const showPaymentModal = ref(false)
+const paymentInitialClient = ref<Client | null>(null)
 const userMenuOpen = ref(false)
 
 const registerApi = ref<RegisterApi | null>(null)
@@ -70,8 +73,14 @@ function handleLogout() {
   auth.logout()
 }
 
-function openPaymentModal() {
+function openPaymentModal(client?: Client | null) {
+  paymentInitialClient.value = client ?? null
   showPaymentModal.value = true
+}
+
+function closePaymentModal() {
+  showPaymentModal.value = false
+  paymentInitialClient.value = null
 }
 
 // Quick action bar — buttons call handlers directly (no synthetic KeyboardEvent).
@@ -85,7 +94,8 @@ function triggerQuick(id: QuickAction['id']) {
   }
 }
 
-provide('posOpenPayment', openPaymentModal)
+provide('posOpenPayment', () => openPaymentModal())
+provide('posOpenPaymentForClient', (client: Client) => openPaymentModal(client))
 provide('posRegisterApi', registerApi)
 </script>
 
@@ -199,8 +209,8 @@ provide('posRegisterApi', registerApi)
 
     <ClientPaymentModal
       v-if="showPaymentModal"
-      @close="showPaymentModal = false"
-      @recorded="showPaymentModal = false"
+      :initial-client="paymentInitialClient"
+      @close="closePaymentModal"
     />
   </div>
 </template>

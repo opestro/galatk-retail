@@ -10,9 +10,13 @@ import type {
   ShopCharge,
 } from '@/types/api'
 
-export async function listClients(shopId: string, q?: string, activeOnly = false) {
+export async function listClients(shopId: string, q?: string, activeOnly = false, withBalance = false) {
   return api.get<{ data: Client[] }>(`/shops/${shopId}/clients`, {
-    params: { q, activeOnly: activeOnly || undefined },
+    params: {
+      q,
+      activeOnly: activeOnly || undefined,
+      withBalance: withBalance || undefined,
+    },
   })
 }
 

@@ -294,13 +294,13 @@ model Client {
 model ClientCreditPortion {
   id              String   @id @default(uuid())
   clientId        String
-  saleId          String
+  saleId          String?
   originalAmount  Decimal  @db.Decimal(10, 2)
   remainingAmount Decimal  @db.Decimal(10, 2)
   createdAt       DateTime @default(now())
 
   client      Client                    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  sale        Sale                      @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  sale        Sale?                     @relation(fields: [saleId], references: [id], onDelete: Cascade)
   allocations ClientPaymentAllocation[]
 
   @@index([clientId, remainingAmount, createdAt])

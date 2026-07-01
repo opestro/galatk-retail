@@ -7,8 +7,9 @@ export async function listByShop(req: Request, res: Response, next: NextFunction
     const shopId = String(req.params.shopId)
     const q = typeof req.query.q === 'string' ? req.query.q : undefined
     const activeOnly = req.query.activeOnly === 'true'
+    const withBalance = req.query.withBalance === 'true'
 
-    const clients = await ClientsService.listClients(req.staff!, shopId, q, activeOnly)
+    const clients = await ClientsService.listClients(req.staff!, shopId, q, activeOnly, withBalance)
     res.status(200).json({ data: clients.map(clientPresenter) })
   } catch (error) {
     next(error)

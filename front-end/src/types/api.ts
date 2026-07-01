@@ -138,6 +138,7 @@ export interface Sale {
   clientId?: string | null
   createdAt: string
   cashier: { id: string; name: string }
+  client?: { id: string; name: string; phone?: string } | null
   lines: Array<{
     productId: string
     quantity: number
