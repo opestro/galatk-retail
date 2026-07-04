@@ -50,7 +50,19 @@ onMounted(load)
 
     <div v-else-if="financial?.totals" class="card flex flex-col gap-4">
       <h3 class="font-medium text-gray-900">Network totals</h3>
-      <div class="grid grid-cols-2 gap-4 text-sm md:grid-cols-5">
+      <div class="grid grid-cols-2 gap-4 text-sm md:grid-cols-4 lg:grid-cols-8">
+        <div>
+          <p class="text-gray-500">Gross revenue</p>
+          <p class="mt-1 font-semibold">{{ financial.totals.grossRevenue }} DZD</p>
+        </div>
+        <div>
+          <p class="text-gray-500">COGS</p>
+          <p class="mt-1 font-semibold">{{ financial.totals.costOfGoodsSold }} DZD</p>
+        </div>
+        <div>
+          <p class="text-gray-500">Gross profit</p>
+          <p class="mt-1 font-semibold text-green-700">{{ financial.totals.grossProfit }} DZD</p>
+        </div>
         <div>
           <p class="text-gray-500">POS collected</p>
           <p class="mt-1 font-semibold">{{ financial.totals.posCollected }} DZD</p>
@@ -83,6 +95,14 @@ onMounted(load)
           </p>
         </div>
         <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p class="text-gray-500">Gross profit</p>
+            <p class="mt-1 font-semibold text-green-700">{{ shop.grossProfit }} DZD</p>
+          </div>
+          <div>
+            <p class="text-gray-500">Gross revenue</p>
+            <p class="mt-1 font-semibold">{{ shop.grossRevenue }} DZD</p>
+          </div>
           <div>
             <p class="text-gray-500">POS collected</p>
             <p class="mt-1 font-semibold">{{ shop.posCollected }} DZD</p>

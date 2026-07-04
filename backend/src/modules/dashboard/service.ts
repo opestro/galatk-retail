@@ -21,6 +21,9 @@ export interface FinancialSummary {
   totalCashIn: string
   outstandingCredit: string
   totalCharges: string
+  grossRevenue: string
+  costOfGoodsSold: string
+  grossProfit: string
 }
 
 export interface NetworkFinancialSummary {
@@ -83,7 +86,7 @@ export async function getNetworkSummary(staff: AuthenticatedStaff) {
 async function computeFinancialSummary(shopId: string, from?: string, to?: string): Promise<FinancialSummary> {
   const { fromDate, toDate } = parseDateRange(from, to)
 
-  const [sales, payments, clients, charges] = await Promise.all([
+  const [sales, payments, clients, charges, saleLines] = await Promise.all([
     prisma.sale.findMany({
       where: {
         shopId,
@@ -112,6 +115,16 @@ async function computeFinancialSummary(shopId: string, from?: string, to?: strin
       },
       select: { amount: true },
     }),
+    prisma.saleLine.findMany({
+      where: {
+        sale: {
+          shopId,
+          status: SaleStatus.COMPLETED,
+          createdAt: { gte: fromDate, lte: toDate },
+        },
+      },
+      select: { quantity: true, lineTotal: true, unitCost: true },
+    }),
   ])
 
   const posCollected = sales.reduce((sum, s) => sum.add(s.amountPaid), new Decimal(0))
@@ -119,12 +132,22 @@ async function computeFinancialSummary(shopId: string, from?: string, to?: strin
   const outstandingCredit = clients.reduce((sum, c) => sum.add(c.balance), new Decimal(0))
   const totalCharges = charges.reduce((sum, c) => sum.add(c.amount), new Decimal(0))
 
+  const grossRevenue = saleLines.reduce((sum, line) => sum.add(line.lineTotal), new Decimal(0))
+  const costOfGoodsSold = saleLines.reduce(
+    (sum, line) => sum.add(line.unitCost.mul(line.quantity)),
+    new Decimal(0),
+  )
+  const grossProfit = grossRevenue.sub(costOfGoodsSold)
+
   return {
     posCollected: posCollected.toFixed(2),
     clientPaymentsReceived: clientPaymentsReceived.toFixed(2),
     totalCashIn: posCollected.add(clientPaymentsReceived).toFixed(2),
     outstandingCredit: outstandingCredit.toFixed(2),
     totalCharges: totalCharges.toFixed(2),
+    grossRevenue: grossRevenue.toFixed(2),
+    costOfGoodsSold: costOfGoodsSold.toFixed(2),
+    grossProfit: grossProfit.toFixed(2),
   }
 }
 
@@ -167,6 +190,9 @@ export async function getNetworkFinancialSummary(
         .add(shop.outstandingCredit)
         .toFixed(2),
       totalCharges: new Decimal(acc.totalCharges).add(shop.totalCharges).toFixed(2),
+      grossRevenue: new Decimal(acc.grossRevenue).add(shop.grossRevenue).toFixed(2),
+      costOfGoodsSold: new Decimal(acc.costOfGoodsSold).add(shop.costOfGoodsSold).toFixed(2),
+      grossProfit: new Decimal(acc.grossProfit).add(shop.grossProfit).toFixed(2),
     }),
     {
       posCollected: '0.00',
@@ -174,6 +200,9 @@ export async function getNetworkFinancialSummary(
       totalCashIn: '0.00',
       outstandingCredit: '0.00',
       totalCharges: '0.00',
+      grossRevenue: '0.00',
+      costOfGoodsSold: '0.00',
+      grossProfit: '0.00',
     },
   )
 

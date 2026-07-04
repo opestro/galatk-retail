@@ -18,6 +18,7 @@ export async function createProduct(input: CreateProductInput) {
     data: {
       name: input.name,
       description: input.description ?? null,
+      unitCost: input.unitCost ?? 0,
       sellPrice: input.sellPrice,
       galatkProductRef: input.galatkProductRef ?? null,
       isActive: input.isActive ?? true,
@@ -41,6 +42,7 @@ export async function updateProduct(productId: string, input: UpdateProductInput
     data: {
       name: input.name,
       description: input.description,
+      unitCost: input.unitCost,
       sellPrice: input.sellPrice,
       galatkProductRef: input.galatkProductRef,
       isActive: input.isActive,

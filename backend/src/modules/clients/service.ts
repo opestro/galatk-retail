@@ -52,12 +52,22 @@ export async function createClient(
     throw new CustomError('VALIDATION_ERROR', 'Name and phone are required', 400)
   }
 
+  const name = input.name.trim()
+  const phone = input.phone.trim()
+
   try {
+    const customer = await prisma.customer.upsert({
+      where: { phone },
+      update: {},
+      create: { name, phone, email: input.email?.trim() ?? null },
+    })
+
     return await prisma.client.create({
       data: {
         shopId,
-        name: input.name.trim(),
-        phone: input.phone.trim(),
+        customerId: customer.id,
+        name,
+        phone,
         email: input.email?.trim() ?? null,
         address: input.address?.trim() ?? null,
         notes: input.notes?.trim() ?? null,
@@ -69,7 +79,7 @@ export async function createClient(
     })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw new CustomError('DUPLICATE_PHONE', 'Phone number already registered', 400)
+      throw new CustomError('DUPLICATE_PHONE', 'Phone number already registered at this shop', 400)
     }
     throw error
   }
@@ -164,4 +174,33 @@ export async function getClientLedger(staff: AuthenticatedStaff, clientId: strin
     include: { recordedBy: { select: { id: true, name: true } } },
     orderBy: { createdAt: 'desc' },
   })
+}
+
+/**
+ * Returns everything a client has bought at this shop: in-person POS sales
+ * and online orders, each with their line items. Used by the "view items
+ * purchased" action in POS orders/credits views.
+ */
+export async function getClientPurchases(staff: AuthenticatedStaff, clientId: string) {
+  await getClientForStaff(staff, clientId)
+
+  const [sales, onlineOrders] = await Promise.all([
+    prisma.sale.findMany({
+      where: { clientId },
+      include: {
+        lines: { include: { product: { select: { id: true, name: true } } } },
+        cashier: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.onlineOrder.findMany({
+      where: { clientId },
+      include: {
+        lines: { include: { product: { select: { id: true, name: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+  ])
+
+  return { sales, onlineOrders }
 }

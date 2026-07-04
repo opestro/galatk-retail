@@ -12,5 +12,6 @@ clientRouter.use(requireAuth)
 clientRouter.get('/:clientId', ClientsController.getById)
 clientRouter.patch('/:clientId', ClientsController.update)
 clientRouter.get('/:clientId/ledger', ClientsController.getLedger)
+clientRouter.get('/:clientId/purchases', ClientsController.getPurchases)
 
 export { shopClientsRouter, clientRouter }

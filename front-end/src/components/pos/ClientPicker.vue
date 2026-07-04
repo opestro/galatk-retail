@@ -96,21 +96,21 @@ defineExpose({
         ref="inputRef"
         v-model="search"
         placeholder="Search by name or phone…"
-        class="input"
+        class="input pr-16"
         @focus="searchClients(search)"
         @keydown="onKeydown"
       />
       <button
         v-if="props.modelValue"
         type="button"
-        class="absolute top-1/2 right-2 -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
+        class="absolute right-0 top-0 flex h-full min-w-[44px] items-center justify-center px-3 text-sm text-gray-500 hover:text-gray-700"
         @click="clearClient"
       >
         Clear
       </button>
     </div>
     <p v-if="loading" class="text-sm text-gray-500">Searching…</p>
-    <ul v-else-if="results.length && !props.modelValue" class="list-panel max-h-40 overflow-y-auto">
+    <ul v-else-if="results.length && !props.modelValue" class="list-panel max-h-52 overflow-y-auto">
       <li
         v-for="(client, i) in results"
         :key="client.id"

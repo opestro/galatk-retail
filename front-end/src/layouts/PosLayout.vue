@@ -32,6 +32,7 @@ const userMenuOpen = ref(false)
 const registerApi = ref<RegisterApi | null>(null)
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
 const navItems = [
   { to: '/pos', name: 'Register', icon: ShoppingCart },
@@ -102,13 +103,13 @@ provide('posRegisterApi', registerApi)
 <template>
   <div class="flex h-screen flex-col bg-gray-50 text-gray-900">
     <!-- Top bar: icon-card nav (left) + quick actions + user menu (right) -->
-    <header class="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-2.5">
-      <nav class="flex items-center gap-2">
+    <header class="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-200 bg-white px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
+      <nav class="flex items-center gap-1.5 sm:gap-2">
         <RouterLink
           v-for="item in navItems"
           :key="item.to"
           :to="item.to"
-          class="flex w-16 shrink-0 flex-col items-center gap-1 rounded-lg border border-gray-200 px-1 py-2 text-center text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+          class="flex min-h-11 w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-lg border border-gray-200 px-1 py-1.5 text-center text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 sm:w-16 sm:py-2 sm:text-xs"
           active-class="!bg-gray-900 !text-white !border-gray-900"
         >
           <component :is="item.icon" class="h-5 w-5" />
@@ -116,13 +117,13 @@ provide('posRegisterApi', registerApi)
         </RouterLink>
       </nav>
 
-      <div class="ml-auto flex items-center gap-2">
+      <div class="ml-auto flex items-center gap-1.5 sm:gap-2">
         <button
           v-for="action in visibleQuickActions"
           :key="action.id"
           type="button"
           :class="[
-            'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+            'flex min-h-11 items-center gap-2 rounded-lg px-2.5 text-sm font-medium transition-colors sm:px-3 sm:py-2',
             action.primary
               ? 'bg-gray-900 text-white hover:bg-gray-800'
               : 'border border-gray-300 text-gray-700 hover:bg-gray-50',
@@ -132,6 +133,7 @@ provide('posRegisterApi', registerApi)
           <component :is="action.icon" class="h-4 w-4" />
           <span class="hidden sm:inline">{{ action.label }}</span>
           <kbd
+            v-if="!isTouchDevice"
             class="hidden rounded bg-black/10 px-1.5 py-0.5 font-mono text-[10px] tabular-nums sm:inline"
             :class="action.primary ? 'bg-white/15 text-white/80' : 'text-gray-500'"
           >
@@ -143,10 +145,10 @@ provide('posRegisterApi', registerApi)
         <div class="relative">
           <button
             type="button"
-            class="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            class="flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 px-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:px-3 sm:py-2"
             @click="userMenuOpen = !userMenuOpen"
           >
-            <span class="max-w-[10rem] truncate">{{ auth.staff?.name ?? 'Staff' }}</span>
+            <span class="hidden max-w-[10rem] truncate sm:inline">{{ auth.staff?.name ?? 'Staff' }}</span>
             <ChevronDown class="h-4 w-4" />
           </button>
           <div
@@ -157,7 +159,7 @@ provide('posRegisterApi', registerApi)
             <RouterLink
               v-if="auth.isManager"
               to="/admin"
-              class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              class="flex min-h-11 items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
               @click="userMenuOpen = false"
             >
               <Settings class="h-4 w-4" />
@@ -165,7 +167,7 @@ provide('posRegisterApi', registerApi)
             </RouterLink>
             <button
               type="button"
-              class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+              class="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
               @click="handleLogout"
             >
               <LogOut class="h-4 w-4" />
@@ -183,9 +185,9 @@ provide('posRegisterApi', registerApi)
       </div>
     </header>
 
-    <!-- Shortcut legend (register only) -->
+    <!-- Shortcut legend (register only, hidden on touch devices where hotkeys don't apply) -->
     <div
-      v-if="isRegister"
+      v-if="isRegister && !isTouchDevice"
       class="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 px-4 py-1.5 text-xs text-gray-500"
     >
       <span class="font-medium text-gray-600">Shortcuts</span>

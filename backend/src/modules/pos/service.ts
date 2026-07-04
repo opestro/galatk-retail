@@ -161,6 +161,7 @@ export async function createSale(staff: AuthenticatedStaff, shopId: string, inpu
           create: products.map(({ product, quantity }) => ({
             productId: product.id,
             quantity,
+            unitCost: product.unitCost,
             unitPrice: product.sellPrice,
             lineTotal: product.sellPrice.mul(quantity),
           })),
@@ -256,31 +257,45 @@ export async function voidSale(
 ) {
   assertShopAccess(staff, shopId)
 
-  const sale = await prisma.sale.findFirst({
-    where: { id: saleId, shopId },
-    include: {
-      lines: true,
-      creditPortions: { include: { allocations: true } },
-    },
-  })
-
-  if (!sale) {
-    throw new CustomError('SALE_NOT_FOUND', 'Sale not found', 404)
-  }
-
-  assertCanVoidSale(staff.role, staff.id, sale)
-
-  for (const portion of sale.creditPortions) {
-    if (portion.allocations.length > 0) {
-      throw new CustomError(
-        'SALE_VOID_BLOCKED',
-        'Cannot void sale with allocated credit payments; void payments first',
-        422,
-      )
-    }
-  }
-
   return prisma.$transaction(async (tx) => {
+    const sale = await tx.sale.findFirst({
+      where: { id: saleId, shopId },
+      include: {
+        lines: true,
+        creditPortions: { include: { allocations: true } },
+      },
+    })
+
+    if (!sale) {
+      throw new CustomError('SALE_NOT_FOUND', 'Sale not found', 404)
+    }
+
+    assertCanVoidSale(staff.role, staff.id, sale)
+
+    for (const portion of sale.creditPortions) {
+      if (portion.allocations.length > 0) {
+        throw new CustomError(
+          'SALE_VOID_BLOCKED',
+          'Cannot void sale with allocated credit payments; void payments first',
+          422,
+        )
+      }
+    }
+
+    const cancelled = await tx.sale.updateMany({
+      where: { id: saleId, shopId, status: SaleStatus.COMPLETED },
+      data: {
+        status: SaleStatus.CANCELLED,
+        cancelledById: staff.id,
+        cancelledAt: new Date(),
+        cancelReason: reason ?? null,
+      },
+    })
+
+    if (cancelled.count === 0) {
+      throw new CustomError('ALREADY_VOIDED', 'Sale is already voided', 400)
+    }
+
     if (!sale.onlineOrderId) {
       await restoreShopStock(
         tx,
@@ -321,14 +336,8 @@ export async function voidSale(
       }
     }
 
-    return tx.sale.update({
+    return tx.sale.findFirstOrThrow({
       where: { id: saleId },
-      data: {
-        status: SaleStatus.CANCELLED,
-        cancelledById: staff.id,
-        cancelledAt: new Date(),
-        cancelReason: reason ?? null,
-      },
       include: {
         lines: { include: { product: true } },
         cashier: { select: { id: true, name: true } },

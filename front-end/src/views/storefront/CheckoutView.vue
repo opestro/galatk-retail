@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/services/api'
 import { useStorefrontCartStore } from '@/stores/storefrontCart'
+import { lookupCustomerByPhoneStorefront } from '@/services/globalStore'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonForm from '@/components/ui/SkeletonForm.vue'
+import { Check, Loader2 } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,6 +23,9 @@ const form = ref({
   deliveryCity: '',
 })
 const error = ref('')
+const lookupStatus = ref<'idle' | 'loading' | 'found' | 'not-found'>('idle')
+
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 onMounted(async () => {
   const slug = route.params.slug as string
@@ -31,6 +36,37 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+watch(
+  () => form.value.customerPhone,
+  (phone) => {
+    if (debounceTimer) clearTimeout(debounceTimer)
+
+    if (!phone?.trim() || phone.trim().length < 6) {
+      lookupStatus.value = 'idle'
+      return
+    }
+
+    lookupStatus.value = 'loading'
+    debounceTimer = setTimeout(async () => {
+      const slug = route.params.slug as string
+      const result = await lookupCustomerByPhoneStorefront(slug, phone)
+      if (result) {
+        form.value.customerName = result.name
+        form.value.customerEmail = result.email ?? ''
+        lookupStatus.value = 'found'
+        setTimeout(() => {
+          if (lookupStatus.value === 'found') lookupStatus.value = 'idle'
+        }, 2000)
+      } else {
+        lookupStatus.value = 'not-found'
+        setTimeout(() => {
+          if (lookupStatus.value === 'not-found') lookupStatus.value = 'idle'
+        }, 2000)
+      }
+    }, 500)
+  },
+)
 
 async function submit() {
   const slug = route.params.slug as string
@@ -74,7 +110,20 @@ async function submit() {
       </div>
 
       <input v-model="form.customerName" placeholder="Your name" required class="input" />
-      <input v-model="form.customerPhone" placeholder="Phone" required class="input" />
+      <div class="relative">
+        <input v-model="form.customerPhone" placeholder="Phone" required class="input" />
+        <Loader2
+          v-if="lookupStatus === 'loading'"
+          class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400"
+        />
+        <Check
+          v-else-if="lookupStatus === 'found'"
+          class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600"
+        />
+      </div>
+      <p v-if="lookupStatus === 'found'" class="-mt-2 text-xs text-green-600">
+        Welcome back! Name and email auto-filled.
+      </p>
       <input v-model="form.customerEmail" type="email" placeholder="Email (optional)" class="input" />
 
       <template v-if="form.fulfillmentType === 'DELIVERY'">

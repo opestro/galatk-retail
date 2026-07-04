@@ -3,6 +3,7 @@ import type {
   Client,
   ClientLedgerEntry,
   ClientPayment,
+  ClientPurchases,
   CreditDashboardEntry,
   CreditReminderEntry,
   FinancialSummary,
@@ -53,8 +54,10 @@ export async function voidClientPayment(
   return api.post(`/shops/${shopId}/clients/${clientId}/payments/${paymentId}/void`, { reason })
 }
 
-export async function getCreditDashboard(shopId: string) {
-  return api.get<{ data: CreditDashboardEntry[] }>(`/shops/${shopId}/credit/dashboard`)
+export async function getCreditDashboard(shopId: string, q?: string) {
+  return api.get<{ data: CreditDashboardEntry[] }>(`/shops/${shopId}/credit/dashboard`, {
+    params: { q: q || undefined },
+  })
 }
 
 export async function getCreditReminders(shopId: string) {
@@ -91,4 +94,8 @@ export async function getNetworkFinancialSummary(from?: string, to?: string) {
 
 export async function createClientAdjustment(clientId: string, body: { amount: number; note?: string }) {
   return api.post(`/clients/${clientId}/adjustments`, body)
+}
+
+export async function getClientPurchases(clientId: string) {
+  return api.get<{ data: ClientPurchases }>(`/clients/${clientId}/purchases`)
 }

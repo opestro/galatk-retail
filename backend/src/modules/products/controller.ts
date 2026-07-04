@@ -15,7 +15,7 @@ export async function list(req: Request, res: Response, next: NextFunction) {
 
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
-    const { name, description, sellPrice, galatkProductRef, isActive, availableOnline } = req.body
+    const { name, description, unitCost, sellPrice, galatkProductRef, isActive, availableOnline } = req.body
 
     if (!name || sellPrice === undefined) {
       throw new CustomError('VALIDATION_ERROR', 'name and sellPrice are required', 400)
@@ -24,6 +24,7 @@ export async function create(req: Request, res: Response, next: NextFunction) {
     const product = await ProductsService.createProduct({
       name,
       description,
+      unitCost: unitCost !== undefined ? Number(unitCost) : undefined,
       sellPrice: Number(sellPrice),
       galatkProductRef,
       isActive,
@@ -49,11 +50,12 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
 export async function update(req: Request, res: Response, next: NextFunction) {
   try {
     const productId = String(req.params.productId)
-    const { name, description, sellPrice, galatkProductRef, isActive, availableOnline } = req.body
+    const { name, description, unitCost, sellPrice, galatkProductRef, isActive, availableOnline } = req.body
 
     const product = await ProductsService.updateProduct(productId, {
       name,
       description,
+      unitCost: unitCost !== undefined ? Number(unitCost) : undefined,
       sellPrice: sellPrice !== undefined ? Number(sellPrice) : undefined,
       galatkProductRef,
       isActive,

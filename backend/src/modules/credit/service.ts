@@ -15,6 +15,7 @@ import {
   ClientLedgerEntryType,
   ClientPaymentStatus,
   PaymentMethod,
+  Prisma,
   StaffRole,
 } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
@@ -34,6 +35,7 @@ async function buildDashboardClient(client: {
   id: string
   name: string
   phone: string
+  email: string | null
   balance: Decimal
 }): Promise<CreditDashboardClient> {
   const oldestPortion = await getOldestOpenPortion(client.id)
@@ -41,6 +43,7 @@ async function buildDashboardClient(client: {
     clientId: client.id,
     name: client.name,
     phone: client.phone,
+    email: client.email,
     balance: client.balance.toString(),
     oldestDebtAgeDays: oldestPortion ? daysSince(oldestPortion.createdAt) : 0,
   }
@@ -197,11 +200,22 @@ export async function voidPayment(
   })
 }
 
-export async function getCreditDashboard(staff: AuthenticatedStaff, shopId: string) {
+export async function getCreditDashboard(staff: AuthenticatedStaff, shopId: string, search?: string) {
   assertShopAccess(staff, shopId)
 
+  const where: Prisma.ClientWhereInput = { shopId, balance: { gt: 0 } }
+
+  if (search?.trim()) {
+    const q = search.trim()
+    where.OR = [
+      { name: { contains: q, mode: 'insensitive' } },
+      { phone: { contains: q, mode: 'insensitive' } },
+      { email: { contains: q, mode: 'insensitive' } },
+    ]
+  }
+
   const clients = await prisma.client.findMany({
-    where: { shopId, balance: { gt: 0 } },
+    where,
     orderBy: { name: 'asc' },
   })
 

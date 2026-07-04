@@ -6,11 +6,13 @@ import stockRoutes from './stock/index.js'
 import posRoutes from './pos/index.js'
 import ordersRoutes from './orders/index.js'
 import storefrontRoutes from './storefront/index.js'
+import globalStoreRoutes from './global-store/index.js'
 import staffRoutes from './staff/index.js'
 import { shopRouter as dashboardShopRouter, networkRouter as dashboardNetworkRouter } from './dashboard/index.js'
 import { shopClientsRouter, clientRouter } from './clients/index.js'
 import { shopCreditRouter, paymentsRouter, clientCreditRouter } from './credit/index.js'
 import chargesRoutes from './charges/index.js'
+import integrationsRoutes from './integrations/index.js'
 
 const appRouter = express.Router()
 
@@ -34,8 +36,10 @@ apiV1.use('/shops/:shopId/charges', chargesRoutes)
 apiV1.use('/clients', clientRouter)
 apiV1.use('/clients', clientCreditRouter)
 apiV1.use('/storefront', storefrontRoutes)
+apiV1.use('/global-store', globalStoreRoutes)
 apiV1.use('/staff', staffRoutes)
 apiV1.use('/dashboard', dashboardNetworkRouter)
+apiV1.use('/integrations', integrationsRoutes)
 
 appRouter.use('/api/v1', apiV1)
 

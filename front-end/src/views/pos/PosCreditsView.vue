@@ -4,11 +4,15 @@ import { useAuthStore } from '@/stores/auth'
 import { getCreditDashboard, getClient } from '@/services/clientApi'
 import type { Client, CreditDashboardEntry } from '@/types/api'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
+import ClientPurchasesModal from '@/components/pos/ClientPurchasesModal.vue'
+import { ShoppingBag } from 'lucide-vue-next'
 
 const auth = useAuthStore()
 const entries = ref<CreditDashboardEntry[]>([])
 const loading = ref(true)
 const search = ref('')
+const purchasesClientId = ref<string | null>(null)
+const purchasesClientName = ref('')
 
 const openPaymentForClient = inject<(client: Client) => void>('posOpenPaymentForClient')
 
@@ -18,7 +22,8 @@ const filtered = computed(() => {
   return entries.value.filter(
     (e) =>
       (e.name ?? e.clientName ?? '').toLowerCase().includes(q) ||
-      e.phone.includes(q),
+      e.phone.includes(q) ||
+      (e.email ?? '').toLowerCase().includes(q),
   )
 })
 
@@ -47,6 +52,11 @@ async function collectPayment(entry: CreditDashboardEntry) {
   openPaymentForClient(data.data)
 }
 
+function openPurchases(entry: CreditDashboardEntry) {
+  purchasesClientId.value = entry.clientId
+  purchasesClientName.value = entry.name ?? entry.clientName ?? entry.phone
+}
+
 onMounted(loadCredits)
 watch(() => auth.selectedShopId, loadCredits)
 </script>
@@ -56,12 +66,12 @@ watch(() => auth.selectedShopId, loadCredits)
     <div class="page-header">
       <div>
         <h2 class="page-title">Client credit & debt</h2>
-        <p class="text-sm text-gray-500">Search debtors · F4 to record payment from register</p>
+        <p class="text-sm text-gray-500">Search debtors and record payments</p>
       </div>
       <p class="text-lg font-semibold text-gray-900">{{ totalOwed }} DZD total owed</p>
     </div>
 
-    <input v-model="search" placeholder="Search client by name or phone…" class="input max-w-sm" />
+    <input v-model="search" placeholder="Search client by name, phone, or email…" class="input max-w-sm" />
 
     <SkeletonList v-if="loading" :rows="5" />
     <div v-else class="list-panel">
@@ -81,6 +91,14 @@ watch(() => auth.selectedShopId, loadCredits)
               Oldest debt: {{ entry.oldestDebtAgeDays ?? entry.oldestDebtDays ?? 0 }} days
             </p>
           </div>
+          <button
+            type="button"
+            class="btn-secondary flex shrink-0 items-center gap-1 px-3 py-1.5 text-xs"
+            @click="openPurchases(entry)"
+          >
+            <ShoppingBag class="h-3.5 w-3.5" />
+            View purchases
+          </button>
           <button type="button" class="btn-primary shrink-0 px-3 py-1.5 text-xs" @click="collectPayment(entry)">
             Collect payment
           </button>
@@ -90,5 +108,12 @@ watch(() => auth.selectedShopId, loadCredits)
         No clients with outstanding balance.
       </p>
     </div>
+
+    <ClientPurchasesModal
+      v-if="purchasesClientId"
+      :client-id="purchasesClientId"
+      :client-name="purchasesClientName"
+      @close="purchasesClientId = null"
+    />
   </div>
 </template>

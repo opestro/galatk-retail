@@ -1,22 +1,19 @@
 import { Request, Response, NextFunction } from 'express'
-import * as StorefrontService from './service.js'
+import * as GlobalStoreService from './service.js'
 import { FulfillmentType } from '@prisma/client'
-import { lookupCustomerByPhone } from '../../shared/clients/upsertFromOnline.js'
 
-export async function getShop(req: Request, res: Response, next: NextFunction) {
+export async function listShops(_req: Request, res: Response, next: NextFunction) {
   try {
-    const slug = String(req.params.shopSlug)
-    const shop = await StorefrontService.getPublicShopInfo(slug)
-    res.status(200).json({ data: shop })
+    const shops = await GlobalStoreService.listGlobalShops()
+    res.status(200).json({ data: shops })
   } catch (error) {
     next(error)
   }
 }
 
-export async function listProducts(req: Request, res: Response, next: NextFunction) {
+export async function listProducts(_req: Request, res: Response, next: NextFunction) {
   try {
-    const slug = String(req.params.shopSlug)
-    const products = await StorefrontService.listStorefrontProducts(slug)
+    const products = await GlobalStoreService.listGlobalProducts()
     res.status(200).json({ data: products })
   } catch (error) {
     next(error)
@@ -26,7 +23,7 @@ export async function listProducts(req: Request, res: Response, next: NextFuncti
 export async function lookupCustomer(req: Request, res: Response, next: NextFunction) {
   try {
     const phone = String(req.query.phone ?? '')
-    const customer = await lookupCustomerByPhone(phone)
+    const customer = await GlobalStoreService.lookupCustomerByPhone(phone)
     res.status(200).json({ data: customer })
   } catch (error) {
     next(error)
@@ -35,7 +32,6 @@ export async function lookupCustomer(req: Request, res: Response, next: NextFunc
 
 export async function checkout(req: Request, res: Response, next: NextFunction) {
   try {
-    const slug = String(req.params.shopSlug)
     const {
       fulfillmentType,
       customerName,
@@ -46,7 +42,7 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
       lines,
     } = req.body
 
-    const order = await StorefrontService.checkout(slug, {
+    const orders = await GlobalStoreService.globalCheckout({
       fulfillmentType: fulfillmentType as FulfillmentType,
       customerName,
       customerPhone,
@@ -57,10 +53,13 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
     })
 
     res.status(201).json({
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      total: order.total.toString(),
-      status: order.status,
+      orders: orders.map((order) => ({
+        orderId: order.id,
+        shopId: order.shopId,
+        orderNumber: order.orderNumber,
+        total: order.total.toString(),
+        status: order.status,
+      })),
     })
   } catch (error) {
     next(error)

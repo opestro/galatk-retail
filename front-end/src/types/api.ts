@@ -80,6 +80,7 @@ export interface CreditDashboardEntry {
   name?: string
   clientName?: string
   phone: string
+  email?: string | null
   balance: string
   oldestDebtAgeDays?: number
   oldestDebtDays?: number
@@ -95,6 +96,9 @@ export interface FinancialSummary {
   totalCashIn: string
   outstandingCredit: string
   totalCharges: string
+  grossRevenue: string
+  costOfGoodsSold: string
+  grossProfit: string
 }
 
 export interface NetworkFinancialSummary {
@@ -107,6 +111,7 @@ export interface Product {
   id: string
   name: string
   description: string | null
+  unitCost: string
   sellPrice: string
   galatkProductRef: string | null
   isActive: boolean
@@ -155,10 +160,48 @@ export interface OnlineOrder {
   fulfillmentType: string
   customerName: string
   customerPhone: string
+  customerEmail?: string | null
   total: string
   createdAt: string
   client?: Pick<Client, 'id' | 'name' | 'phone' | 'balance' | 'creditLimit'> | null
-  lines: Array<{ product: { name: string }; quantity: number }>
+  lines: Array<{ product: { name: string }; quantity: number; unitPrice?: string; lineTotal?: string }>
+}
+
+export interface PurchaseLine {
+  productId: string
+  productName: string
+  quantity: number
+  unitPrice: string
+  lineTotal: string
+}
+
+export interface SalePurchase {
+  id: string
+  type: 'SALE'
+  status: string
+  paymentMethod: string
+  total: string
+  amountPaid: string
+  amountOnCredit: string
+  createdAt: string
+  cashier: { id: string; name: string }
+  lines: PurchaseLine[]
+}
+
+export interface OnlineOrderPurchase {
+  id: string
+  type: 'ONLINE_ORDER'
+  orderNumber: string
+  status: string
+  fulfillmentType: string
+  total: string
+  createdAt: string
+  lines: PurchaseLine[]
+}
+
+export interface ClientPurchases {
+  sales: SalePurchase[]
+  onlineOrders: OnlineOrderPurchase[]
 }
 
 export interface DashboardSummary {

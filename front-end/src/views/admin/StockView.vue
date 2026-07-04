@@ -34,8 +34,8 @@ watch(() => auth.selectedShopId, loadStock)
     <PageHeader title="Stock overview" />
 
     <SkeletonTable v-if="loading" />
-    <div v-else class="list-panel overflow-hidden">
-      <table class="w-full text-sm">
+    <div v-else class="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+      <table class="min-w-full text-sm">
         <thead class="border-b border-gray-200 bg-gray-50">
           <tr>
             <th class="px-5 py-3 text-left font-medium text-gray-700">Product</th>

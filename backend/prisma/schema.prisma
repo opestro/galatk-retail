@@ -131,6 +131,7 @@ model Product {
   id               String   @id @default(uuid())
   name             String
   description      String?
+  unitCost         Decimal  @default(0) @db.Decimal(10, 2)
   sellPrice        Decimal  @db.Decimal(10, 2)
   galatkProductRef String?
   isActive         Boolean  @default(true)
@@ -215,6 +216,7 @@ model SaleLine {
   saleId    String
   productId String
   quantity  Int
+  unitCost  Decimal @default(0) @db.Decimal(10, 2)
   unitPrice Decimal @db.Decimal(10, 2)
   lineTotal Decimal @db.Decimal(10, 2)
 
@@ -259,6 +261,7 @@ model OnlineOrderLine {
   orderId   String
   productId String
   quantity  Int
+  unitCost  Decimal @default(0) @db.Decimal(10, 2)
   unitPrice Decimal @db.Decimal(10, 2)
   lineTotal Decimal @db.Decimal(10, 2)
 
@@ -266,11 +269,23 @@ model OnlineOrderLine {
   product Product     @relation(fields: [productId], references: [id])
 }
 
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String   @unique
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clients Client[]
+}
+
 model Client {
   id          String   @id @default(uuid())
   shopId      String
+  customerId  String
   name        String
-  phone       String   @unique
+  phone       String
   email       String?
   address     String?
   notes       String?
@@ -281,6 +296,7 @@ model Client {
   updatedAt   DateTime @updatedAt
 
   shop              Shop                    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer          Customer                @relation(fields: [customerId], references: [id], onDelete: Cascade)
   sales             Sale[]
   onlineOrders      OnlineOrder[]
   creditPortions    ClientCreditPortion[]
@@ -288,7 +304,9 @@ model Client {
   ledgerEntries     ClientLedgerEntry[]
   reminderContacts  CreditReminderContact[]
 
+  @@unique([shopId, phone])
   @@index([shopId, isActive, name])
+  @@index([customerId])
 }
 
 model ClientCreditPortion {

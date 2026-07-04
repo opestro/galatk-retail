@@ -1,6 +1,12 @@
 import { Request, Response, NextFunction } from 'express'
 import * as ClientsService from './service.js'
-import { clientPresenter, clientProfilePresenter, ledgerEntryPresenter } from './presenter.js'
+import {
+  clientPresenter,
+  clientProfilePresenter,
+  ledgerEntryPresenter,
+  onlineOrderPurchasePresenter,
+  salePurchasePresenter,
+} from './presenter.js'
 
 export async function listByShop(req: Request, res: Response, next: NextFunction) {
   try {
@@ -51,6 +57,21 @@ export async function getLedger(req: Request, res: Response, next: NextFunction)
     const clientId = String(req.params.clientId)
     const entries = await ClientsService.getClientLedger(req.staff!, clientId)
     res.status(200).json({ data: entries.map(ledgerEntryPresenter) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function getPurchases(req: Request, res: Response, next: NextFunction) {
+  try {
+    const clientId = String(req.params.clientId)
+    const { sales, onlineOrders } = await ClientsService.getClientPurchases(req.staff!, clientId)
+    res.status(200).json({
+      data: {
+        sales: sales.map(salePurchasePresenter),
+        onlineOrders: onlineOrders.map(onlineOrderPurchasePresenter),
+      },
+    })
   } catch (error) {
     next(error)
   }
