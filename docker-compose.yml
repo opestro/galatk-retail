@@ -1,0 +1,18 @@
+# Unified galatk-retail app (API + SPA). Postgres is external —
+# use `yarn --cwd backend infra:up` or set DATABASE_URL to your host.
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: galatk-retail
+    ports:
+      - '8080:8080'
+    env_file:
+      - ./backend/config/.env.example
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+    restart: unless-stopped
