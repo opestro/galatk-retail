@@ -8,8 +8,10 @@ RUN yarn install --frozen-lockfile
 
 COPY front-end/ ./
 
-# Same-origin API: axios baseURL /api/v1 hits this container.
-ENV VITE_API_BASE_URL=/api/v1
+# Browser calls the API subdomain (cross-origin). Override at build with:
+#   docker build --build-arg VITE_API_BASE_URL=https://api.galatk.shop/api/v1 .
+ARG VITE_API_BASE_URL=https://api.galatk.shop/api/v1
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN yarn build-only
 
 # --- Stage 2: build Express backend ---
@@ -46,6 +48,10 @@ COPY --from=frontend-builder /app/dist ./public
 
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV WEB_HOST=galatk.shop
+ENV API_HOST=api.galatk.shop
+ENV FRONTEND_ORIGIN=https://galatk.shop
+ENV CORS_ORIGINS=https://galatk.shop,https://www.galatk.shop
 
 EXPOSE 8080
 

@@ -1,5 +1,5 @@
-# Unified galatk-retail app (API + SPA). Postgres is external —
-# use `yarn --cwd backend infra:up` or set DATABASE_URL to your host.
+# One container: SPA on galatk.shop, API on api.galatk.shop (Host header routing).
+# On PivoCloud, add BOTH hostnames as custom domains and CNAME both to this app's target.
 version: '3.8'
 
 services:
@@ -7,12 +7,18 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: https://api.galatk.shop/api/v1
     container_name: galatk-retail
     ports:
       - '8080:8080'
     env_file:
-      - ./backend/config/.env.example
+      - ./backend/config/.env.dev
     environment:
       - NODE_ENV=production
       - PORT=8080
+      - WEB_HOST=galatk.shop
+      - API_HOST=api.galatk.shop
+      - FRONTEND_ORIGIN=https://galatk.shop
+      - CORS_ORIGINS=https://galatk.shop,https://www.galatk.shop
     restart: unless-stopped
