@@ -68,7 +68,19 @@ watch(() => auth.selectedShopId, load)
 
     <div v-if="financial && !loading" class="flex flex-col gap-4">
       <h3 class="section-title">Financial summary</h3>
-      <div class="grid gap-6 md:grid-cols-3 lg:grid-cols-5">
+      <div class="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
+        <div class="card">
+          <p class="text-sm text-gray-500">Gross revenue</p>
+          <p class="mt-2 text-xl font-semibold">{{ financial.grossRevenue }} DZD</p>
+        </div>
+        <div class="card">
+          <p class="text-sm text-gray-500">Cost of goods</p>
+          <p class="mt-2 text-xl font-semibold">{{ financial.costOfGoodsSold }} DZD</p>
+        </div>
+        <div class="card">
+          <p class="text-sm text-gray-500">Gross profit</p>
+          <p class="mt-2 text-xl font-semibold text-green-700">{{ financial.grossProfit }} DZD</p>
+        </div>
         <div class="card">
           <p class="text-sm text-gray-500">POS collected</p>
           <p class="mt-2 text-xl font-semibold">{{ financial.posCollected }} DZD</p>

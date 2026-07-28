@@ -6,6 +6,7 @@ export function productPresenter(product: Product): ProductResponse {
     id: product.id,
     name: product.name,
     description: product.description,
+    unitCost: product.unitCost.toString(),
     sellPrice: product.sellPrice.toString(),
     galatkProductRef: product.galatkProductRef,
     isActive: product.isActive,

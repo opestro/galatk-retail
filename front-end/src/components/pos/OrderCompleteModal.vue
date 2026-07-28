@@ -84,7 +84,7 @@ function handleComplete() {
 
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-    <div class="card w-full max-w-md flex flex-col gap-4">
+    <div class="card flex max-h-[90vh] w-full max-w-md flex-col gap-4 overflow-y-auto">
       <div>
         <h3 class="text-lg font-semibold text-gray-900">Complete order</h3>
         <p class="text-sm text-gray-500">{{ order.orderNumber }} · {{ order.customerName }}</p>
@@ -123,7 +123,7 @@ function handleComplete() {
 
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
 
-      <div class="flex justify-end gap-2">
+      <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <button type="button" class="btn-secondary" @click="emit('close')">Cancel</button>
         <button type="button" class="btn-primary" :disabled="loading" @click="handleComplete">
           {{ loading ? 'Saving…' : 'Complete order' }}

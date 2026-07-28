@@ -6,7 +6,8 @@ export async function list(req: Request, res: Response, next: NextFunction) {
   try {
     const shopId = String(req.params.shopId)
     const status = typeof req.query.status === 'string' ? (req.query.status as OrderStatus) : undefined
-    const orders = await StorefrontService.listOrders(req.staff!, shopId, status)
+    const search = typeof req.query.q === 'string' ? req.query.q : undefined
+    const orders = await StorefrontService.listOrders(req.staff!, shopId, status, search)
     res.status(200).json({ data: orders })
   } catch (error) {
     next(error)

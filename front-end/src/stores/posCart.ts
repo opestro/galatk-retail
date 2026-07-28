@@ -39,20 +39,23 @@ export const usePosCartStore = defineStore('posCart', () => {
     return projectedBalance.value > Number(selectedClient.value.creditLimit)
   })
 
-  function addProduct(product: PosProduct) {
+  function addProductQty(product: PosProduct, qty = 1) {
     const existing = lines.value.find((l) => l.productId === product.productId)
     if (existing) {
-      if (existing.quantity < product.quantity) {
-        existing.quantity += 1
-      }
+      const remaining = product.quantity - existing.quantity
+      if (remaining > 0) existing.quantity += Math.min(qty, remaining)
     } else {
       lines.value.push({
         productId: product.productId,
         name: product.name,
         sellPrice: product.sellPrice,
-        quantity: 1,
+        quantity: Math.min(qty, product.quantity),
       })
     }
+  }
+
+  function addProduct(product: PosProduct) {
+    addProductQty(product, 1)
   }
 
   function updateQuantity(productId: string, quantity: number) {
@@ -111,6 +114,7 @@ export const usePosCartStore = defineStore('posCart', () => {
     projectedBalance,
     creditLimitExceeded,
     addProduct,
+    addProductQty,
     updateQuantity,
     removeLine,
     selectClient,

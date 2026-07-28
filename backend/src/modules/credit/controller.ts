@@ -43,7 +43,8 @@ export async function voidPayment(req: Request, res: Response, next: NextFunctio
 export async function dashboard(req: Request, res: Response, next: NextFunction) {
   try {
     const shopId = String(req.params.shopId)
-    const data = await CreditService.getCreditDashboard(req.staff!, shopId)
+    const search = typeof req.query.q === 'string' ? req.query.q : undefined
+    const data = await CreditService.getCreditDashboard(req.staff!, shopId, search)
     res.status(200).json({ data })
   } catch (error) {
     next(error)

@@ -4,13 +4,20 @@ import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import type { OnlineOrder } from '@/types/api'
 import OrderCompleteModal from '@/components/pos/OrderCompleteModal.vue'
+import ClientPurchasesModal from '@/components/pos/ClientPurchasesModal.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
+import { ShoppingBag } from 'lucide-vue-next'
 
 const auth = useAuthStore()
 const orders = ref<OnlineOrder[]>([])
 const loading = ref(true)
 const completingOrder = ref<OnlineOrder | null>(null)
+const purchasesClientId = ref<string | null>(null)
+const purchasesClientName = ref('')
 const filter = ref<'active' | 'all'>('active')
+const search = ref('')
+
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const activeStatuses = ['PLACED', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY']
 
@@ -32,12 +39,20 @@ async function loadOrders() {
   }
   loading.value = true
   try {
-    const { data } = await api.get<{ data: OnlineOrder[] }>(`/shops/${shopId}/orders`)
+    const q = search.value.trim() || undefined
+    const { data } = await api.get<{ data: OnlineOrder[] }>(`/shops/${shopId}/orders`, {
+      params: { q },
+    })
     orders.value = data.data
   } finally {
     loading.value = false
   }
 }
+
+watch(search, () => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(loadOrders, 400)
+})
 
 async function markReady(order: OnlineOrder) {
   const shopId = auth.selectedShopId
@@ -51,6 +66,12 @@ function openComplete(order: OnlineOrder) {
   completingOrder.value = order
 }
 
+function openPurchases(order: OnlineOrder) {
+  if (!order.client) return
+  purchasesClientId.value = order.client.id
+  purchasesClientName.value = order.client.name
+}
+
 function statusLabel(status: string): string {
   return status.replace(/_/g, ' ').toLowerCase()
 }
@@ -60,7 +81,7 @@ watch(() => auth.selectedShopId, loadOrders)
 </script>
 
 <template>
-  <div class="page-shell max-w-4xl">
+  <div class="page-shell max-w-full">
     <div class="page-header">
       <div>
         <h2 class="page-title">Online orders</h2>
@@ -71,6 +92,8 @@ watch(() => auth.selectedShopId, loadOrders)
         <option value="all">All orders</option>
       </select>
     </div>
+
+    <input v-model="search" placeholder="Search by name, phone, or email…" class="input max-w-sm" />
 
     <SkeletonList v-if="loading" :rows="4" />
     <ul v-else class="flex flex-col gap-4">
@@ -108,6 +131,15 @@ watch(() => auth.selectedShopId, loadOrders)
           >
             Complete & collect payment
           </button>
+          <button
+            v-if="order.client"
+            type="button"
+            class="btn-secondary flex items-center gap-1 px-3 py-1.5 text-xs"
+            @click="openPurchases(order)"
+          >
+            <ShoppingBag class="h-3.5 w-3.5" />
+            View purchases
+          </button>
         </div>
       </li>
       <li v-if="!displayed.length" class="card text-sm text-gray-500">No orders in this view.</li>
@@ -118,6 +150,13 @@ watch(() => auth.selectedShopId, loadOrders)
       :order="completingOrder"
       @close="completingOrder = null"
       @completed="completingOrder = null; loadOrders()"
+    />
+
+    <ClientPurchasesModal
+      v-if="purchasesClientId"
+      :client-id="purchasesClientId"
+      :client-name="purchasesClientName"
+      @close="purchasesClientId = null"
     />
   </div>
 </template>

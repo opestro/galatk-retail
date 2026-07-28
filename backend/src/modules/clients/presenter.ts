@@ -1,9 +1,25 @@
-import { Client, ClientLedgerEntry, StaffUser } from '@prisma/client'
-import { ClientProfileResponse, ClientResponse, LedgerEntryResponse } from './types.js'
+import { Client, ClientLedgerEntry, OnlineOrder, OnlineOrderLine, Product, Sale, SaleLine, StaffUser } from '@prisma/client'
+import {
+  ClientProfileResponse,
+  ClientResponse,
+  LedgerEntryResponse,
+  OnlineOrderPurchaseResponse,
+  PurchaseLineResponse,
+  SalePurchaseResponse,
+} from './types.js'
 
 type LedgerWithStaff = ClientLedgerEntry & {
   recordedBy: Pick<StaffUser, 'id' | 'name'>
 }
+
+type SaleLineWithProduct = SaleLine & { product: Pick<Product, 'id' | 'name'> }
+type SaleWithLines = Sale & {
+  lines: SaleLineWithProduct[]
+  cashier: Pick<StaffUser, 'id' | 'name'>
+}
+
+type OnlineOrderLineWithProduct = OnlineOrderLine & { product: Pick<Product, 'id' | 'name'> }
+type OnlineOrderWithLines = OnlineOrder & { lines: OnlineOrderLineWithProduct[] }
 
 export function clientPresenter(client: Client): ClientResponse {
   return {
@@ -42,5 +58,53 @@ export function clientProfilePresenter(
   return {
     ...clientPresenter(client),
     ledgerPreview: ledgerPreview.map(ledgerEntryPresenter),
+  }
+}
+
+function saleLinePresenter(line: SaleLineWithProduct): PurchaseLineResponse {
+  return {
+    productId: line.productId,
+    productName: line.product.name,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice.toString(),
+    lineTotal: line.lineTotal.toString(),
+  }
+}
+
+function onlineOrderLinePresenter(line: OnlineOrderLineWithProduct): PurchaseLineResponse {
+  return {
+    productId: line.productId,
+    productName: line.product.name,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice.toString(),
+    lineTotal: line.lineTotal.toString(),
+  }
+}
+
+export function salePurchasePresenter(sale: SaleWithLines): SalePurchaseResponse {
+  return {
+    id: sale.id,
+    type: 'SALE',
+    status: sale.status,
+    paymentMethod: sale.paymentMethod,
+    total: sale.total.toString(),
+    amountPaid: sale.amountPaid.toString(),
+    amountOnCredit: sale.amountOnCredit.toString(),
+    createdAt: sale.createdAt,
+    cashier: sale.cashier,
+    lines: sale.lines.map(saleLinePresenter),
+  }
+}
+
+export function onlineOrderPurchasePresenter(order: OnlineOrderWithLines): OnlineOrderPurchaseResponse {
+  return {
+    id: order.id,
+    type: 'ONLINE_ORDER',
+    orderNumber: order.orderNumber,
+    status: order.status,
+    fulfillmentType: order.fulfillmentType,
+    total: order.total.toString(),
+    createdAt: order.createdAt,
+    lines: order.lines.map(onlineOrderLinePresenter),
   }
 }

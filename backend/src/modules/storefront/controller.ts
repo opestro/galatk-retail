@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import * as StorefrontService from './service.js'
 import { FulfillmentType } from '@prisma/client'
+import { lookupCustomerByPhone } from '../../shared/clients/upsertFromOnline.js'
 
 export async function getShop(req: Request, res: Response, next: NextFunction) {
   try {
@@ -17,6 +18,16 @@ export async function listProducts(req: Request, res: Response, next: NextFuncti
     const slug = String(req.params.shopSlug)
     const products = await StorefrontService.listStorefrontProducts(slug)
     res.status(200).json({ data: products })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function lookupCustomer(req: Request, res: Response, next: NextFunction) {
+  try {
+    const phone = String(req.query.phone ?? '')
+    const customer = await lookupCustomerByPhone(phone)
+    res.status(200).json({ data: customer })
   } catch (error) {
     next(error)
   }

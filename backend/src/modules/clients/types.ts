@@ -46,3 +46,40 @@ export interface LedgerEntryResponse {
   createdAt: Date
   recordedBy: { id: string; name: string }
 }
+
+export interface PurchaseLineResponse {
+  productId: string
+  productName: string
+  quantity: number
+  unitPrice: string
+  lineTotal: string
+}
+
+export interface SalePurchaseResponse {
+  id: string
+  type: 'SALE'
+  status: string
+  paymentMethod: string
+  total: string
+  amountPaid: string
+  amountOnCredit: string
+  createdAt: Date
+  cashier: { id: string; name: string }
+  lines: PurchaseLineResponse[]
+}
+
+export interface OnlineOrderPurchaseResponse {
+  id: string
+  type: 'ONLINE_ORDER'
+  orderNumber: string
+  status: string
+  fulfillmentType: string
+  total: string
+  createdAt: Date
+  lines: PurchaseLineResponse[]
+}
+
+export interface ClientPurchasesResponse {
+  sales: SalePurchaseResponse[]
+  onlineOrders: OnlineOrderPurchaseResponse[]
+}

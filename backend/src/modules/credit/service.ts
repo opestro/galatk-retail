@@ -15,6 +15,7 @@ import {
   ClientLedgerEntryType,
   ClientPaymentStatus,
   PaymentMethod,
+  Prisma,
   StaffRole,
 } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
@@ -34,6 +35,7 @@ async function buildDashboardClient(client: {
   id: string
   name: string
   phone: string
+  email: string | null
   balance: Decimal
 }): Promise<CreditDashboardClient> {
   const oldestPortion = await getOldestOpenPortion(client.id)
@@ -41,6 +43,7 @@ async function buildDashboardClient(client: {
     clientId: client.id,
     name: client.name,
     phone: client.phone,
+    email: client.email,
     balance: client.balance.toString(),
     oldestDebtAgeDays: oldestPortion ? daysSince(oldestPortion.createdAt) : 0,
   }
@@ -71,12 +74,14 @@ export async function recordPayment(
     orderBy: { createdAt: 'asc' },
   })
 
-  let allocations
-  try {
-    allocations = allocateFifo(portions, amount)
-  } catch {
-    throw new CustomError('VALIDATION_ERROR', 'Payment exceeds open credit portions', 400)
-  }
+  const openPortionsTotal = portions.reduce(
+    (sum, portion) => sum.add(portion.remainingAmount),
+    new Decimal(0),
+  )
+
+  const amountToAllocate = Decimal.min(amount, openPortionsTotal)
+  const allocations =
+    amountToAllocate.gt(0) ? allocateFifo(portions, amountToAllocate) : []
 
   return prisma.$transaction(async (tx) => {
     const payment = await tx.clientPayment.create({
@@ -195,11 +200,22 @@ export async function voidPayment(
   })
 }
 
-export async function getCreditDashboard(staff: AuthenticatedStaff, shopId: string) {
+export async function getCreditDashboard(staff: AuthenticatedStaff, shopId: string, search?: string) {
   assertShopAccess(staff, shopId)
 
+  const where: Prisma.ClientWhereInput = { shopId, balance: { gt: 0 } }
+
+  if (search?.trim()) {
+    const q = search.trim()
+    where.OR = [
+      { name: { contains: q, mode: 'insensitive' } },
+      { phone: { contains: q, mode: 'insensitive' } },
+      { email: { contains: q, mode: 'insensitive' } },
+    ]
+  }
+
   const clients = await prisma.client.findMany({
-    where: { shopId, balance: { gt: 0 } },
+    where,
     orderBy: { name: 'asc' },
   })
 
@@ -278,6 +294,16 @@ export async function createAdjustment(
       where: { id: clientId },
       data: { balance: { increment: amount } },
     })
+
+    if (amount.gt(0)) {
+      await tx.clientCreditPortion.create({
+        data: {
+          clientId,
+          originalAmount: amount,
+          remainingAmount: amount,
+        },
+      })
+    }
 
     await tx.clientLedgerEntry.create({
       data: {

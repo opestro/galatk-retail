@@ -45,7 +45,9 @@ async function confirmVoid() {
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
       <div class="flex justify-end gap-3">
         <button class="btn-secondary" @click="emit('close')">Cancel</button>
-        <button :disabled="loading" class="btn-danger" @click="confirmVoid">Void sale</button>
+        <button :disabled="loading" class="btn-danger" @click="confirmVoid">
+          {{ loading ? 'Voiding…' : 'Void sale' }}
+        </button>
       </div>
     </div>
   </div>

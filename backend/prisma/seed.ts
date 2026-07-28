@@ -84,11 +84,32 @@ async function main() {
     },
   })
 
-  const client1 = await prisma.client.upsert({
+  // Create global Customer identities first
+  const customer1 = await prisma.customer.upsert({
     where: { phone: '+212600000001' },
     update: {},
     create: {
+      name: 'Ahmed Benali',
+      phone: '+212600000001',
+    },
+  })
+
+  const customer2 = await prisma.customer.upsert({
+    where: { phone: '+213770000002' },
+    update: {},
+    create: {
+      name: 'Fatima Oran',
+      phone: '+213770000002',
+    },
+  })
+
+  // Create per-shop Client records linked to Customers
+  const client1 = await prisma.client.upsert({
+    where: { shopId_phone: { shopId: shop.id, phone: '+212600000001' } },
+    update: {},
+    create: {
       shopId: shop.id,
+      customerId: customer1.id,
       name: 'Ahmed Benali',
       phone: '+212600000001',
       creditLimit: 1000,
@@ -97,10 +118,11 @@ async function main() {
   })
 
   const client2 = await prisma.client.upsert({
-    where: { phone: '+213770000002' },
+    where: { shopId_phone: { shopId: shop2.id, phone: '+213770000002' } },
     update: {},
     create: {
       shopId: shop2.id,
+      customerId: customer2.id,
       name: 'Fatima Oran',
       phone: '+213770000002',
       creditLimit: 500,
@@ -131,8 +153,22 @@ async function main() {
     })
   }
 
+  const integrationEmail = 'integration@galatk.local'
+  const integrationStaff = await prisma.staffUser.upsert({
+    where: { email: integrationEmail },
+    update: { isActive: false },
+    create: {
+      email: integrationEmail,
+      passwordHash: await hashPassword('integration-no-login'),
+      name: 'Galatk Integration',
+      role: StaffRole.OWNER,
+      isActive: false,
+    },
+  })
+
   console.log('Seed complete:', {
     owner: owner.email,
+    integrationStaffId: integrationStaff.id,
     shops: [shop.slug, shop2.slug],
     clients: [client1.phone, client2.phone],
   })

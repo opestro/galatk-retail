@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import PosLayout from '@/layouts/PosLayout.vue'
 import StorefrontLayout from '@/layouts/StorefrontLayout.vue'
+import GlobalStoreLayout from '@/layouts/GlobalStoreLayout.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -55,8 +56,18 @@ const router = createRouter({
       ],
     },
     {
+      path: '/store',
+      component: GlobalStoreLayout,
+      meta: { public: true },
+      children: [
+        { path: '', name: 'global-store-catalog', component: () => import('@/views/global-store/GlobalCatalogView.vue') },
+        { path: 'checkout', name: 'global-store-checkout', component: () => import('@/views/global-store/GlobalCheckoutView.vue') },
+        { path: 'confirmation', name: 'global-store-confirmation', component: () => import('@/views/global-store/GlobalOrderConfirmationView.vue') },
+      ],
+    },
+    {
       path: '/',
-      redirect: '/login',
+      redirect: '/store',
     },
   ],
 })

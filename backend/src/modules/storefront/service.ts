@@ -11,6 +11,7 @@ import {
   OrderStatus,
   OutOfStockDisplay,
   PaymentMethod,
+  Prisma,
   StaffRole,
 } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
@@ -90,12 +91,13 @@ export async function listStorefrontProducts(slug: string) {
     }))
 }
 
-export async function checkout(slug: string, input: CheckoutInput) {
-  const shop = await prisma.shop.findUnique({ where: { slug } })
-  if (!shop) {
-    throw new CustomError('SHOP_NOT_FOUND', 'Shop not found', 404)
-  }
-
+/**
+ * Core single-shop checkout logic: validates the cart against a specific shop,
+ * decrements stock, and creates one OnlineOrder. Shared by the per-shop
+ * storefront (/storefront/:slug/checkout) and the global store checkout,
+ * which calls this once per shop present in a multi-shop cart.
+ */
+export async function checkoutForShop(shop: { id: string; slug: string; serviceCity: string; deliveryFee: Decimal }, input: CheckoutInput) {
   if (!input.lines?.length) {
     throw new CustomError('VALIDATION_ERROR', 'Cart is empty', 400)
   }
@@ -166,6 +168,7 @@ export async function checkout(slug: string, input: CheckoutInput) {
           create: products.map(({ product, quantity }) => ({
             productId: product.id,
             quantity,
+            unitCost: product.unitCost,
             unitPrice: product.sellPrice,
             lineTotal: product.sellPrice.mul(quantity),
           })),
@@ -175,11 +178,36 @@ export async function checkout(slug: string, input: CheckoutInput) {
   })
 }
 
-export async function listOrders(staff: AuthenticatedStaff, shopId: string, status?: OrderStatus) {
+export async function checkout(slug: string, input: CheckoutInput) {
+  const shop = await prisma.shop.findUnique({ where: { slug } })
+  if (!shop) {
+    throw new CustomError('SHOP_NOT_FOUND', 'Shop not found', 404)
+  }
+
+  return checkoutForShop(shop, input)
+}
+
+export async function listOrders(
+  staff: AuthenticatedStaff,
+  shopId: string,
+  status?: OrderStatus,
+  search?: string,
+) {
   assertShopAccess(staff, shopId)
 
+  const where: Prisma.OnlineOrderWhereInput = { shopId, ...(status ? { status } : {}) }
+
+  if (search?.trim()) {
+    const q = search.trim()
+    where.OR = [
+      { customerName: { contains: q, mode: 'insensitive' } },
+      { customerPhone: { contains: q, mode: 'insensitive' } },
+      { customerEmail: { contains: q, mode: 'insensitive' } },
+    ]
+  }
+
   return prisma.onlineOrder.findMany({
-    where: { shopId, ...(status ? { status } : {}) },
+    where,
     include: {
       lines: { include: { product: true } },
       client: { select: { id: true, name: true, phone: true, balance: true } },
@@ -254,7 +282,8 @@ export async function completeOnlineOrder(
   assertShopAccess(staff, shopId)
   const order = await getOrderById(staff, shopId, orderId)
 
-  if (![OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY].includes(order.status)) {
+  const allowedStatuses: OrderStatus[] = [OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY]
+  if (!allowedStatuses.includes(order.status)) {
     throw new CustomError(
       'INVALID_TRANSITION',
       'Order must be ready for pickup or out for delivery before completion',
@@ -336,6 +365,7 @@ export async function completeOnlineOrder(
           create: order.lines.map((line) => ({
             productId: line.productId,
             quantity: line.quantity,
+            unitCost: line.unitCost,
             unitPrice: line.unitPrice,
             lineTotal: line.lineTotal,
           })),
