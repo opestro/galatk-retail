@@ -1,7 +1,7 @@
 generator client {
   provider      = "prisma-client-js"
-  // Alpine (node:*-alpine) runtime on PivoCloud / Docker
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  // Debian slim (bookworm) runtime on PivoCloud / Docker
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
