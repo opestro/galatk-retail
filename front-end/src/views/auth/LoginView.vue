@@ -3,8 +3,8 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-const email = ref('owner@galatk-retail.local')
-const password = ref('password123')
+const email = ref('')
+const password = ref('')
 const error = ref('')
 const loading = ref(false)
 
