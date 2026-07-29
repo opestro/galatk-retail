@@ -35,7 +35,18 @@ function isWebHostname(hostname: string): boolean {
     return true
   }
   // Local / default PivoCloud hostname: serve SPA when not on the API host.
-  return !hostname || hostname === 'localhost' || hostname.endsWith('.pivocloud.dz') || hostname.endsWith('.pivocloud.com')
+  return (
+    !hostname ||
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.pivocloud.dz') ||
+    hostname.endsWith('.pivocloud.com')
+  )
+}
+
+function wantsHtml(req: Request): boolean {
+  const accept = (req.headers.accept ?? '').toString()
+  return accept.includes('text/html')
 }
 
 export function createExpressApp(): Express {
@@ -50,6 +61,15 @@ export function createExpressApp(): Express {
   // Middleware
   server.use(express.json())
   server.use(express.urlencoded({ extended: true }))
+
+  // Platform health probes hit GET / (often without Accept: text/html)
+  server.get('/', (req, res, next) => {
+    if (wantsHtml(req) && isWebHostname(requestHostname(req))) {
+      next()
+      return
+    }
+    res.status(200).json({ status: 'ok' })
+  })
 
   // Modules (/api/v1 + /health) — available on every host
   server.use('/', AppModules)
@@ -93,7 +113,9 @@ export function createExpressApp(): Express {
 }
 
 export function startServer(app: Express) {
-  return app.listen(PORT, () => {
-    console.info(`⚡️[server]: Server is running at http://localhost:${PORT}`)
+  // Must bind 0.0.0.0 for Docker / PivoCloud health checks (not only localhost).
+  const port = PORT
+  return app.listen(port, '0.0.0.0', () => {
+    console.info(`⚡️[server]: Server is running at http://0.0.0.0:${port}`)
   })
 }
