@@ -2,6 +2,8 @@ import { createExpressApp, startServer } from './server.js'
 import prisma from './resources/database/initDatabase.js'
 
 async function bootstrap() {
+  console.info(`⚡️[boot]: NODE_ENV=${process.env.NODE_ENV} PORT=${process.env.PORT}`)
+
   const expressApp = createExpressApp()
   expressApp.set('trust proxy', true)
 
@@ -12,7 +14,6 @@ async function bootstrap() {
     await prisma.$connect()
     console.log('⚡️[DB]: Database connection established')
   } catch (error) {
-    // Do not exit — keep listening so health checks / logs stay available.
     console.error('⚡️[DB]: Database connection failed (server still listening):', error)
   }
 
