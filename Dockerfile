@@ -47,6 +47,7 @@ COPY --from=backend-builder /app/node_modules/@prisma/client ./node_modules/@pri
 COPY --from=frontend-builder /app/dist ./public
 
 ENV NODE_ENV=production
+# PivoCloud maps the EXPOSE'd port; keep PORT in sync (override via platform env if needed).
 ENV PORT=8080
 ENV WEB_HOST=galatk.shop
 ENV API_HOST=api.galatk.shop
