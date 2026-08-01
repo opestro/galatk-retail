@@ -2,12 +2,15 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { LayoutDashboard, Package, Store, ArrowDownToLine, ClipboardList, Users, Settings, LogOut, UserCircle, Bell, Receipt, Menu, X } from 'lucide-vue-next'
+import { LayoutDashboard, Package, Store, ArrowDownToLine, ClipboardList, Users, Settings, LogOut, UserCircle, Bell, Receipt, Menu, X, Factory } from 'lucide-vue-next'
 import ShopSelector from '@/components/admin/ShopSelector.vue'
+import { api } from '@/services/api'
 
 const auth = useAuthStore()
 const route = useRoute()
 const menuOpen = ref(false)
+const switchingWorkshop = ref(false)
+const switchError = ref('')
 
 const navItems = computed(() => {
   const items = [
@@ -38,6 +41,25 @@ function isActive(path: string) {
 
 function handleLogout() {
   auth.logout()
+}
+
+async function switchToWorkshop() {
+  if (switchingWorkshop.value) return
+  switchingWorkshop.value = true
+  switchError.value = ''
+  try {
+    const { data } = await api.post<{ data: { redirectUrl: string } }>('/auth/sso/launch-workshop')
+    const redirectUrl = data.data?.redirectUrl
+    if (!redirectUrl) {
+      throw new Error('Workshop did not return a redirect URL')
+    }
+    window.location.assign(redirectUrl)
+  } catch (e: unknown) {
+    const ax = e as { response?: { data?: { message?: string } }; message?: string }
+    switchError.value =
+      ax.response?.data?.message ?? ax.message ?? 'Could not open Workshop'
+    switchingWorkshop.value = false
+  }
 }
 
 // Close the mobile drawer whenever navigation happens
@@ -104,8 +126,20 @@ watch(() => route.path, () => {
         </RouterLink>
       </nav>
 
+      <p v-if="switchError" class="mt-6 px-1 text-xs text-red-600">{{ switchError }}</p>
       <button
-        class="mt-8 flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
+        v-if="auth.isOwner"
+        type="button"
+        class="mt-6 flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+        :disabled="switchingWorkshop"
+        @click="switchToWorkshop"
+      >
+        <Factory class="h-4 w-4" />
+        {{ switchingWorkshop ? 'Opening Workshop…' : 'Switch to Workshop' }}
+      </button>
+      <button
+        class="mt-2 flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
+        :class="auth.isOwner ? '' : 'mt-8'"
         @click="handleLogout"
       >
         <LogOut class="h-4 w-4" />

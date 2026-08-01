@@ -29,3 +29,25 @@ export async function me(req: Request, res: Response, next: NextFunction) {
     next(error)
   }
 }
+
+export async function exchangeSso(req: Request, res: Response, next: NextFunction) {
+  try {
+    const code = String(req.body?.code ?? '')
+    const result = await AuthService.exchangeSsoCode(code)
+    res.status(200).json(result)
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function launchWorkshop(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!req.staff) {
+      throw new CustomError('UNAUTHORIZED', 'Authentication required', 401)
+    }
+    const result = await AuthService.launchWorkshopSso(req.staff.id)
+    res.status(200).json({ data: result })
+  } catch (error) {
+    next(error)
+  }
+}

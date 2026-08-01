@@ -20,7 +20,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_staff')
-      if (router.currentRoute.value.path !== '/login') {
+      const path = router.currentRoute.value.path
+      if (path !== '/login' && !path.startsWith('/sso')) {
         router.push('/login')
       }
     }
