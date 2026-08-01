@@ -51,13 +51,13 @@ async function switchToWorkshop() {
     const { data } = await api.post<{ data: { redirectUrl: string } }>('/auth/sso/launch-workshop')
     const redirectUrl = data.data?.redirectUrl
     if (!redirectUrl) {
-      throw new Error('Workshop did not return a redirect URL')
+      throw new Error('Factory did not return a redirect URL')
     }
     window.location.assign(redirectUrl)
   } catch (e: unknown) {
     const ax = e as { response?: { data?: { message?: string } }; message?: string }
     switchError.value =
-      ax.response?.data?.message ?? ax.message ?? 'Could not open Workshop'
+      ax.response?.data?.message ?? ax.message ?? 'Could not open Factory'
     switchingWorkshop.value = false
   }
 }
@@ -135,7 +135,7 @@ watch(() => route.path, () => {
         @click="switchToWorkshop"
       >
         <Factory class="h-4 w-4" />
-        {{ switchingWorkshop ? 'Opening Workshop…' : 'Switch to Workshop' }}
+        {{ switchingWorkshop ? 'Opening Factory…' : 'Switch to Factory' }}
       </button>
       <button
         class="mt-2 flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
