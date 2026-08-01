@@ -81,8 +81,25 @@ watch(() => route.path, () => {
         <Menu class="h-6 w-6" />
       </button>
       <h1 class="text-base font-semibold text-gray-900">Galatk Retail</h1>
-      <div class="w-11"></div>
+      <button
+        v-if="auth.isOwner"
+        type="button"
+        class="inline-flex h-9 max-w-[9.5rem] items-center gap-1.5 rounded-md border border-gray-200 px-2.5 text-xs font-medium text-gray-800 disabled:opacity-60"
+        :disabled="switchingWorkshop"
+        aria-label="Switch to Factory"
+        @click="switchToWorkshop"
+      >
+        <Factory class="h-4 w-4 shrink-0" />
+        <span class="truncate">{{ switchingWorkshop ? 'Opening…' : 'Factory' }}</span>
+      </button>
+      <div v-else class="w-11"></div>
     </header>
+    <p
+      v-if="switchError"
+      class="fixed inset-x-0 top-14 z-30 border-b border-red-100 bg-red-50 px-4 py-2 text-xs text-red-600 lg:hidden"
+    >
+      {{ switchError }}
+    </p>
 
     <!-- Mobile drawer overlay -->
     <div
