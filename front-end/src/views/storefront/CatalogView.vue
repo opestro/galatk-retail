@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { api } from '@/services/api'
 import { useStorefrontCartStore } from '@/stores/storefrontCart'
@@ -7,12 +7,14 @@ import type { StorefrontProduct } from '@/types/api'
 import { ShoppingCart } from 'lucide-vue-next'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import SkeletonProductGrid from '@/components/ui/SkeletonProductGrid.vue'
+import { groupByCategory, variantDisplay } from '@/utils/productFamily'
 
 const route = useRoute()
 const cart = useStorefrontCartStore()
 const products = ref<StorefrontProduct[]>([])
 const shopName = ref('')
 const loading = ref(true)
+const productGroups = computed(() => groupByCategory(products.value))
 
 onMounted(async () => {
   const slug = route.params.slug as string
@@ -46,23 +48,31 @@ onMounted(async () => {
     <SkeletonProductGrid v-if="loading" :count="6" :columns="3" />
     <div v-else class="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
       <div
-        v-for="product in products"
-        :key="product.productId"
+        v-for="group in productGroups"
+        :key="group.category"
         class="card flex flex-col gap-3"
-        :class="!product.inStock ? 'opacity-60' : ''"
       >
-        <h3 class="font-medium text-gray-900">{{ product.name }}</h3>
-        <p class="text-sm text-gray-500">{{ product.description }}</p>
-        <div class="flex items-center justify-between pt-1">
-          <span class="font-semibold text-gray-900">{{ product.sellPrice }} DZD</span>
-          <button
-            v-if="product.inStock"
-            class="btn-primary px-3 py-1.5 text-xs"
-            @click="cart.addProduct(product)"
+        <h3 class="font-semibold text-gray-900">{{ group.category }}</h3>
+        <div class="flex flex-col gap-2">
+          <div
+            v-for="product in group.variants"
+            :key="product.productId"
+            class="flex items-center justify-between gap-3 rounded-md border border-gray-200 px-3 py-2"
+            :class="!product.inStock ? 'opacity-60' : ''"
           >
-            Add
-          </button>
-          <span v-else class="text-xs text-red-600">Out of stock</span>
+            <div>
+              <p class="text-sm font-medium text-gray-900">{{ variantDisplay(product) }}</p>
+              <p class="text-xs text-gray-500">{{ product.sellPrice }} DZD</p>
+            </div>
+            <button
+              v-if="product.inStock"
+              class="btn-primary px-3 py-1.5 text-xs"
+              @click="cart.addProduct(product)"
+            >
+              Add
+            </button>
+            <span v-else class="text-xs text-red-600">Out of stock</span>
+          </div>
         </div>
       </div>
     </div>

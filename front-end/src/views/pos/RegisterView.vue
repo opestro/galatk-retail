@@ -11,6 +11,7 @@ import { printPosReceipt, type SaleReceiptData } from '@/utils/printPosReceipt'
 import type { Client, PosProduct, Sale } from '@/types/api'
 import SkeletonProductGrid from '@/components/ui/SkeletonProductGrid.vue'
 import ClientPicker from '@/components/pos/ClientPicker.vue'
+import { groupByCategory, variantDisplay } from '@/utils/productFamily'
 
 const auth = useAuthStore()
 const cart = usePosCartStore()
@@ -45,6 +46,8 @@ const registerApi = inject<{ value: { focusSearch: () => void; completeSale: () 
 const filtered = computed(() =>
   products.value.filter((p) => p.name.toLowerCase().includes(search.value.toLowerCase())),
 )
+
+const productGroups = computed(() => groupByCategory(filtered.value))
 
 watch(
   () => cart.total,
@@ -277,50 +280,35 @@ onActivated(loadProducts)
       <div class="min-h-0 flex-1 overflow-y-auto p-3">
         <SkeletonProductGrid v-if="loading" :count="8" />
         <div v-else class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <button
-            v-for="(product, i) in filtered"
-            :key="product.productId"
-            :id="`pos-card-${i}`"
-            type="button"
-            class="card relative flex min-h-[88px] flex-col justify-between text-left transition-colors active:bg-gray-100"
-            :class="i === highlightIndex ? 'border-gray-900 ring-2 ring-gray-900' : 'hover:border-gray-400 hover:bg-gray-50'"
-            @click="cart.addProduct(product)"
+          <div
+            v-for="group in productGroups"
+            :key="group.category"
+            class="card flex flex-col gap-3"
           >
-            <p class="font-medium leading-snug text-gray-900">{{ product.name }}</p>
-            <div class="mt-2 flex items-end justify-between gap-2">
-              <p class="text-sm text-gray-500">{{ product.sellPrice }} DZD · {{ product.quantity }} left</p>
-              <!-- Touch-friendly quantity control: shown only when product is already in cart -->
-              <div
-                v-if="cart.lines.find(l => l.productId === product.productId)"
-                class="flex items-center gap-1"
-                @click.stop
-              >
-                <button
-                  type="button"
-                  class="flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 text-sm text-gray-700"
-                  @click="cart.updateQuantity(product.productId, (cart.lines.find(l => l.productId === product.productId)?.quantity ?? 1) - 1)"
-                >
-                  −
-                </button>
-                <span class="min-w-[20px] text-center text-sm font-medium tabular-nums">
-                  {{ cart.lines.find(l => l.productId === product.productId)?.quantity ?? 0 }}
-                </span>
-                <button
-                  type="button"
-                  class="flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 text-sm text-gray-700"
-                  @click="cart.addProduct(product)"
-                >
-                  +
-                </button>
-              </div>
+            <div class="flex items-center justify-between gap-2">
+              <p class="font-semibold text-gray-900">{{ group.category }}</p>
+              <span class="text-xs text-gray-500">{{ group.variants.length }} variant{{ group.variants.length === 1 ? '' : 's' }}</span>
             </div>
-            <span
-              v-if="i === highlightIndex && pendingQty > 1"
-              class="absolute top-2 right-2 rounded-full bg-gray-900 px-2 py-0.5 text-xs font-semibold text-white tabular-nums"
-            >
-              ×{{ pendingQty }}
-            </span>
-          </button>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="product in group.variants"
+                :key="product.productId"
+                type="button"
+                class="min-h-11 rounded-md border px-3 py-2 text-left text-sm transition-colors"
+                :class="
+                  filtered.indexOf(product) === highlightIndex
+                    ? 'border-gray-900 bg-gray-900 text-white'
+                    : cart.lines.find((l) => l.productId === product.productId)
+                      ? 'border-gray-900 bg-gray-50'
+                      : 'border-gray-300 text-gray-800 hover:border-gray-400'
+                "
+                @click="cart.addProduct(product)"
+              >
+                <span class="block font-medium">{{ variantDisplay(product) }}</span>
+                <span class="block text-xs opacity-80">{{ product.sellPrice }} DZD · {{ product.quantity }} left</span>
+              </button>
+            </div>
+          </div>
         </div>
         <p v-if="!loading && !filtered.length" class="text-sm text-gray-500">No products match your search.</p>
       </div>

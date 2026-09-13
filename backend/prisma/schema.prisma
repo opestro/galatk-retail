@@ -136,6 +136,10 @@ model Product {
   unitCost         Decimal  @default(0) @db.Decimal(10, 2)
   sellPrice        Decimal  @db.Decimal(10, 2)
   galatkProductRef String?
+  /** Family shown in retail (Baggy / Chemise / Débardeur / new Galatk name). */
+  category         String?
+  /** Size/color remainder, e.g. "M blanc". */
+  variantLabel     String?
   isActive         Boolean  @default(true)
   availableOnline  Boolean  @default(true)
   createdAt        DateTime @default(now())
@@ -145,6 +149,8 @@ model Product {
   inboundTransferLines InboundTransferLine[]
   saleLines          SaleLine[]
   orderLines         OnlineOrderLine[]
+
+  @@index([category])
 }
 
 model ShopStock {

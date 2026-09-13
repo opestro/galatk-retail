@@ -22,6 +22,8 @@ export interface GlobalProduct {
   name: string
   description: string | null
   sellPrice: string
+  category?: string
+  variantLabel?: string | null
   shops: GlobalProductShop[]
 }
 

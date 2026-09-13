@@ -1,3 +1,12 @@
+/** Catalog upsert from Galatk workshop (no stock movement). */
+export interface UpsertIntegrationProductInput {
+  galatkProductRef: string
+  name: string
+  unitCost: string
+  sellPrice?: string
+  category?: string
+}
+
 export interface IntegrationInboundLineInput {
   galatkProductRef: string
   quantity: number

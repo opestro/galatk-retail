@@ -5,25 +5,25 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "dev": "dotenv -e config/.env.dev cross-env NODE_ENV=dev tsx watch src/app.ts",
+    "dev": "env -u DATABASE_URL -u PORT dotenv -e config/.env.dev cross-env NODE_ENV=dev tsx watch src/app.ts",
     "build": "tsc && npx prisma generate",
     "start": "node dist/app.js",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
-    "db:migrate:dev": "dotenv -e config/.env.dev prisma migrate dev",
+    "db:migrate:dev": "env -u DATABASE_URL dotenv -e config/.env.dev prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
-    "db:reset": "dotenv -e config/.env.dev cross-env prisma migrate reset",
-    "db:seed": "dotenv -e config/.env.dev prisma db seed",
+    "db:reset": "env -u DATABASE_URL dotenv -e config/.env.dev cross-env prisma migrate reset",
+    "db:seed": "env -u DATABASE_URL dotenv -e config/.env.dev prisma db seed",
     "infra:up": "docker-compose up -d",
     "infra:down": "docker-compose down",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "prisma": {
-    "seed": "dotenv -e config/.env.dev tsx prisma/seed.ts"
+    "seed": "env -u DATABASE_URL dotenv -e config/.env.dev tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",

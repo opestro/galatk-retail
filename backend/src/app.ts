@@ -12,6 +12,8 @@ async function bootstrap() {
 
   try {
     await prisma.$connect()
+    // pg_restore can leave the database search_path empty.
+    await prisma.$executeRawUnsafe('SET search_path TO public')
     console.log('⚡️[DB]: Database connection established')
   } catch (error) {
     console.error('⚡️[DB]: Database connection failed (server still listening):', error)

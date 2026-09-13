@@ -11,12 +11,20 @@ if (!process.env.DATABASE_URL) {
 const prisma = new PrismaClient()
 
 async function main() {
+  // pg_restore from Pivo can leave search_path empty; qualify default schema for raw SQL.
+  await prisma.$executeRawUnsafe('SET search_path TO public')
+
   const ownerEmail = 'owner@galatk-retail.local'
   const passwordHash = await hashPassword('password123')
 
   const owner = await prisma.staffUser.upsert({
     where: { email: ownerEmail },
-    update: {},
+    update: {
+      passwordHash,
+      name: 'Shop Owner',
+      role: StaffRole.OWNER,
+      isActive: true,
+    },
     create: {
       email: ownerEmail,
       passwordHash,
