@@ -13,6 +13,8 @@ export interface IntegrationInboundLineInput {
   name: string
   unitCost: string
   sellPrice?: string
+  /** Optional workshop family; keeps variants under one retail group when set. */
+  category?: string
 }
 
 export interface CreateIntegrationInboundInput {

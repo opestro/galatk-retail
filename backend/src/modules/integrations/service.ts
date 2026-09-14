@@ -51,11 +51,15 @@ export async function upsertIntegrationProduct(
   }
 
   const sellPrice = input.sellPrice?.trim() || unitCost
-  const family = parseProductFamily(name, input.category)
 
   const existing = await db.product.findFirst({
     where: { galatkProductRef },
   })
+
+  // Prefer explicit workshop family; otherwise keep the existing retail family on update
+  // so "T-shirt XL" / "T-shirt noir L" stay under "T-shirt" when category is omitted.
+  const family = parseProductFamily(name, input.category ?? existing?.category)
+
   if (existing) {
     return db.product.update({
       where: { id: existing.id },
@@ -92,6 +96,7 @@ async function resolveOrCreateProduct(
       name: line.name,
       unitCost: line.unitCost,
       sellPrice: line.sellPrice,
+      category: line.category,
     },
     tx,
   )

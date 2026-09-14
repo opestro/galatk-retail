@@ -126,6 +126,49 @@ describe('createIntegrationInboundTransfer', () => {
     expect(mockPrisma.product.create).not.toHaveBeenCalled()
   })
 
+  it('passes workshop family on inbound so variants stay under that category', async () => {
+    mockPrisma.product.findFirst.mockResolvedValue(null)
+    mockPrisma.product.create.mockResolvedValue({ id: 'retail-prod-2' })
+    mockPrisma.$transaction.mockImplementation(async (fn: (tx: typeof mockPrisma) => unknown) => {
+      const tx = {
+        product: mockPrisma.product,
+        inboundTransfer: {
+          create: vi.fn().mockResolvedValue({ id: 'transfer-family', lines: [] }),
+        },
+      }
+      return fn(tx as never)
+    })
+
+    const { createIntegrationInboundTransfer } = await import('../src/modules/integrations/service.js')
+
+    await createIntegrationInboundTransfer('shop-1', {
+      galatkTransferRef: 'dispatch-family',
+      lines: [
+        {
+          galatkProductRef: 'galatk-tee-xl',
+          quantity: 3,
+          name: 'T-shirt XL noir',
+          unitCost: '80',
+          sellPrice: '80',
+          category: 'T-shirt',
+        },
+      ],
+    })
+
+    expect(mockPrisma.product.create).toHaveBeenCalledWith({
+      data: {
+        name: 'T-shirt XL noir',
+        unitCost: '80',
+        sellPrice: '80',
+        galatkProductRef: 'galatk-tee-xl',
+        category: 'T-shirt',
+        variantLabel: 'XL noir',
+        isActive: true,
+        availableOnline: true,
+      },
+    })
+  })
+
   it('returns existing transfer for duplicate galatkTransferRef', async () => {
     const existing = {
       id: 'transfer-existing',
@@ -218,6 +261,32 @@ describe('upsertIntegrationProduct', () => {
       },
     })
     expect(mockPrisma.product.create).not.toHaveBeenCalled()
+  })
+
+  it('keeps existing retail family when category hint is omitted on update', async () => {
+    mockPrisma.product.findFirst.mockResolvedValue({
+      id: 'existing-prod',
+      category: 'T-shirt',
+      name: 'T-shirt XL',
+    })
+    mockPrisma.product.update.mockResolvedValue({ id: 'existing-prod' })
+
+    const { upsertIntegrationProduct } = await import('../src/modules/integrations/service.js')
+    await upsertIntegrationProduct({
+      galatkProductRef: 'galatk-1',
+      name: 'T-shirt noir L',
+      unitCost: '80',
+    })
+
+    expect(mockPrisma.product.update).toHaveBeenCalledWith({
+      where: { id: 'existing-prod' },
+      data: {
+        name: 'T-shirt noir L',
+        unitCost: '80',
+        category: 'T-shirt',
+        variantLabel: 'noir L',
+      },
+    })
   })
 
   it('rejects missing identity fields', async () => {
