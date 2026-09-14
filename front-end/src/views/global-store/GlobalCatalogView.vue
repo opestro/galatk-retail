@@ -4,6 +4,7 @@ import { listGlobalProducts, type GlobalProduct } from '@/services/globalStore'
 import { useGlobalStoreCartStore } from '@/stores/globalStoreCart'
 import { Check, MapPin, Package, Search, ShoppingBag } from 'lucide-vue-next'
 import SkeletonProductGrid from '@/components/ui/SkeletonProductGrid.vue'
+import { groupByCategory, variantDisplay } from '@/utils/productFamily'
 
 const cart = useGlobalStoreCartStore()
 const products = ref<GlobalProduct[]>([])
@@ -51,6 +52,8 @@ const filteredProducts = computed(() => {
 
   return list
 })
+
+const productGroups = computed(() => groupByCategory(filteredProducts.value))
 
 function getShopForProduct(productId: string): string | undefined {
   return selectedShops.value.get(productId)
@@ -106,67 +109,71 @@ function addToCart(product: GlobalProduct) {
 
     <div v-else class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       <div
-        v-for="product in filteredProducts"
-        :key="product.productId"
-        class="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:border-gray-300"
+        v-for="group in productGroups"
+        :key="group.category"
+        class="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white"
       >
-        <!-- Product image placeholder -->
-        <div class="flex aspect-square items-center justify-center bg-gray-50">
+        <div class="flex aspect-[5/3] items-center justify-center bg-gray-50">
           <Package class="h-12 w-12 text-gray-300" />
         </div>
 
         <div class="flex flex-1 flex-col gap-3 p-4">
-          <div>
-            <h3 class="font-medium text-gray-900">{{ product.name }}</h3>
-            <p v-if="product.description" class="mt-0.5 line-clamp-2 text-sm text-gray-500">
-              {{ product.description }}
-            </p>
-          </div>
+          <h3 class="text-lg font-semibold text-gray-900">{{ group.category }}</h3>
 
-          <p class="text-lg font-semibold text-gray-900">{{ product.sellPrice }} DZD</p>
+          <div class="flex flex-col gap-3">
+            <div
+              v-for="product in group.variants"
+              :key="product.productId"
+              class="rounded-lg border border-gray-200 p-3"
+            >
+              <div class="mb-2 flex items-center justify-between gap-2">
+                <p class="font-medium text-gray-900">{{ variantDisplay(product) }}</p>
+                <p class="text-sm font-semibold text-gray-900">{{ product.sellPrice }} DZD</p>
+              </div>
 
-          <!-- Shop selection -->
-          <div v-if="product.shops.length > 0" class="flex flex-col gap-2">
-            <p class="text-xs font-medium text-gray-500">
-              {{ product.shops.length > 1 ? `Available at ${product.shops.length} shops` : 'Available at' }}
-            </p>
-            <div class="flex flex-wrap gap-2">
+              <div v-if="product.shops.length > 0" class="flex flex-col gap-2">
+                <p class="text-xs font-medium text-gray-500">
+                  {{ product.shops.length > 1 ? `Available at ${product.shops.length} shops` : 'Available at' }}
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="shop in product.shops"
+                    :key="shop.shopId"
+                    type="button"
+                    :disabled="!shop.inStock"
+                    class="min-h-9 rounded-full border px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
+                    :class="
+                      getShopForProduct(product.productId) === shop.shopId
+                        ? 'border-gray-900 bg-gray-900 text-white'
+                        : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                    "
+                    @click="selectShop(product.productId, shop.shopId)"
+                  >
+                    {{ shop.shopName }}
+                    <span v-if="!shop.inStock">· out of stock</span>
+                  </button>
+                </div>
+              </div>
+
               <button
-                v-for="shop in product.shops"
-                :key="shop.shopId"
+                v-if="product.shops.length > 0"
                 type="button"
-                :disabled="!shop.inStock"
-                class="min-h-9 rounded-full border px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
-                :class="
-                  getShopForProduct(product.productId) === shop.shopId
-                    ? 'border-gray-900 bg-gray-900 text-white'
-                    : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                "
-                @click="selectShop(product.productId, shop.shopId)"
+                :disabled="!isSelectedShopInStock(product)"
+                class="btn-primary mt-2 flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed"
+                @click="addToCart(product)"
               >
-                {{ shop.shopName }}
-                <span v-if="!shop.inStock">· out of stock</span>
+                <template v-if="justAdded.has(product.productId)">
+                  <Check class="h-4 w-4" />
+                  Added
+                </template>
+                <template v-else>
+                  <ShoppingBag class="h-4 w-4" />
+                  {{ isSelectedShopInStock(product) ? 'Add to cart' : 'Out of stock' }}
+                </template>
               </button>
+              <p v-else class="text-center text-xs text-gray-400">Not available</p>
             </div>
           </div>
-
-          <button
-            v-if="product.shops.length > 0"
-            type="button"
-            :disabled="!isSelectedShopInStock(product)"
-            class="btn-primary mt-auto flex items-center justify-center gap-2 disabled:cursor-not-allowed"
-            @click="addToCart(product)"
-          >
-            <template v-if="justAdded.has(product.productId)">
-              <Check class="h-4 w-4" />
-              Added
-            </template>
-            <template v-else>
-              <ShoppingBag class="h-4 w-4" />
-              {{ isSelectedShopInStock(product) ? 'Add to cart' : 'Out of stock' }}
-            </template>
-          </button>
-          <p v-else class="mt-auto text-center text-xs text-gray-400">Not available</p>
         </div>
       </div>
     </div>

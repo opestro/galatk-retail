@@ -15,6 +15,7 @@ import {
   StaffRole,
 } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
+import { withFamily } from '../../shared/products/withFamily.js'
 
 export interface CheckoutLineInput {
   productId: string
@@ -81,14 +82,19 @@ export async function listStorefrontProducts(slug: string) {
 
   return stock
     .filter((s) => shop.outOfStockDisplay === OutOfStockDisplay.SHOW_UNAVAILABLE || s.quantity > 0)
-    .map((s) => ({
-      productId: s.productId,
-      name: s.product.name,
-      description: s.product.description,
-      sellPrice: s.product.sellPrice.toString(),
-      inStock: s.quantity > 0,
-      quantity: s.quantity,
-    }))
+    .map((s) => {
+      const family = withFamily(s.product)
+      return {
+        productId: s.productId,
+        name: s.product.name,
+        description: s.product.description,
+        sellPrice: s.product.sellPrice.toString(),
+        inStock: s.quantity > 0,
+        quantity: s.quantity,
+        category: family.category,
+        variantLabel: family.variantLabel,
+      }
+    })
 }
 
 /**

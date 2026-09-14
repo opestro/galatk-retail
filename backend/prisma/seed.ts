@@ -11,6 +11,9 @@ if (!process.env.DATABASE_URL) {
 const prisma = new PrismaClient()
 
 async function main() {
+  // pg_restore from Pivo can leave search_path empty; qualify default schema for raw SQL.
+  await prisma.$executeRawUnsafe('SET search_path TO public')
+
   // Linked to galatk workshop ADMIN by email for bidirectional SSO jump
   const ownerEmail = 'admin@galatk.com'
   const passwordHash = await hashPassword('password123')

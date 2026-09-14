@@ -4,6 +4,7 @@ import { CustomError } from '../shared/types/error_type.js'
 const defaultOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
+  'http://localhost:5174',
   'http://localhost:4173',
   'http://localhost:8080',
   'https://galatk.shop',

@@ -25,6 +25,8 @@ export interface ProductResponse {
   unitCost: string
   sellPrice: string
   galatkProductRef: string | null
+  category: string
+  variantLabel: string | null
   isActive: boolean
   availableOnline: boolean
   createdAt: Date

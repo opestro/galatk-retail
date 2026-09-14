@@ -11,6 +11,9 @@ export default defineConfig({
     vueDevTools(),
     tailwindcss(),
   ],
+  server: {
+    port: 5174,
+  },
   build: {
     cssMinify: 'lightningcss',
   },

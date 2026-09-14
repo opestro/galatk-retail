@@ -2,7 +2,12 @@ import { Prisma } from '@prisma/client'
 import prisma from '../../resources/database/initDatabase.js'
 import { incrementShopStock } from '../../shared/stock/stockMutations.js'
 import { CustomError } from '../../shared/types/error_type.js'
-import { CreateIntegrationInboundInput, IntegrationShopSummary } from './types.js'
+import {
+  CreateIntegrationInboundInput,
+  IntegrationShopSummary,
+  UpsertIntegrationProductInput,
+} from './types.js'
+import { parseProductFamily } from '../../shared/products/productFamily.js'
 
 function integrationStaffId(): string {
   const staffId = process.env.GALATK_INTEGRATION_STAFF_ID
@@ -24,36 +29,72 @@ export async function listIntegrationShops(): Promise<IntegrationShopSummary[]> 
   return shops
 }
 
-async function resolveOrCreateProduct(
-  tx: Prisma.TransactionClient,
-  line: CreateIntegrationInboundInput['lines'][number],
-) {
-  const unitCost = line.unitCost
-  const sellPrice = line.sellPrice ?? line.unitCost
+type ProductDb = Prisma.TransactionClient | typeof prisma
 
-  const existing = await tx.product.findFirst({
-    where: { galatkProductRef: line.galatkProductRef },
+/**
+ * Upsert a retail catalog product keyed by the Galatk workshop product id.
+ * Existing rows keep their shop sellPrice; new rows default sellPrice to unitCost.
+ */
+export async function upsertIntegrationProduct(
+  input: UpsertIntegrationProductInput,
+  db: ProductDb = prisma,
+) {
+  const galatkProductRef = input.galatkProductRef?.trim()
+  const name = input.name?.trim()
+  const unitCost = input.unitCost?.trim()
+
+  if (!galatkProductRef || !name) {
+    throw new CustomError('VALIDATION_ERROR', 'galatkProductRef and name are required', 400)
+  }
+  if (!unitCost) {
+    throw new CustomError('VALIDATION_ERROR', 'unitCost is required', 400)
+  }
+
+  const sellPrice = input.sellPrice?.trim() || unitCost
+  const family = parseProductFamily(name, input.category)
+
+  const existing = await db.product.findFirst({
+    where: { galatkProductRef },
   })
   if (existing) {
-    return tx.product.update({
+    return db.product.update({
       where: { id: existing.id },
       data: {
-        name: line.name,
+        name,
         unitCost,
+        category: family.category,
+        variantLabel: family.variantLabel,
       },
     })
   }
 
-  return tx.product.create({
+  return db.product.create({
     data: {
-      name: line.name,
+      name,
       unitCost,
       sellPrice,
-      galatkProductRef: line.galatkProductRef,
+      galatkProductRef,
+      category: family.category,
+      variantLabel: family.variantLabel,
       isActive: true,
       availableOnline: true,
     },
   })
+}
+
+async function resolveOrCreateProduct(
+  tx: Prisma.TransactionClient,
+  line: CreateIntegrationInboundInput['lines'][number],
+) {
+  return upsertIntegrationProduct(
+    {
+      galatkProductRef: line.galatkProductRef,
+      name: line.name,
+      unitCost: line.unitCost,
+      sellPrice: line.sellPrice,
+    },
+    tx,
+  )
 }
 
 export async function createIntegrationInboundTransfer(

@@ -35,6 +35,37 @@ export async function listShops(_req: Request, res: Response, next: NextFunction
   }
 }
 
+function presentProduct(
+  product: Awaited<ReturnType<typeof IntegrationService.upsertIntegrationProduct>>,
+) {
+  return {
+    id: product.id,
+    name: product.name,
+    galatkProductRef: product.galatkProductRef,
+    category: product.category,
+    variantLabel: product.variantLabel,
+    unitCost: product.unitCost.toString(),
+    sellPrice: product.sellPrice.toString(),
+    isActive: product.isActive,
+    availableOnline: product.availableOnline,
+  }
+}
+
+export async function upsertProduct(req: Request, res: Response, next: NextFunction) {
+  try {
+    const product = await IntegrationService.upsertIntegrationProduct({
+      galatkProductRef: req.body?.galatkProductRef,
+      name: req.body?.name,
+      unitCost: req.body?.unitCost,
+      sellPrice: req.body?.sellPrice,
+      category: req.body?.category,
+    })
+    res.status(200).json({ data: presentProduct(product) })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export async function createInboundTransfer(req: Request, res: Response, next: NextFunction) {
   try {
     const shopId = String(req.params.shopId)

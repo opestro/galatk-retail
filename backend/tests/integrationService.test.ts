@@ -73,6 +73,8 @@ describe('createIntegrationInboundTransfer', () => {
         unitCost: '25',
         sellPrice: '25',
         galatkProductRef: 'galatk-prod-1',
+        category: 'Factory',
+        variantLabel: 'Shirt',
         isActive: true,
         availableOnline: true,
       },
@@ -114,7 +116,12 @@ describe('createIntegrationInboundTransfer', () => {
 
     expect(mockPrisma.product.update).toHaveBeenCalledWith({
       where: { id: 'existing-prod' },
-      data: { name: 'Factory Shirt', unitCost: '25' },
+      data: {
+        name: 'Factory Shirt',
+        unitCost: '25',
+        category: 'Factory',
+        variantLabel: 'Shirt',
+      },
     })
     expect(mockPrisma.product.create).not.toHaveBeenCalled()
   })
@@ -148,7 +155,80 @@ describe('createIntegrationInboundTransfer', () => {
     expect(result.transfer).toBe(existing)
     expect(mockPrisma.$transaction).not.toHaveBeenCalled()
   })
+})
 
+describe('upsertIntegrationProduct', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('creates a catalog product when galatkProductRef is new', async () => {
+    mockPrisma.product.findFirst.mockResolvedValue(null)
+    mockPrisma.product.create.mockResolvedValue({
+      id: 'retail-prod-1',
+      name: 'New Dress',
+      galatkProductRef: 'galatk-1',
+      unitCost: { toString: () => '40' },
+      sellPrice: { toString: () => '40' },
+      isActive: true,
+      availableOnline: true,
+    })
+
+    const { upsertIntegrationProduct } = await import('../src/modules/integrations/service.js')
+    const product = await upsertIntegrationProduct({
+      galatkProductRef: 'galatk-1',
+      name: 'New Dress',
+      unitCost: '40',
+    })
+
+    expect(mockPrisma.product.create).toHaveBeenCalledWith({
+      data: {
+        name: 'New Dress',
+        unitCost: '40',
+        sellPrice: '40',
+        galatkProductRef: 'galatk-1',
+        category: 'New',
+        variantLabel: 'Dress',
+        isActive: true,
+        availableOnline: true,
+      },
+    })
+    expect(product.id).toBe('retail-prod-1')
+  })
+
+  it('updates name and unitCost when galatkProductRef already exists', async () => {
+    mockPrisma.product.findFirst.mockResolvedValue({ id: 'existing-prod' })
+    mockPrisma.product.update.mockResolvedValue({ id: 'existing-prod', name: 'Renamed' })
+
+    const { upsertIntegrationProduct } = await import('../src/modules/integrations/service.js')
+    await upsertIntegrationProduct({
+      galatkProductRef: 'galatk-1',
+      name: 'Renamed',
+      unitCost: '55',
+      sellPrice: '99',
+    })
+
+    expect(mockPrisma.product.update).toHaveBeenCalledWith({
+      where: { id: 'existing-prod' },
+      data: {
+        name: 'Renamed',
+        unitCost: '55',
+        category: 'Renamed',
+        variantLabel: null,
+      },
+    })
+    expect(mockPrisma.product.create).not.toHaveBeenCalled()
+  })
+
+  it('rejects missing identity fields', async () => {
+    const { upsertIntegrationProduct } = await import('../src/modules/integrations/service.js')
+    await expect(
+      upsertIntegrationProduct({ galatkProductRef: '', name: 'X', unitCost: '1' }),
+    ).rejects.toThrow(CustomError)
+  })
+})
+
+describe('createIntegrationInboundTransfer validation', () => {
   it('rejects invalid lines', async () => {
     const { createIntegrationInboundTransfer } = await import('../src/modules/integrations/service.js')
 

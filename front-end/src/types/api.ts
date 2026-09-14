@@ -114,6 +114,8 @@ export interface Product {
   unitCost: string
   sellPrice: string
   galatkProductRef: string | null
+  category?: string
+  variantLabel?: string | null
   isActive: boolean
   availableOnline: boolean
 }
@@ -131,6 +133,8 @@ export interface PosProduct {
   name: string
   sellPrice: string
   quantity: number
+  category?: string
+  variantLabel?: string | null
 }
 
 export interface Sale {
@@ -217,4 +221,6 @@ export interface StorefrontProduct {
   sellPrice: string
   inStock: boolean
   quantity: number
+  category?: string
+  variantLabel?: string | null
 }

@@ -4,6 +4,7 @@ import { checkoutForShop, CheckoutInput } from '../storefront/service.js'
 import { OutOfStockDisplay } from '@prisma/client'
 import { GlobalCheckoutInput } from './types.js'
 import { lookupCustomerByPhone } from '../../shared/clients/upsertFromOnline.js'
+import { withFamily } from '../../shared/products/withFamily.js'
 
 export { lookupCustomerByPhone }
 
@@ -46,6 +47,8 @@ export async function listGlobalProducts() {
       name: string
       description: string | null
       sellPrice: string
+      category: string
+      variantLabel: string | null
       shops: { shopId: string; shopName: string; shopSlug: string; quantity: number; inStock: boolean }[]
     }
   >()
@@ -64,6 +67,8 @@ export async function listGlobalProducts() {
         name: s.product.name,
         description: s.product.description,
         sellPrice: s.product.sellPrice.toString(),
+        category: withFamily(s.product).category,
+        variantLabel: withFamily(s.product).variantLabel,
         shops: [],
       }
       byProduct.set(s.productId, entry)

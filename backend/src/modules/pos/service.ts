@@ -6,6 +6,7 @@ import { assertCanVoidSale } from '../../shared/pos/voidRules.js'
 import { assertCreditWithinLimit } from '../../shared/credit/limitCheck.js'
 import { ClientLedgerEntryType, PaymentMethod, SaleStatus, StaffRole } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
+import { withFamily } from '../../shared/products/withFamily.js'
 
 export interface SaleLineInput {
   productId: string
@@ -29,12 +30,17 @@ export async function listPosProducts(staff: AuthenticatedStaff, shopId: string)
     include: { product: true },
   })
 
-  return stock.map((s) => ({
-    productId: s.productId,
-    name: s.product.name,
-    sellPrice: s.product.sellPrice.toString(),
-    quantity: s.quantity,
-  }))
+  return stock.map((s) => {
+    const family = withFamily(s.product)
+    return {
+      productId: s.productId,
+      name: s.product.name,
+      sellPrice: s.product.sellPrice.toString(),
+      quantity: s.quantity,
+      category: family.category,
+      variantLabel: family.variantLabel,
+    }
+  })
 }
 
 export async function createSale(staff: AuthenticatedStaff, shopId: string, input: CreateSaleInput) {
