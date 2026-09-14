@@ -2,12 +2,15 @@
 import { computed, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { LayoutDashboard, Package, Store, ArrowDownToLine, ClipboardList, Users, Settings, LogOut, UserCircle, Bell, Receipt, Menu, X } from 'lucide-vue-next'
+import { LayoutDashboard, Package, Store, ArrowDownToLine, ClipboardList, Users, Settings, LogOut, UserCircle, Bell, Receipt, Menu, X, Factory } from 'lucide-vue-next'
 import ShopSelector from '@/components/admin/ShopSelector.vue'
+import { api } from '@/services/api'
 
 const auth = useAuthStore()
 const route = useRoute()
 const menuOpen = ref(false)
+const switchingWorkshop = ref(false)
+const switchError = ref('')
 
 const navItems = computed(() => {
   const items = [
@@ -40,6 +43,25 @@ function handleLogout() {
   auth.logout()
 }
 
+async function switchToWorkshop() {
+  if (switchingWorkshop.value) return
+  switchingWorkshop.value = true
+  switchError.value = ''
+  try {
+    const { data } = await api.post<{ data: { redirectUrl: string } }>('/auth/sso/launch-workshop')
+    const redirectUrl = data.data?.redirectUrl
+    if (!redirectUrl) {
+      throw new Error('Factory did not return a redirect URL')
+    }
+    window.location.assign(redirectUrl)
+  } catch (e: unknown) {
+    const ax = e as { response?: { data?: { message?: string } }; message?: string }
+    switchError.value =
+      ax.response?.data?.message ?? ax.message ?? 'Could not open Factory'
+    switchingWorkshop.value = false
+  }
+}
+
 // Close the mobile drawer whenever navigation happens
 watch(() => route.path, () => {
   menuOpen.value = false
@@ -59,8 +81,25 @@ watch(() => route.path, () => {
         <Menu class="h-6 w-6" />
       </button>
       <h1 class="text-base font-semibold text-gray-900">Galatk Retail</h1>
-      <div class="w-11"></div>
+      <button
+        v-if="auth.isOwner"
+        type="button"
+        class="inline-flex h-9 max-w-[9.5rem] items-center gap-1.5 rounded-md border border-gray-200 px-2.5 text-xs font-medium text-gray-800 disabled:opacity-60"
+        :disabled="switchingWorkshop"
+        aria-label="Switch to Factory"
+        @click="switchToWorkshop"
+      >
+        <Factory class="h-4 w-4 shrink-0" />
+        <span class="truncate">{{ switchingWorkshop ? 'Opening…' : 'Factory' }}</span>
+      </button>
+      <div v-else class="w-11"></div>
     </header>
+    <p
+      v-if="switchError"
+      class="fixed inset-x-0 top-14 z-30 border-b border-red-100 bg-red-50 px-4 py-2 text-xs text-red-600 lg:hidden"
+    >
+      {{ switchError }}
+    </p>
 
     <!-- Mobile drawer overlay -->
     <div
@@ -104,8 +143,20 @@ watch(() => route.path, () => {
         </RouterLink>
       </nav>
 
+      <p v-if="switchError" class="mt-6 px-1 text-xs text-red-600">{{ switchError }}</p>
       <button
-        class="mt-8 flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
+        v-if="auth.isOwner"
+        type="button"
+        class="mt-6 flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+        :disabled="switchingWorkshop"
+        @click="switchToWorkshop"
+      >
+        <Factory class="h-4 w-4" />
+        {{ switchingWorkshop ? 'Opening Factory…' : 'Switch to Factory' }}
+      </button>
+      <button
+        class="mt-2 flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
+        :class="auth.isOwner ? '' : 'mt-8'"
         @click="handleLogout"
       >
         <LogOut class="h-4 w-4" />

@@ -14,17 +14,26 @@ async function main() {
   // pg_restore from Pivo can leave search_path empty; qualify default schema for raw SQL.
   await prisma.$executeRawUnsafe('SET search_path TO public')
 
-  const ownerEmail = 'owner@galatk-retail.local'
+  // Linked to galatk workshop ADMIN by email for bidirectional SSO jump
+  const ownerEmail = 'admin@galatk.com'
   const passwordHash = await hashPassword('password123')
+
+  const legacyOwner = await prisma.staffUser.findUnique({
+    where: { email: 'owner@galatk-retail.local' },
+  })
+  const existingOwner = await prisma.staffUser.findUnique({
+    where: { email: ownerEmail },
+  })
+  if (legacyOwner && !existingOwner) {
+    await prisma.staffUser.update({
+      where: { id: legacyOwner.id },
+      data: { email: ownerEmail, name: 'Shop Owner' },
+    })
+  }
 
   const owner = await prisma.staffUser.upsert({
     where: { email: ownerEmail },
-    update: {
-      passwordHash,
-      name: 'Shop Owner',
-      role: StaffRole.OWNER,
-      isActive: true,
-    },
+    update: { name: 'Shop Owner', role: StaffRole.OWNER, isActive: true },
     create: {
       email: ownerEmail,
       passwordHash,

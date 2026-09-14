@@ -9,5 +9,6 @@ router.use(requireIntegrationKey)
 router.get('/shops', IntegrationController.listShops)
 router.post('/products', IntegrationController.upsertProduct)
 router.post('/shops/:shopId/inbound-transfers', IntegrationController.createInboundTransfer)
+router.post('/sso/issue', IntegrationController.issueSso)
 
 export default router
