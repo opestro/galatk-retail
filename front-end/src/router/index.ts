@@ -28,6 +28,7 @@ const router = createRouter({
         { path: '', name: 'admin-dashboard', component: () => import('@/views/admin/DashboardView.vue') },
         { path: 'shops', name: 'admin-shops', component: () => import('@/views/admin/ShopsView.vue') },
         { path: 'products', name: 'admin-products', component: () => import('@/views/admin/ProductsView.vue') },
+        { path: 'products/:familyId', name: 'admin-product-detail', component: () => import('@/views/admin/ProductDetailView.vue') },
         { path: 'stock', name: 'admin-stock', component: () => import('@/views/admin/StockView.vue') },
         { path: 'inbound', name: 'admin-inbound', component: () => import('@/views/admin/InboundTransferView.vue') },
         { path: 'orders', name: 'admin-orders', component: () => import('@/views/admin/OrdersView.vue') },
@@ -67,6 +68,7 @@ const router = createRouter({
       meta: { public: true },
       children: [
         { path: '', name: 'global-store-catalog', component: () => import('@/views/global-store/GlobalCatalogView.vue') },
+        { path: 'products/:productId', name: 'global-store-product', component: () => import('@/views/global-store/GlobalProductView.vue') },
         { path: 'checkout', name: 'global-store-checkout', component: () => import('@/views/global-store/GlobalCheckoutView.vue') },
         { path: 'confirmation', name: 'global-store-confirmation', component: () => import('@/views/global-store/GlobalOrderConfirmationView.vue') },
       ],

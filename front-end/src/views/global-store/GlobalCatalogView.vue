@@ -1,30 +1,23 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { listGlobalProducts, type GlobalProduct } from '@/services/globalStore'
-import { useGlobalStoreCartStore } from '@/stores/globalStoreCart'
-import { Check, MapPin, Package, Search, ShoppingBag } from 'lucide-vue-next'
-import SkeletonProductGrid from '@/components/ui/SkeletonProductGrid.vue'
-import { groupByCategory, variantDisplay } from '@/utils/productFamily'
+import { RouterLink, useRoute } from 'vue-router'
+import { listGlobalProducts, type PublicCatalogProductSummary } from '@/services/globalStore'
+import { MapPin, Package, Search } from 'lucide-vue-next'
+import StoreProductGridSkeleton from '@/components/storefront/StoreProductGridSkeleton.vue'
+import StoreProductCard from '@/components/storefront/StoreProductCard.vue'
 
-const cart = useGlobalStoreCartStore()
-const products = ref<GlobalProduct[]>([])
+const route = useRoute()
+const products = ref<PublicCatalogProductSummary[]>([])
 const loading = ref(true)
+const loadError = ref(false)
 const searchQuery = ref('')
-const shopFilter = ref<string>('all')
-
-// Track which shop is selected per product; default to first in-stock shop
-const selectedShops = ref<Map<string, string>>(new Map())
-const justAdded = ref<Set<string>>(new Set())
+const shopFilter = ref<string>((route.query.shop as string) || 'all')
 
 onMounted(async () => {
   try {
     products.value = await listGlobalProducts()
-    products.value.forEach((p) => {
-      const firstInStock = p.shops.find((s) => s.inStock)
-      if (firstInStock) {
-        selectedShops.value.set(p.productId, firstInStock.shopId)
-      }
-    })
+  } catch {
+    loadError.value = true
   } finally {
     loading.value = false
   }
@@ -42,7 +35,10 @@ const filteredProducts = computed(() => {
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.trim().toLowerCase()
     list = list.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q),
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.slug.toLowerCase().includes(q) ||
+        (p.description?.toLowerCase().includes(q) ?? false),
     )
   }
 
@@ -53,34 +49,17 @@ const filteredProducts = computed(() => {
   return list
 })
 
-const productGroups = computed(() => groupByCategory(filteredProducts.value))
-
-function getShopForProduct(productId: string): string | undefined {
-  return selectedShops.value.get(productId)
-}
-
-function selectShop(productId: string, shopId: string) {
-  selectedShops.value.set(productId, shopId)
-}
-
-function isSelectedShopInStock(product: GlobalProduct): boolean {
-  const shopId = getShopForProduct(product.productId)
-  return !!product.shops.find((s) => s.shopId === shopId)?.inStock
-}
-
-function addToCart(product: GlobalProduct) {
-  const shopId = getShopForProduct(product.productId)
-  if (!shopId) return
-  cart.addProduct(product, shopId)
-
-  justAdded.value.add(product.productId)
-  setTimeout(() => justAdded.value.delete(product.productId), 1200)
+function productTo(product: PublicCatalogProductSummary) {
+  return {
+    name: 'global-store-product' as const,
+    params: { productId: product.slug || product.id },
+    query: shopFilter.value !== 'all' ? { shop: shopFilter.value } : undefined,
+  }
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
-    <!-- Filters -->
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
       <div class="relative flex-1">
         <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -100,82 +79,27 @@ function addToCart(product: GlobalProduct) {
       </div>
     </div>
 
-    <SkeletonProductGrid v-if="loading" :count="8" :columns="3" />
+    <StoreProductGridSkeleton v-if="loading" />
+
+    <div v-else-if="loadError" class="flex flex-col items-center gap-3 py-16 text-center">
+      <Package class="h-10 w-10 text-gray-300" />
+      <p class="text-gray-500">Could not load the store. Please try again.</p>
+    </div>
 
     <div v-else-if="filteredProducts.length === 0" class="flex flex-col items-center gap-3 py-16 text-center">
       <Package class="h-10 w-10 text-gray-300" />
       <p class="text-gray-500">No products found.</p>
     </div>
 
-    <div v-else class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <div
-        v-for="group in productGroups"
-        :key="group.category"
-        class="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white"
+    <div v-else class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <RouterLink
+        v-for="product in filteredProducts"
+        :key="product.id"
+        :to="productTo(product)"
+        class="block h-full"
       >
-        <div class="flex aspect-[5/3] items-center justify-center bg-gray-50">
-          <Package class="h-12 w-12 text-gray-300" />
-        </div>
-
-        <div class="flex flex-1 flex-col gap-3 p-4">
-          <h3 class="text-lg font-semibold text-gray-900">{{ group.category }}</h3>
-
-          <div class="flex flex-col gap-3">
-            <div
-              v-for="product in group.variants"
-              :key="product.productId"
-              class="rounded-lg border border-gray-200 p-3"
-            >
-              <div class="mb-2 flex items-center justify-between gap-2">
-                <p class="font-medium text-gray-900">{{ variantDisplay(product) }}</p>
-                <p class="text-sm font-semibold text-gray-900">{{ product.sellPrice }} DZD</p>
-              </div>
-
-              <div v-if="product.shops.length > 0" class="flex flex-col gap-2">
-                <p class="text-xs font-medium text-gray-500">
-                  {{ product.shops.length > 1 ? `Available at ${product.shops.length} shops` : 'Available at' }}
-                </p>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="shop in product.shops"
-                    :key="shop.shopId"
-                    type="button"
-                    :disabled="!shop.inStock"
-                    class="min-h-9 rounded-full border px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
-                    :class="
-                      getShopForProduct(product.productId) === shop.shopId
-                        ? 'border-gray-900 bg-gray-900 text-white'
-                        : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                    "
-                    @click="selectShop(product.productId, shop.shopId)"
-                  >
-                    {{ shop.shopName }}
-                    <span v-if="!shop.inStock">· out of stock</span>
-                  </button>
-                </div>
-              </div>
-
-              <button
-                v-if="product.shops.length > 0"
-                type="button"
-                :disabled="!isSelectedShopInStock(product)"
-                class="btn-primary mt-2 flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed"
-                @click="addToCart(product)"
-              >
-                <template v-if="justAdded.has(product.productId)">
-                  <Check class="h-4 w-4" />
-                  Added
-                </template>
-                <template v-else>
-                  <ShoppingBag class="h-4 w-4" />
-                  {{ isSelectedShopInStock(product) ? 'Add to cart' : 'Out of stock' }}
-                </template>
-              </button>
-              <p v-else class="text-center text-xs text-gray-400">Not available</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        <StoreProductCard :product="product" />
+      </RouterLink>
     </div>
   </div>
 </template>

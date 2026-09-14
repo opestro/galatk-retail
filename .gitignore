@@ -50,6 +50,8 @@ pnpm-debug.log*
 # Backend tooling
 backend/cloud-sql-proxy
 backend/cloud-sql-proxy.exe
+backend/uploads/
+!backend/uploads/.gitkeep
 
 # Frontend test artifacts
 front-end/cypress/videos/

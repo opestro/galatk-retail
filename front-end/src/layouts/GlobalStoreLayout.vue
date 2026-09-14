@@ -24,10 +24,10 @@ const cart = useGlobalStoreCartStore()
           <ShoppingCart class="h-5 w-5" />
           <span class="hidden sm:inline">Cart</span>
           <span
-            v-if="cart.lines.length > 0"
+            v-if="cart.itemCount > 0"
             class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-xs font-bold text-white"
           >
-            {{ cart.lines.length }}
+            {{ cart.itemCount }}
           </span>
         </RouterLink>
       </div>

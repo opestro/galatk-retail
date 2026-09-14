@@ -12,12 +12,21 @@ const mockPrisma = {
   staffUser: { findUnique: vi.fn() },
   inboundTransfer: { findFirst: vi.fn() },
   product: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
+  productFamily: { findUnique: vi.fn(), create: vi.fn() },
   $transaction: vi.fn(),
 }
 
 vi.mock('../src/resources/database/initDatabase.js', () => ({
   default: mockPrisma,
 }))
+
+function stubCatalogFamily() {
+  mockPrisma.productFamily.findUnique.mockResolvedValue(null)
+  mockPrisma.productFamily.create.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
+    id: `family-${String(data.slug)}`,
+    ...data,
+  }))
+}
 
 describe('createIntegrationInboundTransfer', () => {
   beforeEach(() => {
@@ -27,6 +36,7 @@ describe('createIntegrationInboundTransfer', () => {
     mockPrisma.inboundTransfer.findFirst.mockResolvedValue(null)
     mockPrisma.shop.findUnique.mockResolvedValue({ id: 'shop-1', name: 'Main Shop' })
     mockPrisma.staffUser.findUnique.mockResolvedValue({ id: 'staff-integration' })
+    stubCatalogFamily()
   })
 
   it('auto-creates product when galatkProductRef is unknown', async () => {
@@ -38,6 +48,7 @@ describe('createIntegrationInboundTransfer', () => {
     mockPrisma.$transaction.mockImplementation(async (fn: (tx: typeof mockPrisma) => unknown) => {
       const tx = {
         product: mockPrisma.product,
+        productFamily: mockPrisma.productFamily,
         inboundTransfer: {
           create: vi.fn().mockResolvedValue({
             id: 'transfer-1',
@@ -75,6 +86,9 @@ describe('createIntegrationInboundTransfer', () => {
         galatkProductRef: 'galatk-prod-1',
         category: 'Factory',
         variantLabel: 'Shirt',
+        familyId: 'family-factory',
+        attributes: { color: 'Shirt' },
+        attributesKey: 'color:shirt',
         isActive: true,
         availableOnline: true,
       },
@@ -93,6 +107,7 @@ describe('createIntegrationInboundTransfer', () => {
     mockPrisma.$transaction.mockImplementation(async (fn: (tx: typeof mockPrisma) => unknown) => {
       const tx = {
         product: mockPrisma.product,
+        productFamily: mockPrisma.productFamily,
         inboundTransfer: {
           create: vi.fn().mockResolvedValue({ id: 'transfer-2', lines: [] }),
         },
@@ -121,6 +136,9 @@ describe('createIntegrationInboundTransfer', () => {
         unitCost: '25',
         category: 'Factory',
         variantLabel: 'Shirt',
+        familyId: 'family-factory',
+        attributes: { color: 'Shirt' },
+        attributesKey: 'color:shirt',
       },
     })
     expect(mockPrisma.product.create).not.toHaveBeenCalled()
@@ -132,6 +150,7 @@ describe('createIntegrationInboundTransfer', () => {
     mockPrisma.$transaction.mockImplementation(async (fn: (tx: typeof mockPrisma) => unknown) => {
       const tx = {
         product: mockPrisma.product,
+        productFamily: mockPrisma.productFamily,
         inboundTransfer: {
           create: vi.fn().mockResolvedValue({ id: 'transfer-family', lines: [] }),
         },
@@ -163,6 +182,9 @@ describe('createIntegrationInboundTransfer', () => {
         galatkProductRef: 'galatk-tee-xl',
         category: 'T-shirt',
         variantLabel: 'XL noir',
+        familyId: 'family-t shirt',
+        attributes: { size: 'XL', color: 'Noir' },
+        attributesKey: 'color:noir|size:xl',
         isActive: true,
         availableOnline: true,
       },
@@ -203,6 +225,7 @@ describe('createIntegrationInboundTransfer', () => {
 describe('upsertIntegrationProduct', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    stubCatalogFamily()
   })
 
   it('creates a catalog product when galatkProductRef is new', async () => {
@@ -232,6 +255,9 @@ describe('upsertIntegrationProduct', () => {
         galatkProductRef: 'galatk-1',
         category: 'New',
         variantLabel: 'Dress',
+        familyId: 'family-new',
+        attributes: { color: 'Dress' },
+        attributesKey: 'color:dress',
         isActive: true,
         availableOnline: true,
       },
@@ -258,6 +284,9 @@ describe('upsertIntegrationProduct', () => {
         unitCost: '55',
         category: 'Renamed',
         variantLabel: null,
+        familyId: 'family-renamed',
+        attributes: {},
+        attributesKey: 'default',
       },
     })
     expect(mockPrisma.product.create).not.toHaveBeenCalled()
@@ -285,6 +314,9 @@ describe('upsertIntegrationProduct', () => {
         unitCost: '80',
         category: 'T-shirt',
         variantLabel: 'noir L',
+        familyId: 'family-t shirt',
+        attributes: { color: 'Noir', size: 'L' },
+        attributesKey: 'color:noir|size:l',
       },
     })
   })

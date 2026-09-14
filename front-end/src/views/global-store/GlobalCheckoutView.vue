@@ -116,6 +116,7 @@ async function submit() {
             >
               <div class="min-w-0 flex-1 basis-full sm:basis-auto">
                 <p class="truncate text-sm font-medium text-gray-900">{{ line.name }}</p>
+                <p v-if="line.variantLabel" class="text-xs text-gray-500">{{ line.variantLabel }}</p>
                 <p class="text-xs text-gray-500">{{ line.sellPrice }} DZD each</p>
               </div>
 

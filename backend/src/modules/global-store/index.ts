@@ -5,6 +5,7 @@ const router = Router()
 
 router.get('/shops', GlobalStoreController.listShops)
 router.get('/products', GlobalStoreController.listProducts)
+router.get('/products/:productId', GlobalStoreController.getProduct)
 router.get('/customer-lookup', GlobalStoreController.lookupCustomer)
 router.post('/checkout', GlobalStoreController.checkout)
 

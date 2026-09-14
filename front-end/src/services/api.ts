@@ -11,6 +11,9 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type']
+  }
   return config
 })
 
@@ -21,7 +24,8 @@ api.interceptors.response.use(
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_staff')
       const path = router.currentRoute.value.path
-      if (path !== '/login' && !path.startsWith('/sso')) {
+      const isCustomerStorefront = path.startsWith('/store') || path.startsWith('/shop')
+      if (path !== '/login' && !path.startsWith('/sso') && !isCustomerStorefront) {
         router.push('/login')
       }
     }

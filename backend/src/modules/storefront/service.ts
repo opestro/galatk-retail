@@ -80,7 +80,7 @@ export async function listStorefrontProducts(slug: string) {
     include: { product: true },
   })
 
-  return stock
+  const mapped = stock
     .filter((s) => shop.outOfStockDisplay === OutOfStockDisplay.SHOW_UNAVAILABLE || s.quantity > 0)
     .map((s) => {
       const family = withFamily(s.product)
@@ -95,6 +95,11 @@ export async function listStorefrontProducts(slug: string) {
         variantLabel: family.variantLabel,
       }
     })
+
+  const familiesWithStock = new Set(
+    stock.filter((s) => s.quantity > 0).map((s) => withFamily(s.product).category),
+  )
+  return mapped.filter((item) => familiesWithStock.has(item.category ?? ''))
 }
 
 /**
@@ -123,9 +128,21 @@ export async function checkoutForShop(shop: { id: string; slug: string; serviceC
 
   const products = await Promise.all(
     input.lines.map(async (line) => {
-      const product = await prisma.product.findUnique({ where: { id: line.productId } })
-      if (!product || !product.isActive || !product.availableOnline) {
-        throw new CustomError('PRODUCT_NOT_FOUND', `Product ${line.productId} unavailable`, 404)
+      if (!Number.isInteger(line.quantity) || line.quantity < 1) {
+        throw new CustomError('VALIDATION_ERROR', 'Quantity must be a positive integer', 400)
+      }
+
+      const product = await prisma.product.findUnique({
+        where: { id: line.productId },
+        include: { family: true },
+      })
+      if (
+        !product ||
+        !product.isActive ||
+        !product.availableOnline ||
+        (product.family && (!product.family.isActive || !product.family.availableOnline))
+      ) {
+        throw new CustomError('PRODUCT_NOT_FOUND', 'Product unavailable', 404)
       }
       return { product, quantity: line.quantity }
     }),

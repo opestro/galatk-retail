@@ -3,6 +3,14 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PrismaClient, StaffRole } from '@prisma/client'
 import { hashPassword } from '../src/shared/auth/password.js'
+import { findOrCreateProductFamily } from '../src/shared/products/findOrCreateFamily.js'
+import { parseProductFamily } from '../src/shared/products/productFamily.js'
+import {
+  attributesKey,
+  canonicalizeAttributes,
+  parseAttributesFromLabel,
+  skuName,
+} from '../src/shared/products/variantAttributes.js'
 
 if (!process.env.DATABASE_URL) {
   config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '../config/.env.dev') })
@@ -70,11 +78,22 @@ async function main() {
     let product = await prisma.product.findFirst({ where: { name: p.name } })
 
     if (!product) {
+      const parsed = parseProductFamily(p.name)
+      const family = await findOrCreateProductFamily(prisma, parsed.category, {
+        description: p.description,
+        categoryHint: parsed.category,
+      })
+      const attributes = canonicalizeAttributes(parseAttributesFromLabel(parsed.variantLabel))
       product = await prisma.product.create({
         data: {
-          name: p.name,
+          name: skuName(family.name, attributes) || p.name,
           description: p.description,
           sellPrice: p.sellPrice,
+          category: family.name,
+          variantLabel: parsed.variantLabel,
+          familyId: family.id,
+          attributes,
+          attributesKey: attributesKey(attributes),
           isActive: true,
           availableOnline: true,
         },

@@ -8,6 +8,7 @@ import { PORT } from './config/global.js'
 import { corsOptions } from './config/cors.js'
 import { morganLogger } from './shared/middlewares/morgan-logger.js'
 import { errorHandler } from './handlers/errorHandler.js'
+import { ensureUploadDirs, uploadsRoot } from './resources/storage/productImages.js'
 
 /**
  * Host for the Vue app (e.g. galatk.shop). API-only host is api.* (e.g. api.galatk.shop).
@@ -61,6 +62,9 @@ export function createExpressApp(): Express {
   // Middleware
   server.use(express.json())
   server.use(express.urlencoded({ extended: true }))
+
+  ensureUploadDirs()
+  server.use('/uploads', express.static(uploadsRoot()))
 
   // Platform health probes hit GET / (often without Accept: text/html)
   server.get('/', (req, res, next) => {

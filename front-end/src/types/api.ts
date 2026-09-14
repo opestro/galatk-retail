@@ -116,8 +116,31 @@ export interface Product {
   galatkProductRef: string | null
   category?: string
   variantLabel?: string | null
+  familyId?: string | null
+  attributes?: Record<string, string>
+  attributesKey?: string
   isActive: boolean
   availableOnline: boolean
+  shopQuantity?: number | null
+  inStock?: boolean | null
+}
+
+export interface ProductImage {
+  id: string
+  url: string
+  sortOrder: number
+}
+
+export interface ProductFamily {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  isActive: boolean
+  availableOnline: boolean
+  available?: boolean | null
+  images: ProductImage[]
+  variants: Product[]
 }
 
 export interface ShopStockItem {

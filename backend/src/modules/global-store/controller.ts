@@ -20,6 +20,16 @@ export async function listProducts(_req: Request, res: Response, next: NextFunct
   }
 }
 
+export async function getProduct(req: Request, res: Response, next: NextFunction) {
+  try {
+    const idOrSlug = String(req.params.productId ?? '')
+    const product = await GlobalStoreService.getGlobalProduct(idOrSlug)
+    res.status(200).json({ data: product })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export async function lookupCustomer(req: Request, res: Response, next: NextFunction) {
   try {
     const phone = String(req.query.phone ?? '')

@@ -84,3 +84,32 @@ export async function incrementShopStock(
     }
   }
 }
+
+/** Set shop stock to an exact quantity (admin adjustment). Source of truth stays ShopStock. */
+export async function setShopStockQuantity(
+  tx: Prisma.TransactionClient,
+  shopId: string,
+  productId: string,
+  quantity: number,
+): Promise<number> {
+  if (!Number.isInteger(quantity) || quantity < 0) {
+    throw new CustomError('VALIDATION_ERROR', 'Quantity must be an integer of 0 or more', 400)
+  }
+
+  const stock = await tx.shopStock.findUnique({
+    where: { shopId_productId: { shopId, productId } },
+  })
+
+  if (stock) {
+    await tx.shopStock.update({
+      where: { id: stock.id },
+      data: { quantity },
+    })
+  } else {
+    await tx.shopStock.create({
+      data: { shopId, productId, quantity },
+    })
+  }
+
+  return quantity
+}
