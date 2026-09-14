@@ -15,6 +15,12 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      path: '/sso',
+      name: 'sso',
+      component: () => import('@/views/auth/SsoExchangeView.vue'),
+      meta: { public: true },
+    },
+    {
       path: '/admin',
       component: AdminLayout,
       meta: { requiresAuth: true, roles: ['OWNER', 'MANAGER'] },

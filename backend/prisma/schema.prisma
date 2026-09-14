@@ -406,3 +406,16 @@ model ShopCharge {
 
   @@index([shopId, chargeDate])
 }
+
+/// One-time SSO handoff codes (galatk workshop ↔ retail admin jump)
+model SsoHandoff {
+  id        String    @id @default(uuid())
+  codeHash  String    @unique
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}

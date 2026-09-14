@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import * as IntegrationService from './service.js'
+import * as AuthService from '../auth/service.js'
 
 function presentTransfer(transfer: Awaited<
   ReturnType<typeof IntegrationService.createIntegrationInboundTransfer>
@@ -46,6 +47,21 @@ export async function createInboundTransfer(req: Request, res: Response, next: N
     })
 
     res.status(result.created ? 201 : 200).json({ data: presentTransfer(result.transfer) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function issueSso(req: Request, res: Response, next: NextFunction) {
+  try {
+    const email = String(req.body?.email ?? '')
+    const result = await AuthService.issueSsoCode(email)
+    res.status(200).json({
+      data: {
+        code: result.code,
+        expiresAt: result.expiresAt.toISOString(),
+      },
+    })
   } catch (error) {
     next(error)
   }

@@ -13,7 +13,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "db:migrate:dev": "dotenv -e config/.env.dev prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:deploy": "dotenv -e config/.env.dev prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:reset": "dotenv -e config/.env.dev cross-env prisma migrate reset",
     "db:seed": "dotenv -e config/.env.dev prisma db seed",

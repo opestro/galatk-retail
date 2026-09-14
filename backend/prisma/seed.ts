@@ -11,12 +11,26 @@ if (!process.env.DATABASE_URL) {
 const prisma = new PrismaClient()
 
 async function main() {
-  const ownerEmail = 'owner@galatk-retail.local'
+  // Linked to galatk workshop ADMIN by email for bidirectional SSO jump
+  const ownerEmail = 'admin@galatk.com'
   const passwordHash = await hashPassword('password123')
+
+  const legacyOwner = await prisma.staffUser.findUnique({
+    where: { email: 'owner@galatk-retail.local' },
+  })
+  const existingOwner = await prisma.staffUser.findUnique({
+    where: { email: ownerEmail },
+  })
+  if (legacyOwner && !existingOwner) {
+    await prisma.staffUser.update({
+      where: { id: legacyOwner.id },
+      data: { email: ownerEmail, name: 'Shop Owner' },
+    })
+  }
 
   const owner = await prisma.staffUser.upsert({
     where: { email: ownerEmail },
-    update: {},
+    update: { name: 'Shop Owner', role: StaffRole.OWNER, isActive: true },
     create: {
       email: ownerEmail,
       passwordHash,
