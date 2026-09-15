@@ -53,9 +53,10 @@ export interface GlobalCheckoutLineInput {
 }
 
 export interface GlobalCheckoutInput {
-  fulfillmentType: 'PICKUP' | 'DELIVERY'
+  fulfillmentType?: 'PICKUP' | 'DELIVERY'
   customerName: string
   customerPhone: string
+  customerWilaya: string
   customerEmail?: string
   deliveryAddress?: string
   deliveryCity?: string
@@ -74,6 +75,7 @@ export interface CustomerLookupResult {
   name: string
   email: string | null
   phone: string
+  wilaya?: string | null
 }
 
 export async function listGlobalShops() {

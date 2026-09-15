@@ -277,6 +277,7 @@ model OnlineOrder {
   fulfillmentType FulfillmentType
   customerName    String
   customerPhone   String
+  customerWilaya  String?
   customerEmail   String?
   deliveryAddress String?
   deliveryCity    String?
@@ -298,6 +299,7 @@ model OnlineOrder {
 
   @@unique([shopId, orderNumber])
   @@index([shopId, status, createdAt])
+  @@index([shopId, customerWilaya])
   @@index([clientId])
 }
 

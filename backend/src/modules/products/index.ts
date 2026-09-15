@@ -21,6 +21,7 @@ router.post(
   ProductsController.addImage,
 )
 router.delete('/families/:familyId/images/:imageId', ProductsController.removeImage)
+router.patch('/families/:familyId/images/:imageId/primary', ProductsController.setPrimaryImage)
 router.get('/:productId', ProductsController.getById)
 router.patch('/:productId', ProductsController.update)
 router.patch('/:productId/stock', ProductsController.setStock)

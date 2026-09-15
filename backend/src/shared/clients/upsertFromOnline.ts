@@ -1,5 +1,6 @@
 import prisma from '../../resources/database/initDatabase.js'
 import { Prisma } from '@prisma/client'
+import { phoneLookupKeys, normalizeAlgerianPhone } from '../validation/algerianPhone.js'
 
 export interface OnlineCustomerInput {
   name: string
@@ -8,15 +9,31 @@ export interface OnlineCustomerInput {
   address?: string
 }
 
+async function findCustomerByPhone(phone: string) {
+  const keys = phoneLookupKeys(phone)
+  return prisma.customer.findFirst({
+    where: { phone: { in: keys } },
+  })
+}
+
 /**
  * Resolves the global Customer identity for a phone number, creating one if needed.
  */
 async function findOrCreateCustomer(input: OnlineCustomerInput) {
-  const phone = input.phone.trim()
+  const canonical = normalizeAlgerianPhone(input.phone) ?? input.phone.trim()
   const name = input.name.trim()
 
-  const existing = await prisma.customer.findUnique({ where: { phone } })
+  const existing = await findCustomerByPhone(input.phone)
   if (existing) {
+    if (existing.name !== name || (input.email && existing.email !== input.email.trim())) {
+      return prisma.customer.update({
+        where: { id: existing.id },
+        data: {
+          name,
+          email: input.email?.trim() ?? existing.email,
+        },
+      })
+    }
     return existing
   }
 
@@ -24,13 +41,13 @@ async function findOrCreateCustomer(input: OnlineCustomerInput) {
     return await prisma.customer.create({
       data: {
         name,
-        phone,
+        phone: canonical,
         email: input.email?.trim() ?? null,
       },
     })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      return prisma.customer.findUniqueOrThrow({ where: { phone } })
+      return prisma.customer.findUniqueOrThrow({ where: { phone: canonical } })
     }
     throw error
   }
@@ -45,13 +62,20 @@ export async function lookupCustomerByPhone(phone: string) {
   const trimmed = phone.trim()
   if (!trimmed) return null
 
-  const customer = await prisma.customer.findUnique({ where: { phone: trimmed } })
+  const customer = await findCustomerByPhone(trimmed)
   if (!customer) return null
+
+  const lastOrder = await prisma.onlineOrder.findFirst({
+    where: { customerPhone: { in: phoneLookupKeys(trimmed) } },
+    orderBy: { createdAt: 'desc' },
+    select: { customerWilaya: true },
+  })
 
   return {
     name: customer.name,
     email: customer.email,
     phone: customer.phone,
+    wilaya: lastOrder?.customerWilaya ?? null,
   }
 }
 
@@ -61,7 +85,7 @@ export async function lookupCustomerByPhone(phone: string) {
  * Client (credit/balance record) at each shop they buy from.
  */
 export async function findOrCreateClientFromOnlineOrder(shopId: string, input: OnlineCustomerInput) {
-  const phone = input.phone.trim()
+  const phone = normalizeAlgerianPhone(input.phone) ?? input.phone.trim()
   const name = input.name.trim()
 
   const customer = await findOrCreateCustomer(input)

@@ -199,7 +199,7 @@ function addToCart() {
           </p>
         </div>
 
-        <p class="text-lg font-semibold text-gray-900">
+        <p class="text-3xl font-semibold tracking-tight text-gray-900">
           {{
             selectedVariant
               ? formatDzd(selectedVariant.sellPrice)
@@ -295,6 +295,13 @@ function addToCart() {
                     : 'Out of Stock'
           }}
         </button>
+        <RouterLink
+          v-if="addState === 'added'"
+          to="/store/checkout"
+          class="btn-secondary w-full text-center"
+        >
+          View cart
+        </RouterLink>
       </div>
     </div>
   </div>

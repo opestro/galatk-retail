@@ -2,14 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockPrisma = {
   customer: {
-    findUnique: vi.fn(),
+    findFirst: vi.fn(),
     create: vi.fn(),
+    update: vi.fn(),
     findUniqueOrThrow: vi.fn(),
   },
   client: {
     findUnique: vi.fn(),
     create: vi.fn(),
     findUniqueOrThrow: vi.fn(),
+  },
+  onlineOrder: {
+    findFirst: vi.fn(),
   },
 }
 
@@ -25,8 +29,8 @@ describe('findOrCreateClientFromOnlineOrder', () => {
   it('creates a new Customer and Client when both are missing', async () => {
     const { findOrCreateClientFromOnlineOrder } = await import('../src/shared/clients/upsertFromOnline.js')
 
-    mockPrisma.customer.findUnique.mockResolvedValue(null)
-    mockPrisma.customer.create.mockResolvedValue({ id: 'cust-1', phone: '+212600000001' })
+    mockPrisma.customer.findFirst.mockResolvedValue(null)
+    mockPrisma.customer.create.mockResolvedValue({ id: 'cust-1', phone: '+212600000001', name: 'Ahmed' })
     mockPrisma.client.findUnique.mockResolvedValue(null)
     mockPrisma.client.create.mockResolvedValue({ id: 'cli-1', shopId: 'shop-1', customerId: 'cust-1' })
 
@@ -43,7 +47,7 @@ describe('findOrCreateClientFromOnlineOrder', () => {
   it('reuses an existing Customer, creates a new per-shop Client', async () => {
     const { findOrCreateClientFromOnlineOrder } = await import('../src/shared/clients/upsertFromOnline.js')
 
-    mockPrisma.customer.findUnique.mockResolvedValue({ id: 'cust-1', phone: '+212600000001' })
+    mockPrisma.customer.findFirst.mockResolvedValue({ id: 'cust-1', phone: '+212600000001', name: 'Ahmed' })
     mockPrisma.client.findUnique.mockResolvedValue(null)
     mockPrisma.client.create.mockResolvedValue({ id: 'cli-2', shopId: 'shop-2', customerId: 'cust-1' })
 
@@ -61,7 +65,7 @@ describe('findOrCreateClientFromOnlineOrder', () => {
   it('reuses an existing Client record if the customer already bought from this shop', async () => {
     const { findOrCreateClientFromOnlineOrder } = await import('../src/shared/clients/upsertFromOnline.js')
 
-    mockPrisma.customer.findUnique.mockResolvedValue({ id: 'cust-1', phone: '+212600000001' })
+    mockPrisma.customer.findFirst.mockResolvedValue({ id: 'cust-1', phone: '+212600000001', name: 'Ahmed' })
     mockPrisma.client.findUnique.mockResolvedValue({ id: 'cli-1', shopId: 'shop-1', customerId: 'cust-1' })
 
     const client = await findOrCreateClientFromOnlineOrder('shop-1', {

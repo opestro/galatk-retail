@@ -151,6 +151,7 @@ export async function globalCheckout(input: GlobalCheckoutInput) {
       fulfillmentType: input.fulfillmentType,
       customerName: input.customerName,
       customerPhone: input.customerPhone,
+      customerWilaya: input.customerWilaya,
       customerEmail: input.customerEmail,
       deliveryAddress: input.deliveryAddress,
       deliveryCity: input.deliveryCity,

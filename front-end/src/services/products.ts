@@ -106,15 +106,31 @@ export async function addFamilyVariant(
   return data.data
 }
 
-export async function uploadFamilyImage(familyId: string, file: File): Promise<ProductImage> {
+export async function uploadFamilyImage(
+  familyId: string,
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<ProductImage> {
   const form = new FormData()
   form.append('image', file)
-  const { data } = await api.post<{ data: ProductImage }>(`/products/families/${familyId}/images`, form)
+  const { data } = await api.post<{ data: ProductImage }>(`/products/families/${familyId}/images`, form, {
+    onUploadProgress: (event) => {
+      if (!onProgress || !event.total) return
+      onProgress(Math.round((event.loaded / event.total) * 100))
+    },
+  })
   return data.data
 }
 
 export async function deleteFamilyImage(familyId: string, imageId: string): Promise<void> {
   await api.delete(`/products/families/${familyId}/images/${imageId}`)
+}
+
+export async function setPrimaryFamilyImage(familyId: string, imageId: string): Promise<ProductImage> {
+  const { data } = await api.patch<{ data: ProductImage }>(
+    `/products/families/${familyId}/images/${imageId}/primary`,
+  )
+  return data.data
 }
 
 export async function createProduct(input: CreateProductInput): Promise<Product> {

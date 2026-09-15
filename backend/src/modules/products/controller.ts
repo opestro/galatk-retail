@@ -181,6 +181,17 @@ export async function removeImage(req: Request, res: Response, next: NextFunctio
   }
 }
 
+export async function setPrimaryImage(req: Request, res: Response, next: NextFunction) {
+  try {
+    const familyId = String(req.params.familyId)
+    const imageId = String(req.params.imageId)
+    const image = await ProductsService.setPrimaryFamilyImage(familyId, imageId)
+    res.status(200).json({ data: imagePresenter(image) })
+  } catch (error) {
+    next(error)
+  }
+}
+
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
     const {

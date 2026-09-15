@@ -10,6 +10,7 @@ export interface GlobalCheckoutInput {
   fulfillmentType: FulfillmentType
   customerName: string
   customerPhone: string
+  customerWilaya: string
   customerEmail?: string
   deliveryAddress?: string
   deliveryCity?: string

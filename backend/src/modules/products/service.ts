@@ -400,6 +400,30 @@ export async function removeFamilyImage(familyId: string, imageId: string) {
   return image
 }
 
+export async function setPrimaryFamilyImage(familyId: string, imageId: string) {
+  await getFamilyById(familyId)
+  const images = await prisma.productImage.findMany({
+    where: { familyId },
+    orderBy: { sortOrder: 'asc' },
+  })
+  const target = images.find((image) => image.id === imageId)
+  if (!target) {
+    throw new CustomError('PRODUCT_NOT_FOUND', 'Image not found', 404)
+  }
+
+  const ordered = [target, ...images.filter((image) => image.id !== imageId)]
+  await prisma.$transaction(
+    ordered.map((image, index) =>
+      prisma.productImage.update({
+        where: { id: image.id },
+        data: { sortOrder: index },
+      }),
+    ),
+  )
+
+  return prisma.productImage.findUniqueOrThrow({ where: { id: imageId } })
+}
+
 export async function createProduct(input: CreateProductInput) {
   const name = input.name?.trim()
   if (!name) {

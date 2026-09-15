@@ -7,14 +7,12 @@ import { listProductFamilies, mediaUrl, familyInStock } from '@/services/product
 import { useAuthStore } from '@/stores/auth'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
-import ProductCreateModal from '@/components/admin/products/ProductCreateModal.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 const families = ref<ProductFamily[]>([])
 const loading = ref(true)
 const search = ref('')
-const showCreate = ref(false)
 
 const canManage = computed(() => auth.isManager)
 
@@ -31,9 +29,8 @@ function openProduct(family: ProductFamily) {
   router.push({ name: 'admin-product-detail', params: { familyId: family.id } })
 }
 
-function onCreated(family: ProductFamily) {
-  showCreate.value = false
-  router.push({ name: 'admin-product-detail', params: { familyId: family.id } })
+function openCreate() {
+  router.push({ name: 'admin-product-create' })
 }
 
 onMounted(loadProducts)
@@ -44,7 +41,7 @@ watch(() => auth.selectedShopId, loadProducts)
   <div class="page-shell">
     <PageHeader title="Products">
       <template #actions>
-        <button v-if="canManage" type="button" class="btn-primary" @click="showCreate = true">+ Add product</button>
+        <button v-if="canManage" type="button" class="btn-primary" @click="openCreate">+ Add product</button>
       </template>
     </PageHeader>
 
@@ -101,12 +98,5 @@ watch(() => auth.selectedShopId, loadProducts)
         <ChevronRight class="h-4 w-4 shrink-0 text-gray-400" />
       </button>
     </div>
-
-    <ProductCreateModal
-      v-if="showCreate"
-      :shop-id="auth.selectedShopId"
-      @close="showCreate = false"
-      @created="onCreated"
-    />
   </div>
 </template>

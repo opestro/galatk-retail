@@ -6,23 +6,33 @@ import type { Product, ProductFamily } from '@/types/api'
 import {
   addFamilyVariant,
   apiErrorMessage,
-  formatMarginPercent,
+  deleteFamilyImage,
+  deleteProduct,
+  familyInStock,
   getProductFamily,
+  setPrimaryFamilyImage,
   setVariantStock,
   updateProduct,
   updateProductFamily,
   uploadFamilyImage,
-  deleteFamilyImage,
-  deleteProduct,
-  familyInStock,
-  variantInStock,
 } from '@/services/products'
 import { useAuthStore } from '@/stores/auth'
-import { variantDisplay } from '@/utils/productFamily'
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonForm from '@/components/ui/SkeletonForm.vue'
-import ProductImages from '@/components/admin/products/ProductImages.vue'
-import VariantForm, { type VariantDraft } from '@/components/admin/products/VariantForm.vue'
+import ProductEditorShell from '@/components/admin/products/ProductEditorShell.vue'
+import ProductInformationCard from '@/components/admin/products/ProductInformationCard.vue'
+import ProductImageManager from '@/components/admin/products/ProductImageManager.vue'
+import VariantTable from '@/components/admin/products/VariantTable.vue'
+import VariantModal from '@/components/admin/products/VariantModal.vue'
+import {
+  PRODUCT_DESCRIPTION_MAX,
+  PRODUCT_NAME_MAX,
+  attributesFromDraft,
+  emptyVariantDraft,
+  parseAmount,
+  type VariantDraft,
+} from '@/components/admin/products/variantDraft'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,16 +45,15 @@ const family = ref<ProductFamily | null>(null)
 const loading = ref(true)
 const loadError = ref('')
 const saving = ref(false)
-const adding = ref(false)
+const variantBusy = ref(false)
 const feedback = ref('')
 const error = ref('')
-const editingId = ref<string | null>(null)
-const confirmDeleteId = ref<string | null>(null)
+const variantError = ref('')
 const uploading = ref(false)
+const uploadPercent = ref<number | null>(null)
 const stockDraft = ref<Record<string, string>>({})
 const stockState = ref<Record<string, 'idle' | 'saving' | 'error'>>({})
-
-const productUnavailable = computed(() => family.value != null && !familyInStock(family.value))
+const allowLeave = ref(false)
 
 const productForm = reactive({
   name: '',
@@ -53,6 +62,24 @@ const productForm = reactive({
   isActive: true,
 })
 
+const savedSnapshot = ref('')
+
+function snapshotOf() {
+  return JSON.stringify({
+    name: productForm.name,
+    description: productForm.description,
+    availableOnline: productForm.availableOnline,
+    isActive: productForm.isActive,
+  })
+}
+
+const isDirty = computed(
+  () => !allowLeave.value && savedSnapshot.value !== '' && snapshotOf() !== savedSnapshot.value,
+)
+useUnsavedChanges(isDirty)
+
+const productUnavailable = computed(() => family.value != null && !familyInStock(family.value))
+
 const extraColors = computed(() =>
   (family.value?.variants ?? []).map((v) => v.attributes?.color).filter((v): v is string => Boolean(v)),
 )
@@ -60,20 +87,10 @@ const extraSizes = computed(() =>
   (family.value?.variants ?? []).map((v) => v.attributes?.size).filter((v): v is string => Boolean(v)),
 )
 
-function emptyDraft(): VariantDraft {
-  return {
-    color: '',
-    size: '',
-    unitCost: 0,
-    sellPrice: 0,
-    quantity: 0,
-    availableOnline: true,
-    isActive: true,
-  }
-}
-
-const newVariant = ref<VariantDraft>(emptyDraft())
-const editDraft = ref<VariantDraft>(emptyDraft())
+const modalMode = ref<'add' | 'edit' | null>(null)
+const editingId = ref<string | null>(null)
+const confirmDeleteId = ref<string | null>(null)
+const modalDraft = ref<VariantDraft>(emptyVariantDraft())
 
 function applyFamily(next: ProductFamily) {
   family.value = next
@@ -84,6 +101,7 @@ function applyFamily(next: ProductFamily) {
   for (const variant of next.variants) {
     stockDraft.value[variant.id] = String(variant.shopQuantity ?? 0)
   }
+  savedSnapshot.value = snapshotOf()
 }
 
 async function loadFamily() {
@@ -101,17 +119,47 @@ async function loadFamily() {
 
 watch([familyId, () => auth.selectedShopId], loadFamily, { immediate: true })
 
-function attributesFrom(draft: VariantDraft): Record<string, string> {
-  const attrs: Record<string, string> = {}
-  if (draft.color.trim()) attrs.color = draft.color.trim()
-  if (draft.size.trim()) attrs.size = draft.size.trim()
-  return attrs
+function goBack() {
+  router.push({ name: 'admin-products' })
 }
 
-function parseAmount(raw: number | string): number | null {
-  const parsed = Number(raw)
-  if (!Number.isFinite(parsed) || parsed < 0) return null
-  return parsed
+async function saveProduct() {
+  if (!family.value) return
+  const name = productForm.name.trim()
+  if (!name) {
+    error.value = 'Product name is required'
+    return
+  }
+  if (name.length > PRODUCT_NAME_MAX) {
+    error.value = `Product name must be ${PRODUCT_NAME_MAX} characters or fewer`
+    return
+  }
+  if (productForm.description.length > PRODUCT_DESCRIPTION_MAX) {
+    error.value = `Description must be ${PRODUCT_DESCRIPTION_MAX} characters or fewer`
+    return
+  }
+  saving.value = true
+  error.value = ''
+  feedback.value = ''
+  try {
+    applyFamily(
+      await updateProductFamily(
+        family.value.id,
+        {
+          name,
+          description: productForm.description,
+          availableOnline: productForm.availableOnline,
+          isActive: productForm.isActive,
+        },
+        auth.selectedShopId ?? undefined,
+      ),
+    )
+    feedback.value = 'Product saved'
+  } catch (e) {
+    error.value = apiErrorMessage(e, 'Could not save product')
+  } finally {
+    saving.value = false
+  }
 }
 
 async function saveStock(variant: Product) {
@@ -133,10 +181,7 @@ async function saveStock(variant: Product) {
   try {
     await setVariantStock(variant.id, shopId, parsed)
     applyFamily(await getProductFamily(familyId.value, shopId))
-    feedback.value =
-      parsed === 0
-        ? 'Variant stock is 0 — it is now unavailable'
-        : 'Stock updated'
+    feedback.value = parsed === 0 ? 'Variant stock is 0 — it is now unavailable' : 'Stock updated'
     stockState.value[variant.id] = 'idle'
   } catch (e) {
     stockDraft.value[variant.id] = String(variant.shopQuantity ?? 0)
@@ -145,58 +190,62 @@ async function saveStock(variant: Product) {
   }
 }
 
-async function saveProduct() {
-  if (!family.value || !productForm.name.trim()) {
-    error.value = 'Product name is required'
+function openAddVariant() {
+  modalDraft.value = emptyVariantDraft()
+  editingId.value = null
+  variantError.value = ''
+  modalMode.value = 'add'
+}
+
+function startEdit(variantId: string) {
+  const variant = family.value?.variants.find((v) => v.id === variantId)
+  if (!variant) return
+  editingId.value = variantId
+  modalDraft.value = {
+    color: variant.attributes?.color ?? '',
+    size: variant.attributes?.size ?? '',
+    unitCost: variant.unitCost,
+    sellPrice: variant.sellPrice,
+    quantity: variant.shopQuantity ?? 0,
+    availableOnline: variant.availableOnline,
+    isActive: variant.isActive,
+  }
+  modalMode.value = 'edit'
+  variantError.value = ''
+}
+
+async function submitVariant() {
+  if (modalMode.value === 'add') {
+    await submitNewVariant()
     return
   }
-  saving.value = true
-  error.value = ''
-  feedback.value = ''
-  try {
-    applyFamily(
-      await updateProductFamily(
-        family.value.id,
-        {
-          name: productForm.name.trim(),
-          description: productForm.description,
-          availableOnline: productForm.availableOnline,
-          isActive: productForm.isActive,
-        },
-        auth.selectedShopId ?? undefined,
-      ),
-    )
-    feedback.value = 'Product saved'
-  } catch (e) {
-    error.value = apiErrorMessage(e, 'Could not save product')
-  } finally {
-    saving.value = false
-  }
+  await saveEdit()
 }
 
 async function submitNewVariant() {
   if (!family.value) return
-  const attrs = attributesFrom(newVariant.value)
+  const attrs = attributesFromDraft(modalDraft.value)
   if (!attrs.color && !attrs.size) {
-    error.value = 'Each variant needs a color and/or size'
+    variantError.value = 'Each variant needs a color and/or size'
     return
   }
-  const sellPrice = parseAmount(newVariant.value.sellPrice)
-  const unitCost = parseAmount(newVariant.value.unitCost)
-  const quantity = Number(newVariant.value.quantity)
+  const sellPrice = parseAmount(modalDraft.value.sellPrice)
+  const unitCost = parseAmount(modalDraft.value.unitCost)
+  const quantity = Number(modalDraft.value.quantity)
   if (sellPrice === null || unitCost === null) {
-    error.value = 'Cost and price must be valid amounts'
+    variantError.value = 'Cost and price must be valid amounts'
     return
   }
   if (!Number.isInteger(quantity) || quantity < 0) {
-    error.value = 'Quantity must be 0 or more'
+    variantError.value = 'Quantity must be 0 or more'
     return
   }
   if (quantity > 0 && !auth.selectedShopId) {
-    error.value = 'Select a shop before adding stock'
+    variantError.value = 'Select a shop before adding stock'
     return
   }
-  adding.value = true
+  variantBusy.value = true
+  variantError.value = ''
   error.value = ''
   feedback.value = ''
   try {
@@ -205,83 +254,65 @@ async function submitNewVariant() {
       unitCost,
       sellPrice,
       quantity,
-      availableOnline: newVariant.value.availableOnline,
-      isActive: newVariant.value.isActive,
+      availableOnline: modalDraft.value.availableOnline,
+      isActive: modalDraft.value.isActive,
       shopId: auth.selectedShopId ?? undefined,
     })
     applyFamily(result.family)
     feedback.value = result.created
       ? 'Variant created'
       : 'That variant already existed — stock and pricing were updated'
-    newVariant.value = emptyDraft()
+    modalMode.value = null
   } catch (e) {
-    error.value = apiErrorMessage(e, 'Could not add variant')
+    variantError.value = apiErrorMessage(e, 'Could not add variant')
   } finally {
-    adding.value = false
-  }
-}
-
-function startEdit(variantId: string) {
-  const variant = family.value?.variants.find((v) => v.id === variantId)
-  if (!variant) return
-  editingId.value = variantId
-  editDraft.value = {
-    color: variant.attributes?.color ?? '',
-    size: variant.attributes?.size ?? '',
-    unitCost: variant.unitCost,
-    sellPrice: variant.sellPrice,
-    quantity: 0,
-    availableOnline: variant.availableOnline,
-    isActive: variant.isActive,
+    variantBusy.value = false
   }
 }
 
 async function saveEdit() {
   if (!editingId.value || !family.value) return
-  const sellPrice = parseAmount(editDraft.value.sellPrice)
-  const unitCost = parseAmount(editDraft.value.unitCost)
+  const sellPrice = parseAmount(modalDraft.value.sellPrice)
+  const unitCost = parseAmount(modalDraft.value.unitCost)
   if (sellPrice === null || unitCost === null) {
-    error.value = 'Cost and price must be valid amounts'
+    variantError.value = 'Cost and price must be valid amounts'
     return
   }
-  const attrs = attributesFrom(editDraft.value)
-  adding.value = true
-  error.value = ''
+  const attrs = attributesFromDraft(modalDraft.value)
+  variantBusy.value = true
+  variantError.value = ''
   try {
     await updateProduct(editingId.value, {
       attributes: attrs,
       unitCost,
       sellPrice,
-      availableOnline: editDraft.value.availableOnline,
-      isActive: editDraft.value.isActive,
+      availableOnline: modalDraft.value.availableOnline,
+      isActive: modalDraft.value.isActive,
     })
-    const qty = Number(editDraft.value.quantity)
-    if (qty > 0) {
-      const result = await addFamilyVariant(family.value.id, {
-        attributes: attrs,
-        unitCost,
-        sellPrice,
-        quantity: qty,
-        shopId: auth.selectedShopId ?? undefined,
-        availableOnline: editDraft.value.availableOnline,
-        isActive: editDraft.value.isActive,
-      })
-      applyFamily(result.family)
-    } else {
-      applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
+    const qty = Number(modalDraft.value.quantity)
+    const current = family.value.variants.find((v) => v.id === editingId.value)
+    if (Number.isInteger(qty) && qty >= 0 && qty !== (current?.shopQuantity ?? 0)) {
+      if (!auth.selectedShopId) {
+        variantError.value = 'Select a shop before changing stock'
+        variantBusy.value = false
+        return
+      }
+      await setVariantStock(editingId.value, auth.selectedShopId, qty)
     }
+    applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
+    modalMode.value = null
     editingId.value = null
     feedback.value = 'Variant updated'
   } catch (e) {
-    error.value = apiErrorMessage(e, 'Could not update variant')
+    variantError.value = apiErrorMessage(e, 'Could not update variant')
   } finally {
-    adding.value = false
+    variantBusy.value = false
   }
 }
 
 async function confirmDelete() {
   if (!confirmDeleteId.value || !family.value) return
-  adding.value = true
+  variantBusy.value = true
   error.value = ''
   try {
     await deleteProduct(confirmDeleteId.value)
@@ -291,22 +322,28 @@ async function confirmDelete() {
   } catch (e) {
     error.value = apiErrorMessage(e, 'Could not delete variant')
   } finally {
-    adding.value = false
+    variantBusy.value = false
   }
 }
 
-async function onUpload(file: File) {
+async function onUpload(files: File[]) {
   if (!family.value) return
   uploading.value = true
   error.value = ''
   try {
-    await uploadFamilyImage(family.value.id, file)
+    for (const file of files) {
+      uploadPercent.value = 0
+      await uploadFamilyImage(family.value.id, file, (percent) => {
+        uploadPercent.value = percent
+      })
+    }
     applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
     feedback.value = 'Image uploaded'
   } catch (e) {
     error.value = apiErrorMessage(e, 'Image upload failed')
   } finally {
     uploading.value = false
+    uploadPercent.value = null
   }
 }
 
@@ -320,14 +357,25 @@ async function onRemove(imageId: string) {
     error.value = apiErrorMessage(e, 'Could not remove image')
   }
 }
+
+async function onSetPrimary(imageId: string) {
+  if (!family.value) return
+  try {
+    await setPrimaryFamilyImage(family.value.id, imageId)
+    applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
+    feedback.value = 'Primary image updated'
+  } catch (e) {
+    error.value = apiErrorMessage(e, 'Could not update primary image')
+  }
+}
 </script>
 
 <template>
-  <div class="page-shell">
+  <div class="page-shell max-w-6xl overflow-x-hidden">
     <button
       type="button"
       class="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-      @click="router.push({ name: 'admin-products' })"
+      @click="goBack"
     >
       <ArrowLeft class="h-4 w-4" />
       Products
@@ -339,152 +387,103 @@ async function onRemove(imageId: string) {
       {{ loadError }}
     </p>
 
-    <template v-else-if="family">
-      <PageHeader :title="family.name">
-        <template #actions>
-          <span
-            v-if="productUnavailable"
-            class="rounded-full border border-gray-300 px-3 py-1 text-sm text-gray-600"
-          >
-            Unavailable — all variants are out of stock
-          </span>
-          <span
-            v-else
-            class="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm text-gray-700"
-          >
-            Available
-          </span>
-        </template>
-      </PageHeader>
+    <ProductEditorShell v-else-if="family">
+      <template #header>
+        <PageHeader :title="family.name">
+          <template #actions>
+            <span
+              class="rounded-full border px-3 py-1 text-sm"
+              :class="productUnavailable ? 'border-gray-300 text-gray-600' : 'border-gray-200 bg-gray-50 text-gray-700'"
+            >
+              {{ productUnavailable ? 'Unavailable' : 'Available' }}
+            </span>
+            <button
+              v-if="canManage"
+              type="button"
+              class="btn-primary"
+              :disabled="saving"
+              @click="saveProduct"
+            >
+              {{ saving ? 'Saving…' : 'Save product' }}
+            </button>
+          </template>
+        </PageHeader>
+        <p v-if="feedback" class="text-sm text-green-700">{{ feedback }}</p>
+        <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+      </template>
 
-      <p v-if="feedback" class="text-sm text-green-700">{{ feedback }}</p>
-      <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+      <template #information>
+        <ProductInformationCard
+          :name="productForm.name"
+          :description="productForm.description"
+          :available-online="productForm.availableOnline"
+          :is-active="productForm.isActive"
+          :disabled="!canManage"
+          @update:name="productForm.name = $event"
+          @update:description="productForm.description = $event"
+          @update:available-online="productForm.availableOnline = $event"
+          @update:is-active="productForm.isActive = $event"
+        />
+      </template>
 
-      <section class="card flex flex-col gap-3">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Product information</h3>
-        <label class="flex flex-col gap-1 text-sm text-gray-700">
-          Product name
-          <input v-model="productForm.name" class="input" :disabled="!canManage" />
-        </label>
-        <label class="flex flex-col gap-1 text-sm text-gray-700">
-          Description
-          <textarea v-model="productForm.description" class="input min-h-24" :disabled="!canManage" />
-        </label>
-        <ProductImages
+      <template #images>
+        <ProductImageManager
           :images="family.images"
           :disabled="!canManage || uploading"
+          :uploading="uploading"
+          :upload-percent="uploadPercent"
           @upload="onUpload"
           @remove="onRemove"
+          @set-primary="onSetPrimary"
         />
-        <div class="flex flex-wrap gap-4">
-          <label class="inline-flex items-center gap-2 text-sm">
-            <input v-model="productForm.availableOnline" type="checkbox" class="size-4 rounded border-gray-300" :disabled="!canManage" />
-            Available online
-          </label>
-          <label class="inline-flex items-center gap-2 text-sm">
-            <input v-model="productForm.isActive" type="checkbox" class="size-4 rounded border-gray-300" :disabled="!canManage" />
-            Active
-          </label>
-        </div>
-        <button
-          v-if="canManage"
-          type="button"
-          class="btn-primary self-start"
-          :disabled="saving"
-          @click="saveProduct"
-        >
-          {{ saving ? 'Saving…' : 'Save product' }}
-        </button>
-      </section>
+      </template>
 
-      <section class="flex flex-col gap-3">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Variants</h3>
-        <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          <table class="min-w-full text-sm">
-            <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-              <tr>
-                <th class="px-4 py-2">Variant</th>
-                <th class="px-4 py-2">Cost</th>
-                <th class="px-4 py-2">Price</th>
-                <th class="px-4 py-2">Margin</th>
-                <th class="px-4 py-2">Stock</th>
-                <th class="px-4 py-2">Online</th>
-                <th class="px-4 py-2">Active</th>
-                <th v-if="canManage" class="px-4 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-              <tr v-if="family.variants.length === 0">
-                <td colspan="8" class="px-4 py-6 text-center text-gray-500">No variants yet.</td>
-              </tr>
-              <tr
-                v-for="variant in family.variants"
-                :key="variant.id"
-                :class="variantInStock(variant) ? '' : 'bg-gray-50 text-gray-500'"
-              >
-                <td class="px-4 py-3 font-medium text-gray-900">
-                  {{ variantDisplay(variant) }}
-                  <span
-                    v-if="variant.galatkProductRef"
-                    class="ml-2 rounded-full border border-gray-300 px-2 py-0.5 text-xs font-normal text-gray-600"
-                  >
-                    Factory
-                  </span>
-                  <span
-                    v-if="!variantInStock(variant)"
-                    class="ml-2 rounded-full border border-gray-300 px-2 py-0.5 text-xs font-normal text-gray-600"
-                  >
-                    Unavailable
-                  </span>
-                </td>
-                <td class="px-4 py-3 tabular-nums">{{ variant.unitCost }}</td>
-                <td class="px-4 py-3 tabular-nums">{{ variant.sellPrice }}</td>
-                <td class="px-4 py-3 tabular-nums">{{ formatMarginPercent(variant.sellPrice, variant.unitCost) }}</td>
-                <td class="px-4 py-3">
-                  <input
-                    v-model="stockDraft[variant.id]"
-                    type="number"
-                    min="0"
-                    step="1"
-                    class="input w-24"
-                    :disabled="!canManage || stockState[variant.id] === 'saving'"
-                    @keydown.enter="saveStock(variant)"
-                    @blur="saveStock(variant)"
-                  />
-                </td>
-                <td class="px-4 py-3">{{ variant.availableOnline ? '✓' : '—' }}</td>
-                <td class="px-4 py-3">{{ variant.isActive ? '✓' : '—' }}</td>
-                <td v-if="canManage" class="px-4 py-3">
-                  <div class="flex gap-2">
-                    <button type="button" class="text-sm text-gray-700 underline" @click="startEdit(variant.id)">Edit</button>
-                    <button type="button" class="text-sm text-red-600 underline" @click="confirmDeleteId = variant.id">Delete</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      <template #variants>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">Variants</h3>
+          <button v-if="canManage" type="button" class="btn-secondary" @click="openAddVariant">+ Add variant</button>
         </div>
+        <VariantTable
+          :variants="family.variants"
+          :can-manage="canManage"
+          :stock-draft="stockDraft"
+          :stock-state="stockState"
+          @update:stock-draft="stockDraft = $event"
+          @save-stock="saveStock"
+          @edit="startEdit"
+          @delete="confirmDeleteId = $event"
+        />
+      </template>
 
-        <div v-if="canManage && editingId" class="card">
-          <p class="mb-3 text-sm font-medium">Edit variant</p>
-          <VariantForm v-model="editDraft" :extra-colors="extraColors" :extra-sizes="extraSizes" quantity-label="Add stock" />
-          <p class="mt-2 text-xs text-gray-500">Quantity here adds inbound stock for the active shop; it does not overwrite inventory.</p>
-          <div class="mt-3 flex gap-2">
-            <button type="button" class="btn-primary" :disabled="adding" @click="saveEdit">{{ adding ? 'Saving…' : 'Save variant' }}</button>
-            <button type="button" class="btn-secondary" @click="editingId = null">Cancel</button>
-          </div>
-        </div>
-
-        <div v-if="canManage" class="card">
-            <p class="mb-3 text-sm font-medium">Add variant</p>
-            <p class="mb-3 text-xs text-gray-500">Stock 0 makes this variant unavailable until you add quantity.</p>
-          <VariantForm v-model="newVariant" :extra-colors="extraColors" :extra-sizes="extraSizes" />
-          <button type="button" class="btn-primary mt-3" :disabled="adding" @click="submitNewVariant">
-            {{ adding ? 'Adding…' : 'Add variant' }}
+      <template #footer>
+        <div v-if="canManage" class="flex flex-wrap justify-end gap-2">
+          <button type="button" class="btn-secondary" @click="goBack">Cancel</button>
+          <button type="button" class="btn-primary" :disabled="saving" @click="saveProduct">
+            {{ saving ? 'Saving…' : 'Save product' }}
           </button>
         </div>
-      </section>
-    </template>
+      </template>
+    </ProductEditorShell>
+
+    <VariantModal
+      v-if="modalMode"
+      :title="modalMode === 'add' ? 'Add variant' : 'Edit variant'"
+      :model-value="modalDraft"
+      :extra-colors="extraColors"
+      :extra-sizes="extraSizes"
+      :quantity-label="modalMode === 'edit' ? 'Stock' : 'Available quantity'"
+      :submitting="variantBusy"
+      :submit-label="modalMode === 'add' ? 'Add variant' : 'Save changes'"
+      :error="variantError"
+      :quantity-hint="
+        modalMode === 'add'
+          ? 'Stock 0 makes this variant unavailable until you add quantity. Stock applies to the active shop.'
+          : 'Stock is the available quantity for the active shop.'
+      "
+      @update:model-value="modalDraft = $event"
+      @cancel="modalMode = null"
+      @submit="submitVariant"
+    />
 
     <div
       v-if="confirmDeleteId"
@@ -494,7 +493,7 @@ async function onRemove(imageId: string) {
         <p class="text-sm text-gray-800">Delete this variant? This cannot be undone.</p>
         <div class="mt-4 flex justify-end gap-2">
           <button type="button" class="btn-secondary" @click="confirmDeleteId = null">Cancel</button>
-          <button type="button" class="btn-danger" :disabled="adding" @click="confirmDelete">Delete</button>
+          <button type="button" class="btn-danger" :disabled="variantBusy" @click="confirmDelete">Delete</button>
         </div>
       </div>
     </div>

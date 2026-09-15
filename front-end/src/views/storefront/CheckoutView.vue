@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/services/api'
 import { useStorefrontCartStore } from '@/stores/storefrontCart'
 import { lookupCustomerByPhoneStorefront } from '@/services/globalStore'
+import { ALGERIA_WILAYAS } from '@/data/algeriaWilayas'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonForm from '@/components/ui/SkeletonForm.vue'
 import { Check, Loader2 } from 'lucide-vue-next'
@@ -19,6 +20,7 @@ const form = ref({
   customerName: '',
   customerPhone: '',
   customerEmail: '',
+  customerWilaya: '',
   deliveryAddress: '',
   deliveryCity: '',
 })
@@ -54,6 +56,7 @@ watch(
       if (result) {
         form.value.customerName = result.name
         form.value.customerEmail = result.email ?? ''
+        if (result.wilaya) form.value.customerWilaya = result.wilaya
         lookupStatus.value = 'found'
         setTimeout(() => {
           if (lookupStatus.value === 'found') lookupStatus.value = 'idle'
@@ -125,6 +128,10 @@ async function submit() {
         Welcome back! Name and email auto-filled.
       </p>
       <input v-model="form.customerEmail" type="email" placeholder="Email (optional)" class="input" />
+      <select v-model="form.customerWilaya" required class="input">
+        <option value="">Select wilaya</option>
+        <option v-for="wilaya in ALGERIA_WILAYAS" :key="wilaya" :value="wilaya">{{ wilaya }}</option>
+      </select>
 
       <template v-if="form.fulfillmentType === 'DELIVERY'">
         <input v-model="form.deliveryAddress" placeholder="Delivery address" required class="input" />

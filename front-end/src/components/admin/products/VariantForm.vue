@@ -1,16 +1,9 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
 import { DEFAULT_COLORS, DEFAULT_SIZES } from '@/services/products'
+import type { VariantDraft } from './variantDraft'
 
-export interface VariantDraft {
-  color: string
-  size: string
-  unitCost: number | string
-  sellPrice: number | string
-  quantity: number | string
-  availableOnline: boolean
-  isActive: boolean
-}
+export type { VariantDraft } from './variantDraft'
 
 const props = defineProps<{
   modelValue: VariantDraft
@@ -18,6 +11,8 @@ const props = defineProps<{
   extraSizes?: string[]
   showQuantity?: boolean
   quantityLabel?: string
+  stacked?: boolean
+  layout?: 'row' | 'stacked'
 }>()
 
 const emit = defineEmits<{
@@ -34,6 +29,7 @@ const sizes = computed(() => {
   return [...new Set([...DEFAULT_SIZES, ...extra])]
 })
 
+const stackedLayout = computed(() => props.stacked || props.layout === 'stacked')
 const uid = useId()
 const colorListId = computed(() => `variant-colors-${uid}`)
 const sizeListId = computed(() => `variant-sizes-${uid}`)
@@ -44,7 +40,7 @@ function patch(partial: Partial<VariantDraft>) {
 </script>
 
 <template>
-  <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+  <div class="grid gap-3" :class="stackedLayout ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-6'">
     <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
       Color
       <input
@@ -104,7 +100,7 @@ function patch(partial: Partial<VariantDraft>) {
         @input="patch({ quantity: ($event.target as HTMLInputElement).value })"
       />
     </label>
-    <div class="flex items-end gap-4 pb-2">
+    <div class="flex items-end gap-4 pb-2 sm:col-span-2">
       <label class="inline-flex items-center gap-2 text-sm text-gray-700">
         <input
           type="checkbox"

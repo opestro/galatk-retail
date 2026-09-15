@@ -180,18 +180,36 @@ export interface Sale {
   }>
 }
 
+export interface OnlineOrderLine {
+  id: string
+  productId: string
+  familyId?: string | null
+  productName: string
+  variantLabel: string
+  attributes: Record<string, string>
+  quantity: number
+  unitPrice: string
+  lineTotal: string
+}
+
 export interface OnlineOrder {
   id: string
+  shopId?: string
   orderNumber: string
   status: string
   fulfillmentType: string
   customerName: string
   customerPhone: string
+  customerWilaya?: string | null
   customerEmail?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  subtotal?: string
+  deliveryFee?: string
   total: string
   createdAt: string
   client?: Pick<Client, 'id' | 'name' | 'phone' | 'balance' | 'creditLimit'> | null
-  lines: Array<{ product: { name: string }; quantity: number; unitPrice?: string; lineTotal?: string }>
+  lines: OnlineOrderLine[]
 }
 
 export interface PurchaseLine {
