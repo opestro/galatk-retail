@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import PayLaterConfirm from '@/components/pos/PayLaterConfirm.vue'
+import PosSuccessDialog from '@/components/pos/PosSuccessDialog.vue'
+import { saveOrderReceiptPdf } from '@/utils/orderReceiptPdf'
 import type { OnlineOrder } from '@/types/api'
 
 const props = defineProps<{
@@ -19,6 +21,7 @@ const loading = ref(false)
 const error = ref('')
 const showManagerConfirm = ref(false)
 const pendingOverride = ref(false)
+const showSuccess = ref(false)
 
 const total = computed(() => Number(props.order.total))
 const amountOnCredit = computed(() => {
@@ -59,7 +62,7 @@ async function submitComplete(creditLimitOverride = false) {
       body.creditLimitOverride = true
     }
     await api.post(`/shops/${shopId}/orders/${props.order.id}/complete`, body)
-    emit('completed')
+    showSuccess.value = true
   } catch {
     error.value = 'Could not complete order — check payment or credit limit'
   } finally {
@@ -83,7 +86,15 @@ function handleComplete() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+  <PosSuccessDialog
+    v-if="showSuccess"
+    title="Order completed"
+    :message="`${order.orderNumber} · ${order.total} DZD collected.`"
+    @close="emit('completed')"
+    @print="saveOrderReceiptPdf(order)"
+  />
+
+  <div v-else class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
     <div class="card flex max-h-[90vh] w-full max-w-md flex-col gap-4 overflow-y-auto">
       <div>
         <h3 class="text-lg font-semibold text-gray-900">Complete order</h3>
