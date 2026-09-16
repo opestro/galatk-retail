@@ -187,6 +187,8 @@ export interface OnlineOrderLine {
   productName: string
   variantLabel: string
   attributes: Record<string, string>
+  imageUrl?: string | null
+  sku?: string | null
   quantity: number
   unitPrice: string
   lineTotal: string
@@ -204,6 +206,7 @@ export interface OnlineOrder {
   customerEmail?: string | null
   deliveryAddress?: string | null
   deliveryCity?: string | null
+  paymentMethod?: string
   subtotal?: string
   deliveryFee?: string
   total: string

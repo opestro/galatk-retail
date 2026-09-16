@@ -1,4 +1,4 @@
-import { OnlineOrder, OnlineOrderLine, Product, ProductFamily } from '@prisma/client'
+import { OnlineOrder, OnlineOrderLine, Product, ProductFamily, ProductImage } from '@prisma/client'
 import { withFamily } from '../../shared/products/withFamily.js'
 import {
   attributesFromUnknown,
@@ -6,7 +6,9 @@ import {
 } from '../../shared/products/variantAttributes.js'
 
 type OrderLineWithProduct = OnlineOrderLine & {
-  product: Product & { family?: ProductFamily | null }
+  product: Product & {
+    family?: (ProductFamily & { images?: Pick<ProductImage, 'url' | 'sortOrder'>[] }) | null
+  }
 }
 
 type OrderWithLines = OnlineOrder & {
@@ -19,6 +21,15 @@ function money(value: { toString(): string } | string | number | null | undefine
   return typeof value === 'string' ? value : value.toString()
 }
 
+function primaryImageUrl(
+  family?: { images?: Array<{ url: string; sortOrder?: number }> } | null,
+): string | null {
+  const images = family?.images
+  if (!images?.length) return null
+  const sorted = [...images].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  return sorted[0]?.url ?? null
+}
+
 export function orderLinePresenter(line: OrderLineWithProduct) {
   const family = withFamily(line.product)
   const attributes = attributesFromUnknown(line.product.attributes)
@@ -29,6 +40,8 @@ export function orderLinePresenter(line: OrderLineWithProduct) {
     productName: line.product.family?.name ?? family.category,
     variantLabel: displayVariantLabel(attributes, line.product.variantLabel ?? family.variantLabel),
     attributes,
+    imageUrl: primaryImageUrl(line.product.family),
+    sku: line.product.galatkProductRef ?? null,
     quantity: line.quantity,
     unitPrice: money(line.unitPrice),
     lineTotal: money(line.lineTotal),

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import type { OnlineOrder } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -10,6 +10,7 @@ import { ALGERIA_WILAYAS } from '@/data/algeriaWilayas'
 import { formatDzd } from '@/utils/formatMoney'
 
 const auth = useAuthStore()
+const router = useRouter()
 const orders = ref<OnlineOrder[]>([])
 const loading = ref(true)
 const search = ref('')
@@ -34,6 +35,10 @@ async function loadOrders() {
   } finally {
     loading.value = false
   }
+}
+
+function openOrder(orderId: string) {
+  void router.push(`/admin/orders/${orderId}`)
 }
 
 watch([search], () => {
@@ -89,7 +94,12 @@ watch(() => auth.selectedShopId, loadOrders)
           <tr v-if="orders.length === 0">
             <td colspan="6" class="px-4 py-10 text-center text-gray-500">No orders found.</td>
           </tr>
-          <tr v-for="order in orders" :key="order.id" class="hover:bg-gray-50">
+          <tr
+            v-for="order in orders"
+            :key="order.id"
+            class="cursor-pointer hover:bg-gray-50"
+            @click="openOrder(order.id)"
+          >
             <td class="px-4 py-3 font-medium text-gray-900">
               <RouterLink :to="`/admin/orders/${order.id}`" class="hover:underline">
                 {{ order.orderNumber }}

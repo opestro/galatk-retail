@@ -18,6 +18,7 @@ import {
 } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
 import { withFamily } from '../../shared/products/withFamily.js'
+import { canTransitionOrderStatus } from '../../shared/orders/statusTransitions.js'
 
 export interface CheckoutLineInput {
   productId: string
@@ -43,7 +44,15 @@ export interface CompleteOnlineOrderInput {
 }
 
 const orderProductInclude = {
-  product: { include: { family: true } },
+  product: {
+    include: {
+      family: {
+        include: {
+          images: { orderBy: { sortOrder: 'asc' as const }, take: 1 },
+        },
+      },
+    },
+  },
 } as const
 
 export async function checkoutForShop(
@@ -284,14 +293,6 @@ export async function getOrderById(staff: AuthenticatedStaff, shopId: string, or
   return order
 }
 
-const validTransitions: Record<OrderStatus, OrderStatus[]> = {
-  [OrderStatus.PLACED]: [OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED],
-  [OrderStatus.READY_FOR_PICKUP]: [OrderStatus.COMPLETED, OrderStatus.CANCELLED],
-  [OrderStatus.OUT_FOR_DELIVERY]: [OrderStatus.COMPLETED, OrderStatus.CANCELLED],
-  [OrderStatus.COMPLETED]: [],
-  [OrderStatus.CANCELLED]: [],
-}
-
 export async function updateOrderStatus(
   staff: AuthenticatedStaff,
   shopId: string,
@@ -309,8 +310,11 @@ export async function updateOrderStatus(
     )
   }
 
-  const allowed = validTransitions[order.status]
-  if (!allowed.includes(status)) {
+  if (status === OrderStatus.CANCELLED) {
+    return cancelOrder(staff, shopId, orderId, 'Staff cancelled')
+  }
+
+  if (!canTransitionOrderStatus(order.status, status)) {
     throw new CustomError('INVALID_TRANSITION', `Cannot transition from ${order.status} to ${status}`, 400)
   }
 
