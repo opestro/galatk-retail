@@ -1,58 +1,26 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
-import axios from 'axios'
-import { globalCheckout, lookupCustomerByPhone } from '@/services/globalStore'
+import { globalCheckout } from '@/services/globalStore'
 import { useGlobalStoreCartStore } from '@/stores/globalStoreCart'
-import { ALGERIA_WILAYAS, isValidWilaya } from '@/data/algeriaWilayas'
-import { normalizeAlgerianPhone, validateCustomerName } from '@/utils/algerianPhone'
+import GuestCustomerFields from '@/components/storefront/GuestCustomerFields.vue'
+import {
+  checkoutErrorMessage,
+  emptyGuestCustomer,
+  validateGuestCustomer,
+  type GuestCustomerFields as GuestFields,
+} from '@/utils/guestCheckout'
+import { normalizeAlgerianPhone } from '@/utils/algerianPhone'
 import { formatDzd } from '@/utils/formatMoney'
-import { Check, Loader2, Minus, Plus, ShoppingBag, Store, Trash2 } from 'lucide-vue-next'
+import { Loader2, Minus, Plus, ShoppingBag, Store, Trash2 } from 'lucide-vue-next'
 
 const router = useRouter()
 const cart = useGlobalStoreCartStore()
 
-const form = ref({
-  customerName: '',
-  customerPhone: '',
-  customerWilaya: '',
-})
+const form = ref<GuestFields>(emptyGuestCustomer())
 const fieldErrors = ref({ name: '', phone: '', wilaya: '' })
 const error = ref('')
 const submitting = ref(false)
-const lookupStatus = ref<'idle' | 'loading' | 'found' | 'not-found'>('idle')
-
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
-
-watch(
-  () => form.value.customerPhone,
-  async (phone) => {
-    if (debounceTimer) clearTimeout(debounceTimer)
-
-    if (!phone?.trim() || phone.trim().length < 6) {
-      lookupStatus.value = 'idle'
-      return
-    }
-
-    lookupStatus.value = 'loading'
-    debounceTimer = setTimeout(async () => {
-      const result = await lookupCustomerByPhone(phone)
-      if (result) {
-        form.value.customerName = result.name
-        if (result.wilaya) form.value.customerWilaya = result.wilaya
-        lookupStatus.value = 'found'
-        setTimeout(() => {
-          if (lookupStatus.value === 'found') lookupStatus.value = 'idle'
-        }, 2000)
-      } else {
-        lookupStatus.value = 'not-found'
-        setTimeout(() => {
-          if (lookupStatus.value === 'not-found') lookupStatus.value = 'idle'
-        }, 2000)
-      }
-    }, 500)
-  },
-)
 
 const linesByShop = computed(() => {
   const groups = new Map<string, { shopName: string; lines: typeof cart.lines }>()
@@ -67,29 +35,18 @@ const linesByShop = computed(() => {
   return groups
 })
 
-function validateForm(): boolean {
-  fieldErrors.value = { name: '', phone: '', wilaya: '' }
-  if (!validateCustomerName(form.value.customerName)) {
-    fieldErrors.value.name = 'Please enter your full name.'
-  }
-  if (!normalizeAlgerianPhone(form.value.customerPhone)) {
-    fieldErrors.value.phone = 'Please enter a valid Algerian phone number (05, 06, or 07).'
-  }
-  if (!isValidWilaya(form.value.customerWilaya)) {
-    fieldErrors.value.wilaya = 'Please select a wilaya.'
-  }
-  return !fieldErrors.value.name && !fieldErrors.value.phone && !fieldErrors.value.wilaya
-}
-
 async function submit() {
   error.value = ''
-  if (!validateForm()) return
+  const { valid, errors } = validateGuestCustomer(form.value)
+  fieldErrors.value = errors
+  if (!valid) return
   submitting.value = true
   try {
+    const phone = normalizeAlgerianPhone(form.value.customerPhone) ?? form.value.customerPhone
     const orders = await globalCheckout({
       fulfillmentType: 'PICKUP',
       customerName: form.value.customerName.trim(),
-      customerPhone: normalizeAlgerianPhone(form.value.customerPhone) ?? form.value.customerPhone,
+      customerPhone: phone,
       customerWilaya: form.value.customerWilaya,
       lines: cart.lines.map((l) => ({ productId: l.productId, shopId: l.shopId, quantity: l.quantity })),
     })
@@ -100,23 +57,13 @@ async function submit() {
       query: {
         orders: orders.map((o) => o.orderNumber).join(','),
         total: String(total),
-        phone: normalizeAlgerianPhone(form.value.customerPhone) ?? form.value.customerPhone,
+        phone,
         wilaya: form.value.customerWilaya,
         name: form.value.customerName.trim(),
       },
     })
   } catch (err) {
-    if (axios.isAxiosError(err)) {
-      const type = err.response?.data?.type as string | undefined
-      const message = err.response?.data?.message as string | undefined
-      if (type === 'INSUFFICIENT_STOCK') {
-        error.value = 'Not enough stock for one of the items. Please update your cart.'
-      } else {
-        error.value = message || 'Could not place the order. Please try again.'
-      }
-    } else {
-      error.value = 'Could not place the order. Please try again.'
-    }
+    error.value = checkoutErrorMessage(err)
   } finally {
     submitting.value = false
   }
@@ -202,38 +149,7 @@ async function submit() {
         @submit.prevent="submit"
       >
         <h2 class="text-sm font-semibold text-gray-900">Customer information</h2>
-
-        <label class="flex flex-col gap-1.5">
-          <span class="text-sm text-gray-700">Full name</span>
-          <input v-model="form.customerName" type="text" autocomplete="name" class="input" />
-          <p v-if="fieldErrors.name" class="text-xs text-red-600">{{ fieldErrors.name }}</p>
-        </label>
-
-        <label class="flex flex-col gap-1.5">
-          <span class="text-sm text-gray-700">Phone number</span>
-          <div class="relative">
-            <input v-model="form.customerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="05XXXXXXXX" class="input" />
-            <Loader2
-              v-if="lookupStatus === 'loading'"
-              class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400"
-            />
-            <Check
-              v-else-if="lookupStatus === 'found'"
-              class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600"
-            />
-          </div>
-          <p v-if="lookupStatus === 'found'" class="text-xs text-green-600">Welcome back — details filled in.</p>
-          <p v-if="fieldErrors.phone" class="text-xs text-red-600">{{ fieldErrors.phone }}</p>
-        </label>
-
-        <label class="flex flex-col gap-1.5">
-          <span class="text-sm text-gray-700">Wilaya</span>
-          <select v-model="form.customerWilaya" class="input">
-            <option value="">Select wilaya</option>
-            <option v-for="wilaya in ALGERIA_WILAYAS" :key="wilaya" :value="wilaya">{{ wilaya }}</option>
-          </select>
-          <p v-if="fieldErrors.wilaya" class="text-xs text-red-600">{{ fieldErrors.wilaya }}</p>
-        </label>
+        <GuestCustomerFields v-model="form" :errors="fieldErrors" />
 
         <div class="flex items-center justify-between border-t border-gray-100 pt-4 text-base font-semibold text-gray-900">
           <span>Total</span>
