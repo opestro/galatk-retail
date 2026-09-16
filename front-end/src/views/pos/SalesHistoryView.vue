@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { Printer } from 'lucide-vue-next'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import type { Sale } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import VoidSaleDialog from '@/components/pos/VoidSaleDialog.vue'
+import { printPosReceipt, saleToReceipt } from '@/utils/printPosReceipt'
 
 const auth = useAuthStore()
 const sales = ref<Sale[]>([])
 const loading = ref(true)
 const voidTarget = ref<Sale | null>(null)
+const printError = ref('')
 
 async function loadSales() {
   const shopId = auth.selectedShopId
@@ -24,6 +27,15 @@ async function loadSales() {
     sales.value = data.data
   } finally {
     loading.value = false
+  }
+}
+
+function printSale(sale: Sale) {
+  printError.value = ''
+  try {
+    printPosReceipt(saleToReceipt(sale, auth.staff?.name ?? 'Staff'))
+  } catch (err) {
+    printError.value = err instanceof Error ? err.message : 'Could not print the receipt.'
   }
 }
 
@@ -42,6 +54,7 @@ onMounted(loadSales)
 <template>
   <div class="page-shell max-w-full">
     <PageHeader title="Sales history" />
+    <p v-if="printError" class="text-sm text-red-600">{{ printError }}</p>
 
     <SkeletonList v-if="loading" />
     <ul v-else class="list-panel">
@@ -59,6 +72,14 @@ onMounted(loadSales)
           >
             {{ sale.status }}
           </span>
+          <button
+            type="button"
+            class="btn-secondary flex items-center gap-1 px-3 py-1.5 text-xs"
+            @click="printSale(sale)"
+          >
+            <Printer class="h-3.5 w-3.5" />
+            Print
+          </button>
           <button
             v-if="sale.status === 'COMPLETED'"
             class="text-sm text-red-600 underline"

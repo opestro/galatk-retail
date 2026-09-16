@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onActivated, nextTick, inject, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onActivated, nextTick, inject } from 'vue'
+import { ArrowLeft } from 'lucide-vue-next'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { usePosCartStore } from '@/stores/posCart'
@@ -7,17 +8,19 @@ import { usePosHotkeys } from '@/composables/usePosHotkeys'
 import PayLaterConfirm from '@/components/pos/PayLaterConfirm.vue'
 import PosSuccessDialog from '@/components/pos/PosSuccessDialog.vue'
 import { playPosErrorSound, playPosSuccessSound } from '@/composables/usePosSounds'
-import { printPosReceipt, type SaleReceiptData } from '@/utils/printPosReceipt'
+import { printPosReceipt, saleToReceipt, type SaleReceiptData } from '@/utils/printPosReceipt'
 import type { Client, PosProduct, Sale } from '@/types/api'
 import SkeletonProductGrid from '@/components/ui/SkeletonProductGrid.vue'
 import ClientPicker from '@/components/pos/ClientPicker.vue'
-import { groupByCategory, variantDisplay } from '@/utils/productFamily'
+import { groupByCategory, variantDisplay, type ProductFamilyGroup } from '@/utils/productFamily'
 
 const auth = useAuthStore()
 const cart = usePosCartStore()
 const products = ref<PosProduct[]>([])
 const loading = ref(true)
 const search = ref('')
+/** Currently opened product family; `null` shows the family picker. */
+const selectedFamily = ref<string | null>(null)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const paymentMethod = ref<'CASH' | 'CARD'>('CASH')
 const message = ref('')
@@ -43,11 +46,56 @@ const registerApi = inject<{ value: { focusSearch: () => void; completeSale: () 
   null,
 )
 
-const filtered = computed(() =>
-  products.value.filter((p) => p.name.toLowerCase().includes(search.value.toLowerCase())),
+const query = computed(() => search.value.trim().toLowerCase())
+
+const allFamilies = computed(() => groupByCategory(products.value))
+
+function variantMatchesQuery(product: PosProduct, q: string): boolean {
+  if (!q) return true
+  return (
+    product.name.toLowerCase().includes(q) ||
+    variantDisplay(product).toLowerCase().includes(q)
+  )
+}
+
+/** Family cards on the first screen; search matches family name or any variant. */
+const familyCards = computed(() => {
+  const q = query.value
+  if (!q) return allFamilies.value
+  return allFamilies.value.filter(
+    (group) =>
+      group.category.toLowerCase().includes(q) ||
+      group.variants.some((product) => variantMatchesQuery(product, q)),
+  )
+})
+
+const selectedGroup = computed(
+  () => allFamilies.value.find((group) => group.category === selectedFamily.value) ?? null,
 )
 
-const productGroups = computed(() => groupByCategory(filtered.value))
+/** Variants of the opened family, filtered by the search bar. */
+const variantCards = computed(() => {
+  const group = selectedGroup.value
+  if (!group) return []
+  return group.variants.filter((product) => variantMatchesQuery(product, query.value))
+})
+
+function familyStock(group: ProductFamilyGroup<PosProduct>): number {
+  return group.variants.reduce((sum, product) => sum + product.quantity, 0)
+}
+
+function selectFamily(category: string) {
+  selectedFamily.value = category
+  search.value = ''
+  highlightIndex.value = null
+  pendingQty.value = 1
+}
+
+function clearFamily() {
+  selectedFamily.value = null
+  highlightIndex.value = null
+  pendingQty.value = 1
+}
 
 watch(
   () => cart.total,
@@ -93,25 +141,8 @@ function onCheckoutModeChange(mode: 'full' | 'partial' | 'payLater') {
   cart.setCheckoutMode(mode)
 }
 
-function saleToReceipt(sale: Sale): SaleReceiptData {
-  return {
-    type: 'sale',
-    saleId: sale.id,
-    createdAt: sale.createdAt,
-    cashierName: sale.cashier?.name ?? auth.staff?.name ?? 'Staff',
-    paymentMethod: sale.paymentMethod,
-    lines: sale.lines.map((l) => ({
-      name: l.product?.name ?? 'Item',
-      quantity: l.quantity,
-      lineTotal: l.lineTotal,
-    })),
-    subtotal: sale.total,
-    total: sale.total,
-    amountPaid: sale.amountPaid ?? sale.total,
-    amountOnCredit: sale.amountOnCredit ?? '0',
-    clientName: sale.client?.name ?? null,
-    clientPhone: sale.client?.phone ?? null,
-  }
+function onPrintReceipt() {
+  if (successReceipt.value) printPosReceipt(successReceipt.value)
 }
 
 async function executeCheckout(creditLimitOverride = false) {
@@ -139,7 +170,7 @@ async function executeCheckout(creditLimitOverride = false) {
     }
     const { data } = await api.post<{ data: Sale }>(`/shops/${shopId}/pos/sales`, body)
     playPosSuccessSound()
-    successReceipt.value = saleToReceipt(data.data)
+    successReceipt.value = saleToReceipt(data.data, auth.staff?.name ?? 'Staff')
     cart.clear()
     showConfirm.value = false
     confirmStage.value = false
@@ -186,7 +217,8 @@ function scrollHighlightedIntoView() {
 }
 
 function onSearchKeydown(event: KeyboardEvent) {
-  const len = filtered.value.length
+  const items = selectedFamily.value ? variantCards.value : familyCards.value
+  const len = items.length
   if (event.key === 'ArrowDown') {
     event.preventDefault()
     if (!len) return
@@ -198,26 +230,34 @@ function onSearchKeydown(event: KeyboardEvent) {
     highlightIndex.value = highlightIndex.value === null ? 0 : Math.max(0, highlightIndex.value - 1)
     scrollHighlightedIntoView()
   } else if (event.key === 'ArrowRight') {
-    if (highlightIndex.value !== null) {
+    if (selectedFamily.value && highlightIndex.value !== null) {
       event.preventDefault()
       pendingQty.value += 1
     }
   } else if (event.key === 'ArrowLeft') {
-    if (highlightIndex.value !== null) {
+    if (selectedFamily.value && highlightIndex.value !== null) {
       event.preventDefault()
       pendingQty.value = Math.max(1, pendingQty.value - 1)
     }
   } else if (event.key === 'Enter') {
-    if (highlightIndex.value !== null) {
-      event.preventDefault()
-      const product = filtered.value[highlightIndex.value]
-      if (product) {
-        cart.addProductQty(product, pendingQty.value)
-        pendingQty.value = 1
-      }
+    if (highlightIndex.value === null) return
+    event.preventDefault()
+    if (!selectedFamily.value) {
+      const group = familyCards.value[highlightIndex.value]
+      if (group) selectFamily(group.category)
+      return
+    }
+    const product = variantCards.value[highlightIndex.value]
+    if (product) {
+      cart.addProductQty(product, pendingQty.value)
+      pendingQty.value = 1
     }
   } else if (event.key === 'Escape') {
     event.preventDefault()
+    if (selectedFamily.value) {
+      clearFamily()
+      return
+    }
     search.value = ''
     highlightIndex.value = null
     pendingQty.value = 1
@@ -271,7 +311,7 @@ onActivated(loadProducts)
         <input
           ref="searchInputRef"
           v-model="search"
-          placeholder="Search products…"
+          :placeholder="selectedFamily ? 'Search variants…' : 'Search families or variants…'"
           class="input text-base"
           @keydown="onSearchKeydown"
         />
@@ -279,38 +319,79 @@ onActivated(loadProducts)
 
       <div class="min-h-0 flex-1 overflow-y-auto p-3">
         <SkeletonProductGrid v-if="loading" :count="8" />
-        <div v-else class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <div
-            v-for="group in productGroups"
+
+        <div v-else-if="!selectedFamily" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <button
+            v-for="(group, index) in familyCards"
+            :id="`pos-card-${index}`"
             :key="group.category"
-            class="card flex flex-col gap-3"
+            type="button"
+            class="card flex flex-col gap-2 text-left transition-colors"
+            :class="
+              highlightIndex === index
+                ? 'border-blue-600 bg-blue-50'
+                : 'hover:border-gray-400'
+            "
+            @click="selectFamily(group.category)"
           >
-            <div class="flex items-center justify-between gap-2">
-              <p class="font-semibold text-gray-900">{{ group.category }}</p>
-              <span class="text-xs text-gray-500">{{ group.variants.length }} variant{{ group.variants.length === 1 ? '' : 's' }}</span>
+            <p class="font-semibold text-gray-900">{{ group.category }}</p>
+            <p class="text-sm text-gray-500">
+              {{ group.variants.length }} variant{{ group.variants.length === 1 ? '' : 's' }}
+              · {{ familyStock(group) }} in stock
+            </p>
+          </button>
+        </div>
+
+        <div v-else class="flex flex-col gap-3">
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="btn-secondary gap-2 px-3"
+              @click="clearFamily"
+            >
+              <ArrowLeft class="h-4 w-4" />
+              All families
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="card flex items-center justify-between gap-3 border-blue-600 bg-blue-600 text-left text-white"
+            @click="clearFamily"
+          >
+            <div>
+              <p class="font-semibold">{{ selectedGroup?.category }}</p>
+              <p class="text-sm text-blue-100">
+                {{ selectedGroup?.variants.length ?? 0 }} variant{{ (selectedGroup?.variants.length ?? 0) === 1 ? '' : 's' }}
+              </p>
             </div>
-            <div class="flex flex-wrap gap-2">
-              <button
-                v-for="product in group.variants"
-                :key="product.productId"
-                type="button"
-                class="min-h-11 rounded-md border px-3 py-2 text-left text-sm transition-colors"
-                :class="
-                  filtered.indexOf(product) === highlightIndex
-                    ? 'border-gray-900 bg-gray-900 text-white'
-                    : cart.lines.find((l) => l.productId === product.productId)
-                      ? 'border-gray-900 bg-gray-50'
-                      : 'border-gray-300 text-gray-800 hover:border-gray-400'
-                "
-                @click="cart.addProduct(product)"
-              >
-                <span class="block font-medium">{{ variantDisplay(product) }}</span>
-                <span class="block text-xs opacity-80">{{ product.sellPrice }} DZD · {{ product.quantity }} left</span>
-              </button>
-            </div>
+            <span class="text-sm text-blue-100">Change</span>
+          </button>
+
+          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <button
+              v-for="(product, index) in variantCards"
+              :id="`pos-card-${index}`"
+              :key="product.productId"
+              type="button"
+              class="card flex flex-col gap-1 text-left transition-colors"
+              :class="
+                highlightIndex === index
+                  ? 'border-blue-600 bg-blue-600 text-white'
+                  : cart.lines.find((l) => l.productId === product.productId)
+                    ? 'border-blue-600 bg-blue-50'
+                    : 'hover:border-gray-400'
+              "
+              @click="cart.addProduct(product)"
+            >
+              <span class="block font-medium">{{ variantDisplay(product) }}</span>
+              <span class="block text-xs opacity-80">{{ product.sellPrice }} DZD · {{ product.quantity }} left</span>
+            </button>
           </div>
         </div>
-        <p v-if="!loading && !filtered.length" class="text-sm text-gray-500">No products match your search.</p>
+
+        <p v-if="!loading && !selectedFamily && !familyCards.length" class="text-sm text-gray-500">No families match your search.</p>
+        <p v-if="!loading && selectedFamily && !variantCards.length" class="mt-3 text-sm text-gray-500">No variants match your search.</p>
       </div>
 
       <!-- Mobile floating cart bar (hidden on lg+) -->
@@ -446,6 +527,6 @@ onActivated(loadProducts)
     title="Sale completed"
     :message="`Total ${successReceipt.total} DZD — ${successReceipt.amountPaid} DZD collected.`"
     @close="successReceipt = null"
-    @print="successReceipt && printPosReceipt(successReceipt)"
+    @print="onPrintReceipt"
   />
 </template>
