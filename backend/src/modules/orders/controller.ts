@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import * as StorefrontService from '../storefront/service.js'
+import { orderPresenter } from '../storefront/presenter.js'
 import { OrderStatus } from '@prisma/client'
 
 export async function list(req: Request, res: Response, next: NextFunction) {
@@ -7,8 +8,9 @@ export async function list(req: Request, res: Response, next: NextFunction) {
     const shopId = String(req.params.shopId)
     const status = typeof req.query.status === 'string' ? (req.query.status as OrderStatus) : undefined
     const search = typeof req.query.q === 'string' ? req.query.q : undefined
-    const orders = await StorefrontService.listOrders(req.staff!, shopId, status, search)
-    res.status(200).json({ data: orders })
+    const wilaya = typeof req.query.wilaya === 'string' ? req.query.wilaya : undefined
+    const orders = await StorefrontService.listOrders(req.staff!, shopId, { status, search, wilaya })
+    res.status(200).json({ data: orders.map(orderPresenter) })
   } catch (error) {
     next(error)
   }
@@ -19,7 +21,7 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
     const shopId = String(req.params.shopId)
     const orderId = String(req.params.orderId)
     const order = await StorefrontService.getOrderById(req.staff!, shopId, orderId)
-    res.status(200).json({ data: order })
+    res.status(200).json({ data: orderPresenter(order) })
   } catch (error) {
     next(error)
   }
@@ -37,7 +39,7 @@ export async function updateStatus(req: Request, res: Response, next: NextFuncti
       orderId,
       status as OrderStatus,
     )
-    res.status(200).json({ data: order })
+    res.status(200).json({ data: orderPresenter(order) })
   } catch (error) {
     next(error)
   }
@@ -55,7 +57,7 @@ export async function complete(req: Request, res: Response, next: NextFunction) 
       payLater,
       creditLimitOverride,
     })
-    res.status(200).json({ data: order })
+    res.status(200).json({ data: orderPresenter(order) })
   } catch (error) {
     next(error)
   }
@@ -68,7 +70,7 @@ export async function cancel(req: Request, res: Response, next: NextFunction) {
     const { reason } = req.body
 
     const order = await StorefrontService.cancelOrder(req.staff!, shopId, orderId, reason)
-    res.status(200).json({ data: order })
+    res.status(200).json({ data: orderPresenter(order) })
   } catch (error) {
     next(error)
   }

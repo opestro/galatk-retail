@@ -40,6 +40,7 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
       fulfillmentType,
       customerName,
       customerPhone,
+      customerWilaya,
       customerEmail,
       deliveryAddress,
       deliveryCity,
@@ -47,9 +48,10 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
     } = req.body
 
     const order = await StorefrontService.checkout(slug, {
-      fulfillmentType: fulfillmentType as FulfillmentType,
+      fulfillmentType: (fulfillmentType as FulfillmentType) || FulfillmentType.PICKUP,
       customerName,
       customerPhone,
+      customerWilaya,
       customerEmail,
       deliveryAddress,
       deliveryCity,

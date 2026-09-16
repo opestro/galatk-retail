@@ -24,6 +24,7 @@ describe('globalCheckout', () => {
     fulfillmentType: FulfillmentType.PICKUP,
     customerName: 'Jane Doe',
     customerPhone: '+212600000099',
+    customerWilaya: 'Blida',
   }
 
   it('rejects an empty cart', async () => {

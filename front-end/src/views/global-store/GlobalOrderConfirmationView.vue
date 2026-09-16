@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { CheckCircle2, Store } from 'lucide-vue-next'
+import { CheckCircle2 } from 'lucide-vue-next'
+import { formatDzd } from '@/utils/formatMoney'
 
 const route = useRoute()
 
@@ -10,6 +11,11 @@ const orderNumbers = computed(() => {
   if (typeof raw !== 'string' || !raw) return []
   return raw.split(',').filter(Boolean)
 })
+
+const phone = computed(() => (typeof route.query.phone === 'string' ? route.query.phone : ''))
+const wilaya = computed(() => (typeof route.query.wilaya === 'string' ? route.query.wilaya : ''))
+const name = computed(() => (typeof route.query.name === 'string' ? route.query.name : ''))
+const total = computed(() => (typeof route.query.total === 'string' ? route.query.total : ''))
 </script>
 
 <template>
@@ -19,29 +25,35 @@ const orderNumbers = computed(() => {
     </div>
 
     <div>
-      <h2 class="text-2xl font-semibold text-gray-900">
-        {{ orderNumbers.length > 1 ? 'Orders placed!' : 'Order placed!' }}
-      </h2>
-      <p class="mt-2 text-gray-600">
-        Thanks for shopping with us. You'll be contacted for pickup or delivery details.
-      </p>
+      <h2 class="text-2xl font-semibold text-gray-900">Order confirmed</h2>
+      <p class="mt-2 text-gray-600">Thank you{{ name ? `, ${name}` : '' }} for your order!</p>
     </div>
 
-    <div class="flex flex-col gap-2">
+    <div class="flex w-full max-w-md flex-col gap-2 text-left">
       <div
         v-for="orderNumber in orderNumbers"
         :key="orderNumber"
-        class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm"
+        class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm"
       >
-        <Store class="h-4 w-4 text-gray-500" />
-        <span class="text-gray-500">Order</span>
-        <span class="font-medium text-gray-900">{{ orderNumber }}</span>
+        <p class="text-gray-500">Order number</p>
+        <p class="font-medium text-gray-900">{{ orderNumber }}</p>
+      </div>
+      <div v-if="total" class="rounded-lg border border-gray-200 px-4 py-3 text-sm">
+        <p class="text-gray-500">Total</p>
+        <p class="font-medium text-gray-900">{{ formatDzd(total) }}</p>
+      </div>
+      <div v-if="phone" class="rounded-lg border border-gray-200 px-4 py-3 text-sm">
+        <p class="text-gray-500">We will contact you at</p>
+        <p class="font-medium text-gray-900">{{ phone }}</p>
+      </div>
+      <div v-if="wilaya" class="rounded-lg border border-gray-200 px-4 py-3 text-sm">
+        <p class="text-gray-500">Wilaya</p>
+        <p class="font-medium text-gray-900">{{ wilaya }}</p>
       </div>
     </div>
 
     <p v-if="orderNumbers.length > 1" class="max-w-md text-sm text-gray-500">
-      Your cart included items from {{ orderNumbers.length }} different shops, so it was split into
-      {{ orderNumbers.length }} separate orders — one per shop.
+      Items from {{ orderNumbers.length }} shops were split into {{ orderNumbers.length }} orders.
     </p>
 
     <RouterLink to="/store" class="btn-primary">Continue shopping</RouterLink>

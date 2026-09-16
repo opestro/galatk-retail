@@ -16,3 +16,5 @@ cloud-sql-proxy
 cloud-sql-proxy.exe
 .DS_Store
 .cache
+uploads
+!uploads/.gitkeep

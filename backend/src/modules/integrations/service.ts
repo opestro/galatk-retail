@@ -8,6 +8,12 @@ import {
   UpsertIntegrationProductInput,
 } from './types.js'
 import { parseProductFamily } from '../../shared/products/productFamily.js'
+import { findOrCreateProductFamily } from '../../shared/products/findOrCreateFamily.js'
+import {
+  attributesKey,
+  canonicalizeAttributes,
+  parseAttributesFromLabel,
+} from '../../shared/products/variantAttributes.js'
 
 function integrationStaffId(): string {
   const staffId = process.env.GALATK_INTEGRATION_STAFF_ID
@@ -59,6 +65,11 @@ export async function upsertIntegrationProduct(
   // Prefer explicit workshop family; otherwise keep the existing retail family on update
   // so "T-shirt XL" / "T-shirt noir L" stay under "T-shirt" when category is omitted.
   const family = parseProductFamily(name, input.category ?? existing?.category)
+  const catalog = await findOrCreateProductFamily(db, family.category, {
+    categoryHint: family.category,
+  })
+  const attributes = canonicalizeAttributes(parseAttributesFromLabel(family.variantLabel))
+  const key = attributesKey(attributes)
 
   if (existing) {
     return db.product.update({
@@ -66,8 +77,30 @@ export async function upsertIntegrationProduct(
       data: {
         name,
         unitCost,
-        category: family.category,
+        category: catalog.name,
         variantLabel: family.variantLabel,
+        familyId: catalog.id,
+        attributes,
+        attributesKey: key,
+      },
+    })
+  }
+
+  const duplicate = await db.product.findFirst({
+    where: { familyId: catalog.id, attributesKey: key },
+  })
+  if (duplicate) {
+    return db.product.update({
+      where: { id: duplicate.id },
+      data: {
+        name,
+        unitCost,
+        galatkProductRef,
+        category: catalog.name,
+        variantLabel: family.variantLabel,
+        familyId: catalog.id,
+        attributes,
+        attributesKey: key,
       },
     })
   }
@@ -78,8 +111,11 @@ export async function upsertIntegrationProduct(
       unitCost,
       sellPrice,
       galatkProductRef,
-      category: family.category,
+      category: catalog.name,
       variantLabel: family.variantLabel,
+      familyId: catalog.id,
+      attributes,
+      attributesKey: key,
       isActive: true,
       availableOnline: true,
     },

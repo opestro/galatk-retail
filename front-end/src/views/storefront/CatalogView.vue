@@ -14,7 +14,9 @@ const cart = useStorefrontCartStore()
 const products = ref<StorefrontProduct[]>([])
 const shopName = ref('')
 const loading = ref(true)
-const productGroups = computed(() => groupByCategory(products.value))
+const productGroups = computed(() =>
+  groupByCategory(products.value).filter((group) => group.variants.some((item) => item.inStock)),
+)
 
 onMounted(async () => {
   const slug = route.params.slug as string

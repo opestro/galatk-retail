@@ -45,7 +45,16 @@ export function familyOf(item: FamilyFields): { category: string; variantLabel: 
   return parseFromName(item.name)
 }
 
-export function variantDisplay(item: FamilyFields): string {
+export function variantDisplay(item: FamilyFields & { attributes?: Record<string, string> }): string {
+  const attrs = item.attributes ?? {}
+  const bits: string[] = []
+  if (attrs.color) bits.push(attrs.color)
+  if (attrs.size) bits.push(attrs.size)
+  for (const key of Object.keys(attrs).sort()) {
+    if (key === 'size' || key === 'color') continue
+    if (attrs[key]) bits.push(attrs[key])
+  }
+  if (bits.length) return bits.join(' / ')
   return familyOf(item).variantLabel ?? 'Standard'
 }
 

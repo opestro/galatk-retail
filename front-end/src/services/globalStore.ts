@@ -9,7 +9,7 @@ export interface GlobalShop {
   deliveryFee: string
 }
 
-export interface GlobalProductShop {
+export interface PublicCatalogShop {
   shopId: string
   shopName: string
   shopSlug: string
@@ -17,14 +17,33 @@ export interface GlobalProductShop {
   inStock: boolean
 }
 
-export interface GlobalProduct {
-  productId: string
+export interface PublicCatalogImage {
+  id: string
+  url: string
+  sortOrder: number
+}
+
+export interface PublicCatalogVariant {
+  id: string
+  attributes: Record<string, string>
+  variantLabel: string
+  sellPrice: string
+  shops: PublicCatalogShop[]
+}
+
+export interface PublicCatalogProductSummary {
+  id: string
+  slug: string
   name: string
   description: string | null
-  sellPrice: string
-  category?: string
-  variantLabel?: string | null
-  shops: GlobalProductShop[]
+  images: PublicCatalogImage[]
+  fromPrice: string
+  hasPriceRange: boolean
+  shops: Array<{ shopId: string; shopName: string; shopSlug: string }>
+}
+
+export interface PublicCatalogProductDetail extends PublicCatalogProductSummary {
+  variants: PublicCatalogVariant[]
 }
 
 export interface GlobalCheckoutLineInput {
@@ -34,9 +53,10 @@ export interface GlobalCheckoutLineInput {
 }
 
 export interface GlobalCheckoutInput {
-  fulfillmentType: 'PICKUP' | 'DELIVERY'
+  fulfillmentType?: 'PICKUP' | 'DELIVERY'
   customerName: string
   customerPhone: string
+  customerWilaya: string
   customerEmail?: string
   deliveryAddress?: string
   deliveryCity?: string
@@ -55,6 +75,7 @@ export interface CustomerLookupResult {
   name: string
   email: string | null
   phone: string
+  wilaya?: string | null
 }
 
 export async function listGlobalShops() {
@@ -63,7 +84,14 @@ export async function listGlobalShops() {
 }
 
 export async function listGlobalProducts() {
-  const res = await api.get<{ data: GlobalProduct[] }>('/global-store/products')
+  const res = await api.get<{ data: PublicCatalogProductSummary[] }>('/global-store/products')
+  return res.data.data
+}
+
+export async function getGlobalProduct(idOrSlug: string) {
+  const res = await api.get<{ data: PublicCatalogProductDetail }>(
+    `/global-store/products/${encodeURIComponent(idOrSlug)}`,
+  )
   return res.data.data
 }
 

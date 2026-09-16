@@ -1,12 +1,23 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { GlobalProduct } from '@/services/globalStore'
 
 export interface GlobalCartLine {
   productId: string
   shopId: string
   shopName: string
   name: string
+  variantLabel: string | null
+  sellPrice: string
+  quantity: number
+  maxQuantity: number
+}
+
+export interface AddCartItemInput {
+  productId: string
+  shopId: string
+  shopName: string
+  name: string
+  variantLabel?: string | null
   sellPrice: string
   quantity: number
   maxQuantity: number
@@ -21,31 +32,37 @@ export const useGlobalStoreCartStore = defineStore('globalStoreCart', () => {
 
   const shopCount = computed(() => new Set(lines.value.map((l) => l.shopId)).size)
 
-  /**
-   * Adds a product to the cart from a specific shop. A product can appear in
-   * multiple shops, so the cart line is keyed by (productId, shopId) — the
-   * same product bought from two different shops results in two lines.
-   */
-  function addProduct(product: GlobalProduct, shopId: string) {
-    const shop = product.shops.find((s) => s.shopId === shopId)
-    if (!shop || !shop.inStock) return
+  const itemCount = computed(() => lines.value.reduce((sum, line) => sum + line.quantity, 0))
 
-    const existing = lines.value.find((l) => l.productId === product.productId && l.shopId === shopId)
+  /**
+   * Cart lines are keyed by (variant productId, shopId). Identical variants
+   * from the same shop merge quantities; different variants stay separate.
+   * Display price is copied for the UI; checkout ignores it and uses the API.
+   */
+  function addItem(input: AddCartItemInput) {
+    if (!input.shopId || input.maxQuantity < 1 || input.quantity < 1) return
+
+    const existing = lines.value.find((l) => l.productId === input.productId && l.shopId === input.shopId)
     if (existing) {
-      if (existing.quantity < shop.quantity) {
-        existing.quantity += 1
-      }
-    } else {
-      lines.value.push({
-        productId: product.productId,
-        shopId: shop.shopId,
-        shopName: shop.shopName,
-        name: product.name,
-        sellPrice: product.sellPrice,
-        quantity: 1,
-        maxQuantity: shop.quantity,
-      })
+      existing.quantity = Math.min(existing.quantity + input.quantity, input.maxQuantity)
+      existing.maxQuantity = input.maxQuantity
+      existing.sellPrice = input.sellPrice
+      existing.name = input.name
+      existing.variantLabel = input.variantLabel ?? existing.variantLabel
+      existing.shopName = input.shopName
+      return
     }
+
+    lines.value.push({
+      productId: input.productId,
+      shopId: input.shopId,
+      shopName: input.shopName,
+      name: input.name,
+      variantLabel: input.variantLabel ?? null,
+      sellPrice: input.sellPrice,
+      quantity: Math.min(input.quantity, input.maxQuantity),
+      maxQuantity: input.maxQuantity,
+    })
   }
 
   function updateQuantity(productId: string, shopId: string, quantity: number) {
@@ -63,5 +80,5 @@ export const useGlobalStoreCartStore = defineStore('globalStoreCart', () => {
     lines.value = []
   }
 
-  return { lines, total, shopCount, addProduct, updateQuantity, removeLine, clear }
+  return { lines, total, shopCount, itemCount, addItem, updateQuantity, removeLine, clear }
 })

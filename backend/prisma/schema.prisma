@@ -129,6 +129,35 @@ model StaffShopAssignment {
   @@unique([staffId, shopId])
 }
 
+/** Catalog parent (Baggy, Chemise, …). SKUs stay on Product so stock/orders keep working. */
+model ProductFamily {
+  id               String   @id @default(uuid())
+  name             String
+  slug             String   @unique
+  description      String?
+  isActive         Boolean  @default(true)
+  availableOnline  Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  products Product[]
+  images   ProductImage[]
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  familyId  String
+  filename  String
+  url       String
+  mimeType  String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  family ProductFamily @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@index([familyId, sortOrder])
+}
+
 model Product {
   id               String   @id @default(uuid())
   name             String
@@ -140,17 +169,25 @@ model Product {
   category         String?
   /** Size/color remainder, e.g. "M blanc". */
   variantLabel     String?
+  familyId         String?
+  /** Extensible variant options, e.g. {"size":"M","color":"Vert"}. */
+  attributes       Json     @default("{}")
+  /** Canonical uniqueness key for attributes within a family. */
+  attributesKey    String   @default("default")
   isActive         Boolean  @default(true)
   availableOnline  Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  stock              ShopStock[]
+  family               ProductFamily?        @relation(fields: [familyId], references: [id])
+  stock                ShopStock[]
   inboundTransferLines InboundTransferLine[]
-  saleLines          SaleLine[]
-  orderLines         OnlineOrderLine[]
+  saleLines            SaleLine[]
+  orderLines           OnlineOrderLine[]
 
+  @@unique([familyId, attributesKey])
   @@index([category])
+  @@index([familyId])
 }
 
 model ShopStock {
@@ -240,6 +277,7 @@ model OnlineOrder {
   fulfillmentType FulfillmentType
   customerName    String
   customerPhone   String
+  customerWilaya  String?
   customerEmail   String?
   deliveryAddress String?
   deliveryCity    String?
@@ -261,6 +299,7 @@ model OnlineOrder {
 
   @@unique([shopId, orderNumber])
   @@index([shopId, status, createdAt])
+  @@index([shopId, customerWilaya])
   @@index([clientId])
 }
 

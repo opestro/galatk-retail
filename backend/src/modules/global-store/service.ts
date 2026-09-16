@@ -1,12 +1,16 @@
 import prisma from '../../resources/database/initDatabase.js'
 import { CustomError } from '../../shared/types/error_type.js'
 import { checkoutForShop, CheckoutInput } from '../storefront/service.js'
-import { OutOfStockDisplay } from '@prisma/client'
-import { GlobalCheckoutInput } from './types.js'
+import { GlobalCheckoutInput, PublicCatalogProductDetail, PublicCatalogProductSummary } from './types.js'
 import { lookupCustomerByPhone } from '../../shared/clients/upsertFromOnline.js'
-import { withFamily } from '../../shared/products/withFamily.js'
+import { presentCatalogFamily, toCatalogSummary } from './presenter.js'
 
 export { lookupCustomerByPhone }
+
+const familyCatalogInclude = {
+  images: { orderBy: { sortOrder: 'asc' as const } },
+  products: { orderBy: { name: 'asc' as const } },
+}
 
 export async function listGlobalShops() {
   const shops = await prisma.shop.findMany({
@@ -23,67 +27,87 @@ export async function listGlobalShops() {
   }))
 }
 
+async function loadCatalogContext() {
+  const [shops, families] = await Promise.all([
+    prisma.shop.findMany(),
+    prisma.productFamily.findMany({
+      where: { isActive: true, availableOnline: true },
+      include: familyCatalogInclude,
+      orderBy: { name: 'asc' },
+    }),
+  ])
+
+  const shopById = new Map(shops.map((shop) => [shop.id, shop]))
+  const productIds = families.flatMap((family) => family.products.map((product) => product.id))
+  const stock =
+    productIds.length === 0
+      ? []
+      : await prisma.shopStock.findMany({
+          where: { productId: { in: productIds } },
+        })
+
+  return { shopById, families, stock }
+}
+
 /**
- * Aggregates the active, online-available catalog across all shops. Each
- * product lists every shop that currently carries it (with stock/price),
- * so the global store can let a customer pick which shop to buy each item
- * from.
+ * Aggregates the published catalog as product families (not SKUs).
+ * Only families and variants that are active, available online, and
+ * associated with at least one visible shop are returned.
  */
-export async function listGlobalProducts() {
-  const shops = await prisma.shop.findMany()
-  const shopById = new Map(shops.map((s) => [s.id, s]))
+export async function listGlobalProducts(): Promise<PublicCatalogProductSummary[]> {
+  const { shopById, families, stock } = await loadCatalogContext()
 
-  const stock = await prisma.shopStock.findMany({
-    where: {
-      product: { isActive: true, availableOnline: true },
-    },
-    include: { product: true },
-  })
+  return families
+    .map((family) => presentCatalogFamily(family, stock, shopById))
+    .filter((family): family is PublicCatalogProductDetail => family !== null)
+    .map(toCatalogSummary)
+}
 
-  const byProduct = new Map<
-    string,
-    {
-      productId: string
-      name: string
-      description: string | null
-      sellPrice: string
-      category: string
-      variantLabel: string | null
-      shops: { shopId: string; shopName: string; shopSlug: string; quantity: number; inStock: boolean }[]
-    }
-  >()
-
-  for (const s of stock) {
-    const shop = shopById.get(s.shopId)
-    if (!shop) continue
-
-    const showOutOfStock = shop.outOfStockDisplay === OutOfStockDisplay.SHOW_UNAVAILABLE
-    if (s.quantity <= 0 && !showOutOfStock) continue
-
-    let entry = byProduct.get(s.productId)
-    if (!entry) {
-      entry = {
-        productId: s.productId,
-        name: s.product.name,
-        description: s.product.description,
-        sellPrice: s.product.sellPrice.toString(),
-        category: withFamily(s.product).category,
-        variantLabel: withFamily(s.product).variantLabel,
-        shops: [],
-      }
-      byProduct.set(s.productId, entry)
-    }
-
-    entry.shops.push({
-      shopId: shop.id,
-      shopName: shop.name,
-      shopSlug: shop.slug,
-      quantity: s.quantity,
-      inStock: s.quantity > 0,
-    })
+/**
+ * Storefront product detail. `idOrSlug` may be the family id, family slug,
+ * or a variant SKU id (resolved to its family). Unpublished / inactive
+ * families return the same not-found error as missing records.
+ */
+export async function getGlobalProduct(idOrSlug: string): Promise<PublicCatalogProductDetail> {
+  const trimmed = idOrSlug.trim()
+  if (!trimmed) {
+    throw new CustomError('PRODUCT_NOT_FOUND', 'Product not found', 404)
   }
 
-  return Array.from(byProduct.values()).filter((p) => p.shops.length > 0)
+  let family = await prisma.productFamily.findFirst({
+    where: { OR: [{ id: trimmed }, { slug: trimmed }] },
+    include: familyCatalogInclude,
+  })
+
+  if (!family) {
+    const sku = await prisma.product.findUnique({
+      where: { id: trimmed },
+      select: { familyId: true },
+    })
+    if (sku?.familyId) {
+      family = await prisma.productFamily.findUnique({
+        where: { id: sku.familyId },
+        include: familyCatalogInclude,
+      })
+    }
+  }
+
+  if (!family) {
+    throw new CustomError('PRODUCT_NOT_FOUND', 'Product not found', 404)
+  }
+
+  const shops = await prisma.shop.findMany()
+  const shopById = new Map(shops.map((shop) => [shop.id, shop]))
+  const stock = await prisma.shopStock.findMany({
+    where: { productId: { in: family.products.map((product) => product.id) } },
+  })
+
+  const presented = presentCatalogFamily(family, stock, shopById)
+  if (!presented) {
+    throw new CustomError('PRODUCT_NOT_FOUND', 'Product not found', 404)
+  }
+
+  return presented
 }
 
 /**
@@ -127,6 +151,7 @@ export async function globalCheckout(input: GlobalCheckoutInput) {
       fulfillmentType: input.fulfillmentType,
       customerName: input.customerName,
       customerPhone: input.customerPhone,
+      customerWilaya: input.customerWilaya,
       customerEmail: input.customerEmail,
       deliveryAddress: input.deliveryAddress,
       deliveryCity: input.deliveryCity,

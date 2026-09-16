@@ -4,6 +4,8 @@ import { AuthenticatedStaff, assertShopAccess, requireMinRole } from '../../shar
 import { decrementShopStock, restoreShopStock } from '../../shared/stock/stockMutations.js'
 import { findOrCreateClientFromOnlineOrder } from '../../shared/clients/upsertFromOnline.js'
 import { assertCreditWithinLimit } from '../../shared/credit/limitCheck.js'
+import { canonicalWilaya } from '../../shared/geo/algeriaWilayas.js'
+import { normalizeAlgerianPhone, validateCustomerName } from '../../shared/validation/algerianPhone.js'
 import {
   ClientLedgerEntryType,
   FulfillmentType,
@@ -16,6 +18,7 @@ import {
 } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
 import { withFamily } from '../../shared/products/withFamily.js'
+import { canTransitionOrderStatus } from '../../shared/orders/statusTransitions.js'
 
 export interface CheckoutLineInput {
   productId: string
@@ -26,6 +29,7 @@ export interface CheckoutInput {
   fulfillmentType: FulfillmentType
   customerName: string
   customerPhone: string
+  customerWilaya: string
   customerEmail?: string
   deliveryAddress?: string
   deliveryCity?: string
@@ -39,8 +43,131 @@ export interface CompleteOnlineOrderInput {
   creditLimitOverride?: boolean
 }
 
-function normalizeCity(city: string): string {
-  return city.trim().toLowerCase()
+const orderProductInclude = {
+  product: {
+    include: {
+      family: {
+        include: {
+          images: { orderBy: { sortOrder: 'asc' as const }, take: 1 },
+        },
+      },
+    },
+  },
+} as const
+
+export async function checkoutForShop(
+  shop: { id: string; slug: string; serviceCity: string; deliveryFee: Decimal },
+  input: CheckoutInput,
+) {
+  if (!input.lines?.length) {
+    throw new CustomError('VALIDATION_ERROR', 'Cart is empty', 400)
+  }
+
+  const customerName = validateCustomerName(input.customerName)
+  if (!customerName) {
+    throw new CustomError('VALIDATION_ERROR', 'Please enter your full name.', 400)
+  }
+
+  const customerPhone = normalizeAlgerianPhone(input.customerPhone)
+  if (!customerPhone) {
+    throw new CustomError(
+      'VALIDATION_ERROR',
+      'Please enter a valid Algerian phone number (05, 06, or 07).',
+      400,
+    )
+  }
+
+  const customerWilaya = canonicalWilaya(input.customerWilaya)
+  if (!customerWilaya) {
+    throw new CustomError('VALIDATION_ERROR', 'Please select a wilaya.', 400)
+  }
+
+  if (input.fulfillmentType === FulfillmentType.DELIVERY) {
+    if (!input.deliveryAddress?.trim() && !customerWilaya) {
+      throw new CustomError('VALIDATION_ERROR', 'Delivery address and city required', 400)
+    }
+  }
+
+  const products = await Promise.all(
+    input.lines.map(async (line) => {
+      if (!Number.isInteger(line.quantity) || line.quantity < 1) {
+        throw new CustomError('VALIDATION_ERROR', 'Quantity must be a positive integer', 400)
+      }
+
+      const product = await prisma.product.findUnique({
+        where: { id: line.productId },
+        include: { family: true },
+      })
+      if (
+        !product ||
+        !product.isActive ||
+        !product.availableOnline ||
+        (product.family && (!product.family.isActive || !product.family.availableOnline))
+      ) {
+        throw new CustomError('PRODUCT_NOT_FOUND', 'Product unavailable', 404)
+      }
+      return { product, quantity: line.quantity }
+    }),
+  )
+
+  const subtotal = products.reduce(
+    (sum, { product, quantity }) => sum.add(product.sellPrice.mul(quantity)),
+    new Decimal(0),
+  )
+
+  const deliveryFee =
+    input.fulfillmentType === FulfillmentType.DELIVERY ? shop.deliveryFee : new Decimal(0)
+  const total = subtotal.add(deliveryFee)
+  const orderNumber = await generateOrderNumber(shop.id)
+
+  const client = await findOrCreateClientFromOnlineOrder(shop.id, {
+    name: customerName,
+    phone: customerPhone,
+    email: input.customerEmail,
+    address: customerWilaya,
+  })
+
+  return prisma.$transaction(async (tx) => {
+    await decrementShopStock(
+      tx,
+      shop.id,
+      input.lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+    )
+
+    return tx.onlineOrder.create({
+      data: {
+        shopId: shop.id,
+        orderNumber,
+        fulfillmentType: input.fulfillmentType,
+        customerName,
+        customerPhone,
+        customerWilaya,
+        customerEmail: input.customerEmail ?? null,
+        deliveryAddress: input.deliveryAddress ?? null,
+        deliveryCity: input.deliveryCity?.trim() || customerWilaya,
+        paymentMethod:
+          input.fulfillmentType === FulfillmentType.DELIVERY
+            ? OnlinePaymentMethod.COD
+            : OnlinePaymentMethod.PAY_ON_PICKUP,
+        clientId: client.id,
+        subtotal,
+        deliveryFee,
+        total,
+        lines: {
+          create: products.map(({ product, quantity }) => ({
+            productId: product.id,
+            quantity,
+            unitCost: product.unitCost,
+            unitPrice: product.sellPrice,
+            lineTotal: product.sellPrice.mul(quantity),
+          })),
+        },
+      },
+      include: {
+        lines: { include: orderProductInclude },
+      },
+    })
+  })
 }
 
 async function generateOrderNumber(shopId: string): Promise<string> {
@@ -80,7 +207,7 @@ export async function listStorefrontProducts(slug: string) {
     include: { product: true },
   })
 
-  return stock
+  const mapped = stock
     .filter((s) => shop.outOfStockDisplay === OutOfStockDisplay.SHOW_UNAVAILABLE || s.quantity > 0)
     .map((s) => {
       const family = withFamily(s.product)
@@ -95,93 +222,11 @@ export async function listStorefrontProducts(slug: string) {
         variantLabel: family.variantLabel,
       }
     })
-}
 
-/**
- * Core single-shop checkout logic: validates the cart against a specific shop,
- * decrements stock, and creates one OnlineOrder. Shared by the per-shop
- * storefront (/storefront/:slug/checkout) and the global store checkout,
- * which calls this once per shop present in a multi-shop cart.
- */
-export async function checkoutForShop(shop: { id: string; slug: string; serviceCity: string; deliveryFee: Decimal }, input: CheckoutInput) {
-  if (!input.lines?.length) {
-    throw new CustomError('VALIDATION_ERROR', 'Cart is empty', 400)
-  }
-
-  if (!input.customerName || !input.customerPhone) {
-    throw new CustomError('VALIDATION_ERROR', 'Customer name and phone required', 400)
-  }
-
-  if (input.fulfillmentType === FulfillmentType.DELIVERY) {
-    if (!input.deliveryAddress || !input.deliveryCity) {
-      throw new CustomError('VALIDATION_ERROR', 'Delivery address and city required', 400)
-    }
-    if (normalizeCity(input.deliveryCity) !== normalizeCity(shop.serviceCity)) {
-      throw new CustomError('CITY_MISMATCH', 'Delivery not available in this city', 400)
-    }
-  }
-
-  const products = await Promise.all(
-    input.lines.map(async (line) => {
-      const product = await prisma.product.findUnique({ where: { id: line.productId } })
-      if (!product || !product.isActive || !product.availableOnline) {
-        throw new CustomError('PRODUCT_NOT_FOUND', `Product ${line.productId} unavailable`, 404)
-      }
-      return { product, quantity: line.quantity }
-    }),
+  const familiesWithStock = new Set(
+    stock.filter((s) => s.quantity > 0).map((s) => withFamily(s.product).category),
   )
-
-  const subtotal = products.reduce(
-    (sum, { product, quantity }) => sum.add(product.sellPrice.mul(quantity)),
-    new Decimal(0),
-  )
-
-  const deliveryFee =
-    input.fulfillmentType === FulfillmentType.DELIVERY ? shop.deliveryFee : new Decimal(0)
-  const total = subtotal.add(deliveryFee)
-  const orderNumber = await generateOrderNumber(shop.id)
-
-  const client = await findOrCreateClientFromOnlineOrder(shop.id, {
-    name: input.customerName,
-    phone: input.customerPhone,
-    email: input.customerEmail,
-    address: input.deliveryAddress,
-  })
-
-  return prisma.$transaction(async (tx) => {
-    await decrementShopStock(
-      tx,
-      shop.id,
-      input.lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
-    )
-
-    return tx.onlineOrder.create({
-      data: {
-        shopId: shop.id,
-        orderNumber,
-        fulfillmentType: input.fulfillmentType,
-        customerName: input.customerName,
-        customerPhone: input.customerPhone,
-        customerEmail: input.customerEmail ?? null,
-        deliveryAddress: input.deliveryAddress ?? null,
-        deliveryCity: input.deliveryCity ?? null,
-        paymentMethod: OnlinePaymentMethod.PAY_ON_PICKUP,
-        clientId: client.id,
-        subtotal,
-        deliveryFee,
-        total,
-        lines: {
-          create: products.map(({ product, quantity }) => ({
-            productId: product.id,
-            quantity,
-            unitCost: product.unitCost,
-            unitPrice: product.sellPrice,
-            lineTotal: product.sellPrice.mul(quantity),
-          })),
-        },
-      },
-    })
-  })
+  return mapped.filter((item) => familiesWithStock.has(item.category ?? ''))
 }
 
 export async function checkout(slug: string, input: CheckoutInput) {
@@ -196,26 +241,32 @@ export async function checkout(slug: string, input: CheckoutInput) {
 export async function listOrders(
   staff: AuthenticatedStaff,
   shopId: string,
-  status?: OrderStatus,
-  search?: string,
+  filters?: { status?: OrderStatus; search?: string; wilaya?: string },
 ) {
   assertShopAccess(staff, shopId)
 
-  const where: Prisma.OnlineOrderWhereInput = { shopId, ...(status ? { status } : {}) }
+  const where: Prisma.OnlineOrderWhereInput = {
+    shopId,
+    ...(filters?.status ? { status: filters.status } : {}),
+    ...(filters?.wilaya ? { customerWilaya: filters.wilaya } : {}),
+  }
 
-  if (search?.trim()) {
-    const q = search.trim()
+  if (filters?.search?.trim()) {
+    const q = filters.search.trim()
     where.OR = [
+      { orderNumber: { contains: q, mode: 'insensitive' } },
+      { id: { equals: q } },
       { customerName: { contains: q, mode: 'insensitive' } },
       { customerPhone: { contains: q, mode: 'insensitive' } },
       { customerEmail: { contains: q, mode: 'insensitive' } },
+      { customerWilaya: { contains: q, mode: 'insensitive' } },
     ]
   }
 
   return prisma.onlineOrder.findMany({
     where,
     include: {
-      lines: { include: { product: true } },
+      lines: { include: orderProductInclude },
       client: { select: { id: true, name: true, phone: true, balance: true } },
     },
     orderBy: { createdAt: 'desc' },
@@ -229,7 +280,7 @@ export async function getOrderById(staff: AuthenticatedStaff, shopId: string, or
   const order = await prisma.onlineOrder.findFirst({
     where: { id: orderId, shopId },
     include: {
-      lines: { include: { product: true } },
+      lines: { include: orderProductInclude },
       client: { select: { id: true, name: true, phone: true, balance: true, creditLimit: true } },
       fulfillmentSale: true,
     },
@@ -240,14 +291,6 @@ export async function getOrderById(staff: AuthenticatedStaff, shopId: string, or
   }
 
   return order
-}
-
-const validTransitions: Record<OrderStatus, OrderStatus[]> = {
-  [OrderStatus.PLACED]: [OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED],
-  [OrderStatus.READY_FOR_PICKUP]: [OrderStatus.COMPLETED, OrderStatus.CANCELLED],
-  [OrderStatus.OUT_FOR_DELIVERY]: [OrderStatus.COMPLETED, OrderStatus.CANCELLED],
-  [OrderStatus.COMPLETED]: [],
-  [OrderStatus.CANCELLED]: [],
 }
 
 export async function updateOrderStatus(
@@ -267,15 +310,18 @@ export async function updateOrderStatus(
     )
   }
 
-  const allowed = validTransitions[order.status]
-  if (!allowed.includes(status)) {
+  if (status === OrderStatus.CANCELLED) {
+    return cancelOrder(staff, shopId, orderId, 'Staff cancelled')
+  }
+
+  if (!canTransitionOrderStatus(order.status, status)) {
     throw new CustomError('INVALID_TRANSITION', `Cannot transition from ${order.status} to ${status}`, 400)
   }
 
   return prisma.onlineOrder.update({
     where: { id: orderId },
     data: { status },
-    include: { lines: { include: { product: true } }, client: true },
+    include: { lines: { include: orderProductInclude }, client: true },
   })
 }
 
@@ -410,7 +456,7 @@ export async function completeOnlineOrder(
       where: { id: orderId },
       data: { status: OrderStatus.COMPLETED },
       include: {
-        lines: { include: { product: true } },
+        lines: { include: orderProductInclude },
         client: true,
         fulfillmentSale: true,
       },
@@ -448,7 +494,7 @@ export async function cancelOrder(
         cancelledAt: new Date(),
         cancelReason: reason ?? null,
       },
-      include: { lines: { include: { product: true } } },
+      include: { lines: { include: orderProductInclude } },
     })
   })
 }

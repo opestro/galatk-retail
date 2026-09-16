@@ -116,8 +116,31 @@ export interface Product {
   galatkProductRef: string | null
   category?: string
   variantLabel?: string | null
+  familyId?: string | null
+  attributes?: Record<string, string>
+  attributesKey?: string
   isActive: boolean
   availableOnline: boolean
+  shopQuantity?: number | null
+  inStock?: boolean | null
+}
+
+export interface ProductImage {
+  id: string
+  url: string
+  sortOrder: number
+}
+
+export interface ProductFamily {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  isActive: boolean
+  availableOnline: boolean
+  available?: boolean | null
+  images: ProductImage[]
+  variants: Product[]
 }
 
 export interface ShopStockItem {
@@ -157,18 +180,39 @@ export interface Sale {
   }>
 }
 
+export interface OnlineOrderLine {
+  id: string
+  productId: string
+  familyId?: string | null
+  productName: string
+  variantLabel: string
+  attributes: Record<string, string>
+  imageUrl?: string | null
+  sku?: string | null
+  quantity: number
+  unitPrice: string
+  lineTotal: string
+}
+
 export interface OnlineOrder {
   id: string
+  shopId?: string
   orderNumber: string
   status: string
   fulfillmentType: string
   customerName: string
   customerPhone: string
+  customerWilaya?: string | null
   customerEmail?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  paymentMethod?: string
+  subtotal?: string
+  deliveryFee?: string
   total: string
   createdAt: string
   client?: Pick<Client, 'id' | 'name' | 'phone' | 'balance' | 'creditLimit'> | null
-  lines: Array<{ product: { name: string }; quantity: number; unitPrice?: string; lineTotal?: string }>
+  lines: OnlineOrderLine[]
 }
 
 export interface PurchaseLine {
