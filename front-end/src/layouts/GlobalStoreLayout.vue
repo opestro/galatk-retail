@@ -1,10 +1,35 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import { RouterView, RouterLink, useRoute } from 'vue-router'
 import { useGlobalStoreCartStore } from '@/stores/globalStoreCart'
 import { ShoppingCart, Store } from 'lucide-vue-next'
+import HomeHeroBanner from '@/components/storefront/HomeHeroBanner.vue'
+import { getPublicHomeBanner } from '@/services/siteSettings'
+import type { SiteSettings } from '@/types/api'
+
+const DEFAULT_TITLE = 'Shop from All Our Stores'
+const DEFAULT_SUBTITLE =
+  'Browse products from multiple locations. Choose your preferred shop for each item and enjoy flexible pickup or delivery options.'
 
 const route = useRoute()
 const cart = useGlobalStoreCartStore()
+const banner = ref<SiteSettings | null>(null)
+
+onMounted(async () => {
+  try {
+    banner.value = await getPublicHomeBanner()
+  } catch {
+    banner.value = null
+  }
+})
+
+const hero = computed(() => ({
+  enabled: banner.value?.bannerEnabled ?? true,
+  title: banner.value?.bannerTitle || DEFAULT_TITLE,
+  subtitle: banner.value?.bannerSubtitle ?? DEFAULT_SUBTITLE,
+  images: banner.value?.images ?? [],
+  intervalMs: banner.value?.bannerIntervalMs ?? 5000,
+}))
 </script>
 
 <template>
@@ -33,19 +58,14 @@ const cart = useGlobalStoreCartStore()
       </div>
     </header>
 
-    <!-- Hero Banner (only on catalog page) -->
-    <div v-if="route.name === 'global-store-catalog'" class="border-b border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100">
-      <div class="mx-auto max-w-7xl px-6 py-12 md:px-8 md:py-16">
-        <div class="text-center">
-          <h1 class="text-3xl font-bold text-gray-900 sm:text-4xl md:text-5xl">
-            Shop from All Our Stores
-          </h1>
-          <p class="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
-            Browse products from multiple locations. Choose your preferred shop for each item and enjoy flexible pickup or delivery options.
-          </p>
-        </div>
-      </div>
-    </div>
+    <HomeHeroBanner
+      v-if="route.name === 'global-store-catalog'"
+      :enabled="hero.enabled"
+      :title="hero.title"
+      :subtitle="hero.subtitle"
+      :images="hero.images"
+      :interval-ms="hero.intervalMs"
+    />
 
     <!-- Main Content -->
     <main class="mx-auto w-full max-w-7xl px-6 py-8 md:px-8 md:py-12">

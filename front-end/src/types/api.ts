@@ -268,3 +268,19 @@ export interface StorefrontProduct {
   category?: string
   variantLabel?: string | null
 }
+
+/** Public storefront homepage hero, edited by staff in Settings. */
+export interface SiteBannerImage {
+  id: string
+  url: string
+  sortOrder: number
+}
+
+export interface SiteSettings {
+  bannerEnabled: boolean
+  bannerTitle: string
+  bannerSubtitle: string
+  bannerIntervalMs: number
+  images: SiteBannerImage[]
+  updatedAt: string
+}

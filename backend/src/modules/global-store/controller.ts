@@ -1,6 +1,12 @@
 import { Request, Response, NextFunction } from 'express'
 import * as GlobalStoreService from './service.js'
 import { FulfillmentType } from '@prisma/client'
+import * as SettingsController from '../settings/controller.js'
+
+/** Public homepage hero — same payload admins edit under /settings. */
+export async function getBanner(req: Request, res: Response, next: NextFunction) {
+  return SettingsController.getPublic(req, res, next)
+}
 
 export async function listShops(_req: Request, res: Response, next: NextFunction) {
   try {

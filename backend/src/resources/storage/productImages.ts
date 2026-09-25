@@ -6,6 +6,8 @@ import { CustomError } from '../../shared/types/error_type.js'
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 const MAX_BYTES = 5 * 1024 * 1024
 const RELATIVE_DIR = 'product-images'
+/** Homepage / storefront hero images, separate from SKU photos. */
+export const BANNER_RELATIVE_DIR = 'banners'
 
 export function uploadsRoot(): string {
   return path.join(process.cwd(), 'uploads')
@@ -15,12 +17,17 @@ export function productImagesDir(): string {
   return path.join(uploadsRoot(), RELATIVE_DIR)
 }
 
-export function ensureUploadDirs(): void {
-  fs.mkdirSync(productImagesDir(), { recursive: true })
+export function bannersDir(): string {
+  return path.join(uploadsRoot(), BANNER_RELATIVE_DIR)
 }
 
-export function publicImageUrl(filename: string): string {
-  return `/uploads/${RELATIVE_DIR}/${filename}`
+export function ensureUploadDirs(): void {
+  fs.mkdirSync(productImagesDir(), { recursive: true })
+  fs.mkdirSync(bannersDir(), { recursive: true })
+}
+
+export function publicImageUrl(filename: string, relativeDir = RELATIVE_DIR): string {
+  return `/uploads/${relativeDir}/${filename}`
 }
 
 export function extensionForMime(mimeType: string): string {
@@ -42,16 +49,20 @@ export function assertImageFile(file: { mimetype?: string; size?: number } | und
   }
 }
 
-export function persistImageBuffer(buffer: Buffer, mimeType: string): { filename: string; url: string } {
+export function persistImageBuffer(
+  buffer: Buffer,
+  mimeType: string,
+  relativeDir = RELATIVE_DIR,
+): { filename: string; url: string } {
   ensureUploadDirs()
   const filename = `${randomUUID()}${extensionForMime(mimeType)}`
-  fs.writeFileSync(path.join(productImagesDir(), filename), buffer)
-  return { filename, url: publicImageUrl(filename) }
+  fs.writeFileSync(path.join(uploadsRoot(), relativeDir, filename), buffer)
+  return { filename, url: publicImageUrl(filename, relativeDir) }
 }
 
-export function deleteStoredImage(filename: string): void {
+export function deleteStoredImage(filename: string, relativeDir = RELATIVE_DIR): void {
   const safe = path.basename(filename)
-  const full = path.join(productImagesDir(), safe)
+  const full = path.join(uploadsRoot(), relativeDir, safe)
   if (fs.existsSync(full)) {
     fs.unlinkSync(full)
   }

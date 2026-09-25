@@ -202,6 +202,18 @@ async function main() {
     },
   })
 
+  await prisma.siteSettings.upsert({
+    where: { id: 'default' },
+    update: {},
+    create: {
+      id: 'default',
+      bannerEnabled: true,
+      bannerTitle: 'Shop from All Our Stores',
+      bannerSubtitle:
+        'Browse products from multiple locations. Choose your preferred shop for each item and enjoy flexible pickup or delivery options.',
+    },
+  })
+
   console.log('Seed complete:', {
     owner: owner.email,
     integrationStaffId: integrationStaff.id,
