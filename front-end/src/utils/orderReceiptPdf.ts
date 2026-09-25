@@ -1,6 +1,7 @@
 import type { OnlineOrder, Shop } from '@/types/api'
 import { formatDzd } from '@/utils/formatMoney'
 import { orderStatusLabel } from '@/services/orders'
+import { printHtmlDocument } from '@/utils/printPosReceipt'
 
 function escapeHtml(value: string): string {
   return value
@@ -97,14 +98,8 @@ export function saveOrderReceiptPdf(order: OnlineOrder, shop?: Pick<Shop, 'name'
     ${deliveryRow}
     <div class="row total"><span>Total</span><span>${escapeHtml(formatDzd(order.total))}</span></div>
   </div>
-  <script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); }<\/script>
 </body>
 </html>`
 
-  const printWindow = window.open('', '_blank', 'width=900,height=1100')
-  if (!printWindow) {
-    throw new Error('Allow pop-ups to save the receipt as PDF.')
-  }
-  printWindow.document.write(html)
-  printWindow.document.close()
+  printHtmlDocument(html)
 }

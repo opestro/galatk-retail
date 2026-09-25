@@ -13,6 +13,41 @@ export interface LoginResponse {
   staff: StaffProfile
 }
 
+export interface CustomerProfile {
+  id: string
+  name: string
+  phone: string
+  email: string | null
+}
+
+export interface CustomerLoginResponse {
+  token: string
+  customer: CustomerProfile
+}
+
+export interface CustomerOrderShop {
+  id: string
+  name: string
+  slug: string
+}
+
+export interface CustomerOrder {
+  id: string
+  orderNumber: string
+  status: string
+  fulfillmentType: string
+  paymentMethod?: string
+  customerName: string
+  customerPhone: string
+  customerWilaya?: string | null
+  subtotal: string
+  deliveryFee: string
+  total: string
+  createdAt: string
+  shop: CustomerOrderShop
+  lines: OnlineOrderLine[]
+}
+
 export interface Shop {
   id: string
   name: string
@@ -267,4 +302,20 @@ export interface StorefrontProduct {
   quantity: number
   category?: string
   variantLabel?: string | null
+}
+
+/** Public storefront homepage hero, edited by staff in Settings. */
+export interface SiteBannerImage {
+  id: string
+  url: string
+  sortOrder: number
+}
+
+export interface SiteSettings {
+  bannerEnabled: boolean
+  bannerTitle: string
+  bannerSubtitle: string
+  bannerIntervalMs: number
+  images: SiteBannerImage[]
+  updatedAt: string
 }

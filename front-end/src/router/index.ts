@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useCustomerAuthStore } from '@/stores/customerAuth'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import PosLayout from '@/layouts/PosLayout.vue'
 import StorefrontLayout from '@/layouts/StorefrontLayout.vue'
@@ -10,7 +11,15 @@ const router = createRouter({
   routes: [
     {
       path: '/login',
-      name: 'login',
+      component: GlobalStoreLayout,
+      meta: { public: true },
+      children: [
+        { path: '', name: 'customer-login', component: () => import('@/views/global-store/AccountLoginView.vue') },
+      ],
+    },
+    {
+      path: '/staff/login',
+      name: 'staff-login',
       component: () => import('@/views/auth/LoginView.vue'),
       meta: { public: true },
     },
@@ -60,7 +69,7 @@ const router = createRouter({
       meta: { public: true },
       children: [
         { path: '', name: 'storefront-catalog', component: () => import('@/views/storefront/CatalogView.vue') },
-        { path: 'checkout', name: 'storefront-checkout', component: () => import('@/views/storefront/CheckoutView.vue') },
+        { path: 'checkout', name: 'storefront-checkout', component: () => import('@/views/storefront/CheckoutView.vue'), meta: { requiresCustomerAuth: true, customerCreate: true } },
         { path: 'confirmation/:orderNumber', name: 'storefront-confirmation', component: () => import('@/views/storefront/OrderConfirmationView.vue') },
       ],
     },
@@ -71,8 +80,21 @@ const router = createRouter({
       children: [
         { path: '', name: 'global-store-catalog', component: () => import('@/views/global-store/GlobalCatalogView.vue') },
         { path: 'products/:productId', name: 'global-store-product', component: () => import('@/views/global-store/GlobalProductView.vue') },
-        { path: 'checkout', name: 'global-store-checkout', component: () => import('@/views/global-store/GlobalCheckoutView.vue') },
+        { path: 'checkout', name: 'global-store-checkout', component: () => import('@/views/global-store/GlobalCheckoutView.vue'), meta: { requiresCustomerAuth: true, customerCreate: true } },
         { path: 'confirmation', name: 'global-store-confirmation', component: () => import('@/views/global-store/GlobalOrderConfirmationView.vue') },
+        { path: 'login', redirect: (to) => ({ path: '/login', query: to.query }) },
+        {
+          path: 'account',
+          name: 'store-account',
+          component: () => import('@/views/global-store/AccountOrdersView.vue'),
+          meta: { requiresCustomerAuth: true },
+        },
+        {
+          path: 'account/orders/:orderId',
+          name: 'store-account-order',
+          component: () => import('@/views/global-store/AccountOrderDetailView.vue'),
+          meta: { requiresCustomerAuth: true },
+        },
       ],
     },
     {
@@ -84,17 +106,32 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore()
+  const customerAuth = useCustomerAuthStore()
+
+  if (to.matched.some((record) => record.meta.requiresCustomerAuth) && !customerAuth.isAuthenticated) {
+    const query: Record<string, string> = { next: to.fullPath }
+    if (to.matched.some((record) => record.meta.customerCreate)) {
+      query.create = '1'
+    }
+    return { path: '/login', query }
+  }
+
+  if (to.name === 'customer-login' && customerAuth.isAuthenticated) {
+    const next = typeof to.query.next === 'string' ? to.query.next : ''
+    if (next.startsWith('/store') || next.startsWith('/shop')) return next
+    return '/store/account'
+  }
 
   if (to.meta.public) return true
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return '/login'
+    return '/staff/login'
   }
 
   const roles = to.meta.roles as string[] | undefined
   if (roles && auth.staff && !roles.includes(auth.staff.role)) {
     if (auth.staff.role === 'CASHIER') return '/pos'
-    return '/login'
+    return '/staff/login'
   }
 
   const childRoles = to.matched.at(-1)?.meta.roles as string[] | undefined

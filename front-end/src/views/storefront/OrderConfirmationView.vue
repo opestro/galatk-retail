@@ -11,8 +11,14 @@ const route = useRoute()
     <h2 class="text-xl font-semibold text-gray-900">Order placed!</h2>
     <p class="mt-2 text-gray-600">Order number: {{ route.params.orderNumber }}</p>
     <RouterLink
-      :to="`/shop/${route.params.slug}`"
+      to="/store/account"
       class="btn-primary mt-6"
+    >
+      View my orders
+    </RouterLink>
+    <RouterLink
+      :to="`/shop/${route.params.slug}`"
+      class="btn-secondary mt-3"
     >
       Continue shopping
     </RouterLink>

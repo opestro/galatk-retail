@@ -14,6 +14,8 @@ export interface GlobalCheckoutInput {
   customerEmail?: string
   deliveryAddress?: string
   deliveryCity?: string
+  password?: string
+  authenticatedCustomerId?: string
   lines: GlobalCheckoutLineInput[]
 }
 

@@ -317,12 +317,14 @@ model OnlineOrderLine {
 }
 
 model Customer {
-  id        String   @id @default(uuid())
-  name      String
-  phone     String   @unique
-  email     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid())
+  name         String
+  phone        String   @unique
+  email        String?  @unique
+  /// Set when the shopper creates their client-space account (usually at first checkout).
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   clients Client[]
 }
@@ -450,6 +452,34 @@ model ShopCharge {
   cancelledBy StaffUser? @relation("ChargeCancelledBy", fields: [cancelledById], references: [id])
 
   @@index([shopId, chargeDate])
+}
+
+/// Singleton storefront presentation (id is always "default").
+model SiteSettings {
+  id                String   @id
+  bannerEnabled     Boolean  @default(true)
+  bannerTitle       String
+  bannerSubtitle    String
+  /** Milliseconds between homepage slides when more than one image is set. */
+  bannerIntervalMs  Int      @default(5000)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  images SiteBannerImage[]
+}
+
+model SiteBannerImage {
+  id         String   @id @default(uuid())
+  settingsId String
+  filename   String
+  url        String
+  mimeType   String
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  settings SiteSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+
+  @@index([settingsId, sortOrder])
 }
 
 /// One-time SSO handoff codes (galatk workshop ↔ retail admin jump)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { api } from '@/services/api'
 import type { LoginResponse } from '@/types/api'
@@ -40,7 +40,7 @@ onMounted(async () => {
       <p v-if="status === 'loading'" class="mt-4 text-sm text-gray-500">Signing you in…</p>
       <template v-else>
         <p class="mt-4 text-sm text-red-600">{{ errorMessage }}</p>
-        <RouterLink to="/login" class="mt-4 inline-flex text-sm font-medium text-gray-900 underline">
+        <RouterLink to="/staff/login" class="mt-4 inline-flex text-sm font-medium text-gray-900 underline">
           Sign in
         </RouterLink>
       </template>

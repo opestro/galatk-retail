@@ -1,15 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import axios from 'axios'
-import {
-  getGlobalProduct,
-  globalCheckout,
-  type PublicCatalogProductDetail,
-  type PublicCatalogShop,
-  type PublicCatalogVariant,
-} from '@/services/globalStore'
+import { getGlobalProduct, type PublicCatalogProductDetail, type PublicCatalogShop, type PublicCatalogVariant } from '@/services/globalStore'
 import { useGlobalStoreCartStore } from '@/stores/globalStoreCart'
+import { useCustomerAuthStore } from '@/stores/customerAuth'
 import ProductDetailSkeleton from '@/components/storefront/ProductDetailSkeleton.vue'
 import ProductGallery from '@/components/storefront/ProductGallery.vue'
 import VariantOptionGroup from '@/components/storefront/VariantOptionGroup.vue'
@@ -24,19 +19,11 @@ import {
   optionValues,
   type AttributeMap,
 } from '@/utils/variantSelection'
-import GuestCustomerFields from '@/components/storefront/GuestCustomerFields.vue'
-import {
-  checkoutErrorMessage,
-  emptyGuestCustomer,
-  validateGuestCustomer,
-  type GuestCustomerFields as GuestFields,
-} from '@/utils/guestCheckout'
-import { normalizeAlgerianPhone } from '@/utils/algerianPhone'
 import { Check, Loader2, Minus, Plus, ShoppingBag } from 'lucide-vue-next'
 
 const route = useRoute()
-const router = useRouter()
 const cart = useGlobalStoreCartStore()
+const customerAuth = useCustomerAuthStore()
 
 const product = ref<PublicCatalogProductDetail | null>(null)
 const loading = ref(true)
@@ -47,10 +34,6 @@ const selection = ref<AttributeMap>({})
 const selectedShopId = ref<string | null>(null)
 const quantity = ref(1)
 const addState = ref<'idle' | 'adding' | 'added'>('idle')
-const guestForm = ref<GuestFields>(emptyGuestCustomer())
-const guestErrors = ref({ name: '', phone: '', wilaya: '' })
-const buyNowError = ref('')
-const buyingNow = ref(false)
 
 const shopFilter = computed(() => {
   const q = route.query.shop
@@ -178,49 +161,6 @@ function addToCart() {
   window.setTimeout(() => {
     if (addState.value === 'added') addState.value = 'idle'
   }, 1400)
-}
-
-async function orderThisItem() {
-  buyNowError.value = ''
-  if (!canAdd.value || buyingNow.value || !product.value || !selectedVariant.value || !selectedShop.value) {
-    return
-  }
-  const { valid, errors } = validateGuestCustomer(guestForm.value)
-  guestErrors.value = errors
-  if (!valid) return
-
-  buyingNow.value = true
-  try {
-    const phone = normalizeAlgerianPhone(guestForm.value.customerPhone) ?? guestForm.value.customerPhone
-    const orders = await globalCheckout({
-      fulfillmentType: 'PICKUP',
-      customerName: guestForm.value.customerName.trim(),
-      customerPhone: phone,
-      customerWilaya: guestForm.value.customerWilaya,
-      lines: [
-        {
-          productId: selectedVariant.value.id,
-          shopId: selectedShop.value.shopId,
-          quantity: quantity.value,
-        },
-      ],
-    })
-    const total = orders.reduce((sum, order) => sum + Number(order.total), 0)
-    await router.push({
-      path: '/store/confirmation',
-      query: {
-        orders: orders.map((o) => o.orderNumber).join(','),
-        total: String(total),
-        phone,
-        wilaya: guestForm.value.customerWilaya,
-        name: guestForm.value.customerName.trim(),
-      },
-    })
-  } catch (err) {
-    buyNowError.value = checkoutErrorMessage(err)
-  } finally {
-    buyingNow.value = false
-  }
 }
 </script>
 
@@ -359,27 +299,13 @@ async function orderThisItem() {
         >
           Go to cart
         </RouterLink>
-
-        <div class="border-t border-gray-200 pt-5">
-          <h2 class="text-sm font-semibold text-gray-900">Order this item now</h2>
-          <p class="mt-1 text-xs text-gray-500">
-            Buying only this product? Fill your details here. To order several products, add them to
-            the cart first.
-          </p>
-          <div class="mt-4">
-            <GuestCustomerFields v-model="guestForm" :errors="guestErrors" />
-          </div>
-          <p v-if="buyNowError" class="mt-3 text-sm text-red-600">{{ buyNowError }}</p>
-          <button
-            type="button"
-            class="btn-primary mt-4 flex w-full items-center justify-center gap-2"
-            :disabled="!canAdd || buyingNow"
-            @click="orderThisItem"
-          >
-            <Loader2 v-if="buyingNow" class="h-4 w-4 animate-spin" />
-            {{ buyingNow ? 'Confirming…' : 'Confirm order' }}
-          </button>
-        </div>
+        <RouterLink
+          v-if="!customerAuth.isAuthenticated"
+          :to="{ path: '/login', query: { create: '1', next: '/store/checkout' } }"
+          class="text-center text-sm text-gray-600 hover:text-gray-900"
+        >
+          Create an account to place an order
+        </RouterLink>
       </div>
     </div>
   </div>

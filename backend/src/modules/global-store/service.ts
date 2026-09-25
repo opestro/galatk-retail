@@ -2,7 +2,10 @@ import prisma from '../../resources/database/initDatabase.js'
 import { CustomError } from '../../shared/types/error_type.js'
 import { checkoutForShop, CheckoutInput } from '../storefront/service.js'
 import { GlobalCheckoutInput, PublicCatalogProductDetail, PublicCatalogProductSummary } from './types.js'
-import { lookupCustomerByPhone } from '../../shared/clients/upsertFromOnline.js'
+import {
+  ensureCustomerForCheckout,
+  lookupCustomerByPhone,
+} from '../../shared/clients/upsertFromOnline.js'
 import { presentCatalogFamily, toCatalogSummary } from './presenter.js'
 
 export { lookupCustomerByPhone }
@@ -143,6 +146,14 @@ export async function globalCheckout(input: GlobalCheckoutInput) {
     throw new CustomError('SHOP_NOT_FOUND', `Shop(s) not found: ${missing.join(', ')}`, 404)
   }
 
+  const customer = await ensureCustomerForCheckout({
+    name: input.customerName,
+    phone: input.customerPhone,
+    email: input.customerEmail,
+    password: input.password,
+    authenticatedCustomerId: input.authenticatedCustomerId,
+  })
+
   const orders = []
   for (const [shopId, lines] of linesByShop) {
     const shop = shopById.get(shopId)!
@@ -150,11 +161,12 @@ export async function globalCheckout(input: GlobalCheckoutInput) {
     const checkoutInput: CheckoutInput = {
       fulfillmentType: input.fulfillmentType,
       customerName: input.customerName,
-      customerPhone: input.customerPhone,
+      customerPhone: customer.phone,
       customerWilaya: input.customerWilaya,
       customerEmail: input.customerEmail,
       deliveryAddress: input.deliveryAddress,
       deliveryCity: input.deliveryCity,
+      authenticatedCustomerId: customer.id,
       lines: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
     }
 
@@ -162,5 +174,5 @@ export async function globalCheckout(input: GlobalCheckoutInput) {
     orders.push(order)
   }
 
-  return orders
+  return { orders, customer }
 }

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import type { Shop } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonForm from '@/components/ui/SkeletonForm.vue'
+import HomeBannerSettings from '@/components/admin/HomeBannerSettings.vue'
 
 const auth = useAuthStore()
 const shop = ref<Shop | null>(null)
@@ -48,6 +49,10 @@ watch(() => auth.selectedShopId, loadShop)
 <template>
   <div class="page-shell">
     <PageHeader title="Shop settings" />
+
+    <HomeBannerSettings />
+
+    <h3 class="section-title">Selected shop</h3>
 
     <SkeletonForm v-if="loading" :fields="4" />
 

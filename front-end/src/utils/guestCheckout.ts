@@ -2,14 +2,18 @@ import { isValidWilaya } from '@/data/algeriaWilayas'
 import { normalizeAlgerianPhone, validateCustomerName } from '@/utils/algerianPhone'
 import axios from 'axios'
 
+export const MIN_CUSTOMER_PASSWORD_LENGTH = 6
+
 export interface GuestCustomerFields {
   customerName: string
   customerPhone: string
   customerWilaya: string
+  password: string
+  passwordConfirm: string
 }
 
 export function emptyGuestCustomer(): GuestCustomerFields {
-  return { customerName: '', customerPhone: '', customerWilaya: '' }
+  return { customerName: '', customerPhone: '', customerWilaya: '', password: '', passwordConfirm: '' }
 }
 
 export function validateGuestCustomer(form: GuestCustomerFields) {
@@ -33,6 +37,9 @@ export function checkoutErrorMessage(err: unknown): string {
     const message = err.response?.data?.message as string | undefined
     if (type === 'INSUFFICIENT_STOCK') {
       return 'Not enough stock for this item. Please update the quantity.'
+    }
+    if (type === 'ACCOUNT_EXISTS') {
+      return message || 'This phone already has an account. Sign in to continue.'
     }
     return message || 'Could not place the order. Please try again.'
   }
