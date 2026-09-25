@@ -33,6 +33,9 @@ export interface CheckoutInput {
   customerEmail?: string
   deliveryAddress?: string
   deliveryCity?: string
+  /** Required for guest checkout; omitted when `authenticatedCustomerId` is set. */
+  password?: string
+  authenticatedCustomerId?: string
   lines: CheckoutLineInput[]
 }
 
@@ -63,12 +66,26 @@ export async function checkoutForShop(
     throw new CustomError('VALIDATION_ERROR', 'Cart is empty', 400)
   }
 
-  const customerName = validateCustomerName(input.customerName)
+  let customerName = validateCustomerName(input.customerName)
+  let customerPhone = normalizeAlgerianPhone(input.customerPhone)
+
+  if (input.authenticatedCustomerId) {
+    const account = await prisma.customer.findUnique({
+      where: { id: input.authenticatedCustomerId },
+    })
+    if (!account) {
+      throw new CustomError('UNAUTHORIZED', 'Sign in to continue.', 401)
+    }
+    customerPhone = account.phone
+    if (!customerName) {
+      customerName = account.name
+    }
+  }
+
   if (!customerName) {
     throw new CustomError('VALIDATION_ERROR', 'Please enter your full name.', 400)
   }
 
-  const customerPhone = normalizeAlgerianPhone(input.customerPhone)
   if (!customerPhone) {
     throw new CustomError(
       'VALIDATION_ERROR',
@@ -125,6 +142,8 @@ export async function checkoutForShop(
     phone: customerPhone,
     email: input.customerEmail,
     address: customerWilaya,
+    password: input.password,
+    authenticatedCustomerId: input.authenticatedCustomerId,
   })
 
   return prisma.$transaction(async (tx) => {
@@ -235,7 +254,15 @@ export async function checkout(slug: string, input: CheckoutInput) {
     throw new CustomError('SHOP_NOT_FOUND', 'Shop not found', 404)
   }
 
-  return checkoutForShop(shop, input)
+  const order = await checkoutForShop(shop, input)
+  const customer = order.clientId
+    ? await prisma.client.findUnique({
+        where: { id: order.clientId },
+        include: { customer: true },
+      }).then((row) => row?.customer ?? null)
+    : null
+
+  return { order, customer }
 }
 
 export async function listOrders(

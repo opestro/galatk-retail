@@ -56,6 +56,9 @@ const total = computed(() => (typeof route.query.total === 'string' ? route.quer
       Items from {{ orderNumbers.length }} shops were split into {{ orderNumbers.length }} orders.
     </p>
 
-    <RouterLink to="/store" class="btn-primary">Continue shopping</RouterLink>
+    <div class="flex flex-wrap items-center justify-center gap-3">
+      <RouterLink to="/store/account" class="btn-primary">View my orders</RouterLink>
+      <RouterLink to="/store" class="btn-secondary">Continue shopping</RouterLink>
+    </div>
   </div>
 </template>

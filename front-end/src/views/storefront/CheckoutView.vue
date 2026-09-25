@@ -3,23 +3,26 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/services/api'
 import { useStorefrontCartStore } from '@/stores/storefrontCart'
+import { useCustomerAuthStore } from '@/stores/customerAuth'
 import { lookupCustomerByPhoneStorefront } from '@/services/globalStore'
 import { ALGERIA_WILAYAS } from '@/data/algeriaWilayas'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonForm from '@/components/ui/SkeletonForm.vue'
 import { Check, Loader2 } from 'lucide-vue-next'
+import type { CustomerLoginResponse } from '@/types/api'
 
 const route = useRoute()
 const router = useRouter()
 const cart = useStorefrontCartStore()
+const customerAuth = useCustomerAuthStore()
 
 const shop = ref<{ serviceCity: string; deliveryFee: string } | null>(null)
 const loading = ref(true)
 const form = ref({
   fulfillmentType: 'PICKUP' as 'PICKUP' | 'DELIVERY',
-  customerName: '',
-  customerPhone: '',
-  customerEmail: '',
+  customerName: customerAuth.customer?.name ?? '',
+  customerPhone: customerAuth.customer?.phone ?? '',
+  customerEmail: customerAuth.customer?.email ?? '',
   customerWilaya: '',
   deliveryAddress: '',
   deliveryCity: '',
@@ -75,14 +78,26 @@ async function submit() {
   const slug = route.params.slug as string
   error.value = ''
   try {
-    const { data } = await api.post(`/storefront/${slug}/checkout`, {
-      ...form.value,
+    const { data } = await api.post<{
+      orderNumber: string
+      account: CustomerLoginResponse
+    }>(`/storefront/${slug}/checkout`, {
+      fulfillmentType: form.value.fulfillmentType,
+      customerName: form.value.customerName,
+      customerPhone: form.value.customerPhone,
+      customerEmail: form.value.customerEmail,
+      customerWilaya: form.value.customerWilaya,
+      deliveryAddress: form.value.deliveryAddress,
+      deliveryCity: form.value.deliveryCity,
       lines: cart.lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
     })
+    if (data.account) {
+      customerAuth.setSession(data.account)
+    }
     cart.clear()
     await router.push(`/shop/${slug}/confirmation/${data.orderNumber}`)
   } catch {
-    error.value = 'Checkout failed — check stock and delivery city'
+    error.value = 'Checkout failed — check stock, password, and delivery city'
   }
 }
 </script>

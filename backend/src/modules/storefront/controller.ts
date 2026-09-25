@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express'
 import * as StorefrontService from './service.js'
 import { FulfillmentType } from '@prisma/client'
 import { lookupCustomerByPhone } from '../../shared/clients/upsertFromOnline.js'
+import { issueCustomerSession } from '../account/service.js'
+import { CustomError } from '../../shared/types/error_type.js'
 
 export async function getShop(req: Request, res: Response, next: NextFunction) {
   try {
@@ -44,10 +46,11 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
       customerEmail,
       deliveryAddress,
       deliveryCity,
+      password,
       lines,
     } = req.body
 
-    const order = await StorefrontService.checkout(slug, {
+    const { order, customer } = await StorefrontService.checkout(slug, {
       fulfillmentType: (fulfillmentType as FulfillmentType) || FulfillmentType.PICKUP,
       customerName,
       customerPhone,
@@ -55,14 +58,21 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
       customerEmail,
       deliveryAddress,
       deliveryCity,
+      password,
+      authenticatedCustomerId: req.customer?.id,
       lines,
     })
+
+    if (!customer) {
+      throw new CustomError('CHECKOUT_FAILED', 'Could not create your account.', 500)
+    }
 
     res.status(201).json({
       orderId: order.id,
       orderNumber: order.orderNumber,
       total: order.total.toString(),
       status: order.status,
+      account: issueCustomerSession(customer),
     })
   } catch (error) {
     next(error)

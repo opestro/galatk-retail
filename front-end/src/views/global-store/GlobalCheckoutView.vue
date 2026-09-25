@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { globalCheckout } from '@/services/globalStore'
 import { useGlobalStoreCartStore } from '@/stores/globalStoreCart'
+import { useCustomerAuthStore } from '@/stores/customerAuth'
 import GuestCustomerFields from '@/components/storefront/GuestCustomerFields.vue'
 import {
   checkoutErrorMessage,
@@ -12,15 +13,21 @@ import {
 } from '@/utils/guestCheckout'
 import { normalizeAlgerianPhone } from '@/utils/algerianPhone'
 import { formatDzd } from '@/utils/formatMoney'
-import { Loader2, Minus, Plus, ShoppingBag, Store, Trash2 } from 'lucide-vue-next'
+import { Minus, Plus, ShoppingBag, Store, Trash2 } from 'lucide-vue-next'
 
 const router = useRouter()
 const cart = useGlobalStoreCartStore()
+const customerAuth = useCustomerAuthStore()
 
 const form = ref<GuestFields>(emptyGuestCustomer())
 const fieldErrors = ref({ name: '', phone: '', wilaya: '' })
 const error = ref('')
 const submitting = ref(false)
+
+if (customerAuth.customer) {
+  form.value.customerName = customerAuth.customer.name
+  form.value.customerPhone = customerAuth.customer.phone
+}
 
 const linesByShop = computed(() => {
   const groups = new Map<string, { shopName: string; lines: typeof cart.lines }>()
@@ -43,19 +50,23 @@ async function submit() {
   submitting.value = true
   try {
     const phone = normalizeAlgerianPhone(form.value.customerPhone) ?? form.value.customerPhone
-    const orders = await globalCheckout({
+    const result = await globalCheckout({
       fulfillmentType: 'PICKUP',
       customerName: form.value.customerName.trim(),
       customerPhone: phone,
       customerWilaya: form.value.customerWilaya,
+      customerEmail: customerAuth.customer?.email ?? undefined,
       lines: cart.lines.map((l) => ({ productId: l.productId, shopId: l.shopId, quantity: l.quantity })),
     })
-    const total = orders.reduce((sum, order) => sum + Number(order.total), 0)
+    if (result.account) {
+      customerAuth.setSession(result.account)
+    }
+    const total = result.orders.reduce((sum, order) => sum + Number(order.total), 0)
     cart.clear()
     await router.push({
       path: '/store/confirmation',
       query: {
-        orders: orders.map((o) => o.orderNumber).join(','),
+        orders: result.orders.map((o) => o.orderNumber).join(','),
         total: String(total),
         phone,
         wilaya: form.value.customerWilaya,
@@ -148,7 +159,16 @@ async function submit() {
         class="order-1 flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 lg:order-2 lg:sticky lg:top-24 lg:h-fit"
         @submit.prevent="submit"
       >
-        <h2 class="text-sm font-semibold text-gray-900">Customer information</h2>
+        <h2 class="text-sm font-semibold text-gray-900">Your details</h2>
+
+        <div
+          v-if="customerAuth.customer"
+          class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+        >
+          Ordering as <span class="font-medium">{{ customerAuth.customer.name }}</span>
+          <span class="text-gray-500"> · {{ customerAuth.customer.email || customerAuth.customer.phone }}</span>
+        </div>
+
         <GuestCustomerFields v-model="form" :errors="fieldErrors" />
 
         <div class="flex items-center justify-between border-t border-gray-100 pt-4 text-base font-semibold text-gray-900">
@@ -159,7 +179,7 @@ async function submit() {
         <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
 
         <button type="submit" class="btn-primary w-full" :disabled="submitting">
-          {{ submitting ? 'Confirming…' : 'Confirm Order' }}
+          {{ submitting ? 'Confirming…' : 'Confirm order' }}
         </button>
       </form>
     </div>

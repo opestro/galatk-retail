@@ -12,9 +12,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: GuestCustomerFields]
+  'lookup': [hasPassword: boolean]
 }>()
 
 const lookupStatus = ref<'idle' | 'loading' | 'found' | 'not-found'>('idle')
+const returningAccount = ref(false)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 function patch(partial: Partial<GuestCustomerFields>) {
@@ -27,6 +29,8 @@ watch(
     if (debounceTimer) clearTimeout(debounceTimer)
     if (!phone?.trim() || phone.trim().length < 6) {
       lookupStatus.value = 'idle'
+      returningAccount.value = false
+      emit('lookup', false)
       return
     }
     lookupStatus.value = 'loading'
@@ -39,11 +43,15 @@ watch(
           customerPhone: phone,
           customerWilaya: result.wilaya || props.modelValue.customerWilaya,
         })
+        returningAccount.value = Boolean(result.hasPassword)
+        emit('lookup', Boolean(result.hasPassword))
         lookupStatus.value = 'found'
         setTimeout(() => {
           if (lookupStatus.value === 'found') lookupStatus.value = 'idle'
         }, 2000)
       } else {
+        returningAccount.value = false
+        emit('lookup', false)
         lookupStatus.value = 'not-found'
         setTimeout(() => {
           if (lookupStatus.value === 'not-found') lookupStatus.value = 'idle'

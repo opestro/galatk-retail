@@ -6,6 +6,7 @@ const mockPrisma = {
 }
 
 const mockCheckoutForShop = vi.fn()
+const mockEnsureCustomer = vi.fn()
 
 vi.mock('../src/resources/database/initDatabase.js', () => ({
   default: mockPrisma,
@@ -13,6 +14,11 @@ vi.mock('../src/resources/database/initDatabase.js', () => ({
 
 vi.mock('../src/modules/storefront/service.js', () => ({
   checkoutForShop: mockCheckoutForShop,
+}))
+
+vi.mock('../src/shared/clients/upsertFromOnline.js', () => ({
+  ensureCustomerForCheckout: (...args: unknown[]) => mockEnsureCustomer(...args),
+  lookupCustomerByPhone: vi.fn(),
 }))
 
 describe('globalCheckout', () => {
@@ -25,6 +31,7 @@ describe('globalCheckout', () => {
     customerName: 'Jane Doe',
     customerPhone: '+212600000099',
     customerWilaya: 'Blida',
+    password: 'secret1',
   }
 
   it('rejects an empty cart', async () => {
@@ -64,6 +71,12 @@ describe('globalCheckout', () => {
       { id: 'shop-1', slug: 'main-shop', serviceCity: 'Algiers' },
       { id: 'shop-2', slug: 'branch-shop', serviceCity: 'Oran' },
     ])
+    mockEnsureCustomer.mockResolvedValue({
+      id: 'cust-1',
+      phone: '0551234567',
+      name: 'Jane Doe',
+      email: null,
+    })
 
     mockCheckoutForShop.mockImplementation(async (shop: { id: string }) => ({
       id: `order-${shop.id}`,
@@ -75,7 +88,7 @@ describe('globalCheckout', () => {
 
     const { globalCheckout } = await import('../src/modules/global-store/service.js')
 
-    const orders = await globalCheckout({
+    const { orders } = await globalCheckout({
       ...baseInput,
       lines: [
         { productId: 'p1', shopId: 'shop-1', quantity: 2 },
@@ -84,12 +97,20 @@ describe('globalCheckout', () => {
     })
 
     expect(orders).toHaveLength(2)
+    expect(mockEnsureCustomer).toHaveBeenCalledOnce()
     expect(mockCheckoutForShop).toHaveBeenCalledTimes(2)
     expect(orders.map((o) => o.shopId).sort()).toEqual(['shop-1', 'shop-2'])
+    expect(mockCheckoutForShop.mock.calls[0][1].authenticatedCustomerId).toBe('cust-1')
   })
 
   it('groups multiple lines for the same shop into a single order', async () => {
     mockPrisma.shop.findMany.mockResolvedValue([{ id: 'shop-1', slug: 'main-shop', serviceCity: 'Algiers' }])
+    mockEnsureCustomer.mockResolvedValue({
+      id: 'cust-1',
+      phone: '0551234567',
+      name: 'Jane Doe',
+      email: null,
+    })
 
     mockCheckoutForShop.mockImplementation(async (shop: { id: string }) => ({
       id: `order-${shop.id}`,
@@ -101,7 +122,7 @@ describe('globalCheckout', () => {
 
     const { globalCheckout } = await import('../src/modules/global-store/service.js')
 
-    const orders = await globalCheckout({
+    const { orders } = await globalCheckout({
       ...baseInput,
       lines: [
         { productId: 'p1', shopId: 'shop-1', quantity: 2 },

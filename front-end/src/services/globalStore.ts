@@ -1,4 +1,5 @@
 import { api } from './api'
+import type { CustomerLoginResponse } from '@/types/api'
 
 export interface GlobalShop {
   id: string
@@ -60,6 +61,7 @@ export interface GlobalCheckoutInput {
   customerEmail?: string
   deliveryAddress?: string
   deliveryCity?: string
+  password?: string
   lines: GlobalCheckoutLineInput[]
 }
 
@@ -76,6 +78,7 @@ export interface CustomerLookupResult {
   email: string | null
   phone: string
   wilaya?: string | null
+  hasPassword?: boolean
 }
 
 export async function listGlobalShops() {
@@ -96,8 +99,11 @@ export async function getGlobalProduct(idOrSlug: string) {
 }
 
 export async function globalCheckout(input: GlobalCheckoutInput) {
-  const res = await api.post<{ orders: GlobalCheckoutOrderResult[] }>('/global-store/checkout', input)
-  return res.data.orders
+  const res = await api.post<{ orders: GlobalCheckoutOrderResult[]; account: CustomerLoginResponse }>(
+    '/global-store/checkout',
+    input,
+  )
+  return res.data
 }
 
 export async function lookupCustomerByPhone(phone: string): Promise<CustomerLookupResult | null> {
