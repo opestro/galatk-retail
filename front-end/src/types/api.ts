@@ -36,6 +36,7 @@ export interface CustomerOrder {
   orderNumber: string
   status: string
   fulfillmentType: string
+  deliveryService?: string | null
   paymentMethod?: string
   customerName: string
   customerPhone: string
@@ -235,6 +236,7 @@ export interface OnlineOrder {
   orderNumber: string
   status: string
   fulfillmentType: string
+  deliveryService?: string | null
   customerName: string
   customerPhone: string
   customerWilaya?: string | null
@@ -277,6 +279,7 @@ export interface OnlineOrderPurchase {
   orderNumber: string
   status: string
   fulfillmentType: string
+  deliveryService?: string | null
   total: string
   createdAt: string
   lines: PurchaseLine[]
@@ -318,4 +321,15 @@ export interface SiteSettings {
   bannerIntervalMs: number
   images: SiteBannerImage[]
   updatedAt: string
+}
+
+export type DeliveryService = 'STOPDESK' | 'HOME'
+
+/** Per-wilaya courier prices. A 0 fee is free. */
+export interface WilayaDeliveryRate {
+  wilaya: string
+  stopdeskFee: string
+  homeFee: string
+  stopdeskFree: boolean
+  homeFree: boolean
 }

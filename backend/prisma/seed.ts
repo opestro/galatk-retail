@@ -5,6 +5,7 @@ import { PrismaClient, StaffRole } from '@prisma/client'
 import { hashPassword } from '../src/shared/auth/password.js'
 import { findOrCreateProductFamily } from '../src/shared/products/findOrCreateFamily.js'
 import { parseProductFamily } from '../src/shared/products/productFamily.js'
+import { ALGERIA_WILAYAS } from '../src/shared/geo/algeriaWilayas.js'
 import {
   attributesKey,
   canonicalizeAttributes,
@@ -231,6 +232,21 @@ async function main() {
         'Browse products from multiple locations. Choose your preferred shop for each item and enjoy flexible pickup or delivery options.',
     },
   })
+
+  // Courier table: stop desk slightly cheaper than home; 0 remains free if edited later.
+  await Promise.all(
+    ALGERIA_WILAYAS.map((wilaya) =>
+      prisma.wilayaDeliveryRate.upsert({
+        where: { wilaya },
+        update: {},
+        create: {
+          wilaya,
+          stopdeskFee: 400,
+          homeFee: 500,
+        },
+      }),
+    ),
+  )
 
   console.log('Seed complete:', {
     owner: owner.email,

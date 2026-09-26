@@ -55,6 +55,7 @@ export interface GlobalCheckoutLineInput {
 
 export interface GlobalCheckoutInput {
   fulfillmentType?: 'PICKUP' | 'DELIVERY'
+  deliveryService?: 'STOPDESK' | 'HOME'
   customerName: string
   customerPhone: string
   customerWilaya: string

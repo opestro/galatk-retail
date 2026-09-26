@@ -33,6 +33,10 @@
       "PICKUP": "Pickup",
       "DELIVERY": "Delivery"
     },
+    "deliveryService": {
+      "STOPDESK": "Stop desk",
+      "HOME": "Home delivery"
+    },
     "paymentMethod": {
       "CASH": "Cash",
       "CARD": "Card"
@@ -108,6 +112,11 @@
       "errorFailed": "Checkout failed — check stock, password, and delivery city",
       "pickup": "Pickup",
       "deliveryWithFee": "Delivery (+{fee} DZD)",
+      "stopdesk": "Stop desk",
+      "home": "Home delivery",
+      "stopdeskWithFee": "Stop desk (+{fee} DZD)",
+      "homeWithFee": "Home delivery (+{fee} DZD)",
+      "free": "Free",
       "placeholderName": "Your name",
       "placeholderPhone": "Phone",
       "welcomeBack": "Welcome back! Name and email auto-filled.",
@@ -128,7 +137,8 @@
       "confirmOrder": "Confirm order",
       "insufficientStock": "Not enough stock for this item. Please update the quantity.",
       "accountExists": "This phone already has an account. Sign in to continue.",
-      "genericError": "Could not place the order. Please try again."
+      "genericError": "Could not place the order. Please try again.",
+      "errorAddress": "Please enter a delivery address for home delivery."
     },
     "confirmation": {
       "placedTitle": "Order placed!",
@@ -552,9 +562,25 @@
       "fieldShop": "Shop",
       "fieldAddress": "Address",
       "fieldServiceCity": "Service city (delivery)",
-      "fieldDeliveryFee": "Delivery fee (DZD)",
+      "fieldDeliveryFee": "Fallback delivery fee (DZD)",
+      "deliveryFeeFallbackHint": "Used only if a wilaya has no saved stop-desk or home rate",
       "fieldReminderDays": "Credit reminder days",
-      "reminderDaysHint": "Days overdue before client appears on reminder list"
+      "reminderDaysHint": "Days overdue before client appears on reminder list",
+      "deliveryRates": {
+        "title": "Delivery prices",
+        "hint": "Set stop-desk and home-delivery charges for each wilaya. Check Free for a service to charge 0 DZD. Amounts can differ per service and per wilaya.",
+        "search": "Search wilaya",
+        "colWilaya": "Wilaya",
+        "colStopdesk": "Stop desk (DZD)",
+        "colHome": "Home delivery (DZD)",
+        "free": "Free",
+        "applyStopdeskAll": "Apply stop desk to all",
+        "applyHomeAll": "Apply home to all",
+        "save": "Save delivery prices",
+        "saved": "Delivery prices saved",
+        "loadError": "Could not load delivery prices",
+        "saveError": "Could not save delivery prices"
+      }
     },
     "network": {
       "title": "Network overview",

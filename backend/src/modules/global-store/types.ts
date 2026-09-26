@@ -1,4 +1,4 @@
-import { FulfillmentType } from '@prisma/client'
+import { DeliveryService, FulfillmentType } from '@prisma/client'
 
 export interface GlobalCheckoutLineInput {
   productId: string
@@ -8,6 +8,7 @@ export interface GlobalCheckoutLineInput {
 
 export interface GlobalCheckoutInput {
   fulfillmentType: FulfillmentType
+  deliveryService?: DeliveryService | null
   customerName: string
   customerPhone: string
   customerWilaya: string

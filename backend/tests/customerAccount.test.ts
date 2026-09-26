@@ -153,6 +153,7 @@ describe('customerOrderPresenter', () => {
       orderNumber: 'ORD-00001',
       status: 'PLACED',
       fulfillmentType: 'PICKUP',
+      deliveryService: null,
       paymentMethod: 'PAY_ON_PICKUP',
       customerName: 'Ahmed',
       customerPhone: '0551234567',

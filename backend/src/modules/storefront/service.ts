@@ -8,6 +8,7 @@ import { canonicalWilaya } from '../../shared/geo/algeriaWilayas.js'
 import { normalizeAlgerianPhone, validateCustomerName } from '../../shared/validation/algerianPhone.js'
 import {
   ClientLedgerEntryType,
+  DeliveryService,
   FulfillmentType,
   OnlinePaymentMethod,
   OrderStatus,
@@ -16,9 +17,14 @@ import {
   Prisma,
   StaffRole,
 } from '@prisma/client'
-import { Decimal } from '@prisma/client/runtime/library'
+import { Decimal } from '@prisma/client/runtime/library' // money totals on checkout / complete
 import { withFamily } from '../../shared/products/withFamily.js'
 import { canTransitionOrderStatus } from '../../shared/orders/statusTransitions.js'
+import {
+  parseDeliveryService,
+  resolveDeliveryFee,
+} from '../../shared/delivery/resolveDeliveryFee.js'
+import { listDeliveryRates } from '../settings/service.js'
 
 export interface CheckoutLineInput {
   productId: string
@@ -27,6 +33,8 @@ export interface CheckoutLineInput {
 
 export interface CheckoutInput {
   fulfillmentType: FulfillmentType
+  /** Required when fulfillment is DELIVERY. Defaults to HOME if omitted. */
+  deliveryService?: DeliveryService | null
   customerName: string
   customerPhone: string
   customerWilaya: string
@@ -99,9 +107,11 @@ export async function checkoutForShop(
     throw new CustomError('VALIDATION_ERROR', 'Please select a wilaya.', 400)
   }
 
+  const deliveryService = parseDeliveryService(input.fulfillmentType, input.deliveryService)
+
   if (input.fulfillmentType === FulfillmentType.DELIVERY) {
-    if (!input.deliveryAddress?.trim() && !customerWilaya) {
-      throw new CustomError('VALIDATION_ERROR', 'Delivery address and city required', 400)
+    if (deliveryService === DeliveryService.HOME && !input.deliveryAddress?.trim()) {
+      throw new CustomError('VALIDATION_ERROR', 'Delivery address is required for home delivery', 400)
     }
   }
 
@@ -132,8 +142,15 @@ export async function checkoutForShop(
     new Decimal(0),
   )
 
-  const deliveryFee =
-    input.fulfillmentType === FulfillmentType.DELIVERY ? shop.deliveryFee : new Decimal(0)
+  const rate = await prisma.wilayaDeliveryRate.findUnique({
+    where: { wilaya: customerWilaya },
+  })
+  const deliveryFee = resolveDeliveryFee({
+    fulfillmentType: input.fulfillmentType,
+    deliveryService,
+    rate,
+    fallbackFee: shop.deliveryFee,
+  })
   const total = subtotal.add(deliveryFee)
   const orderNumber = await generateOrderNumber(shop.id)
 
@@ -158,6 +175,7 @@ export async function checkoutForShop(
         shopId: shop.id,
         orderNumber,
         fulfillmentType: input.fulfillmentType,
+        deliveryService,
         customerName,
         customerPhone,
         customerWilaya,
@@ -209,6 +227,7 @@ export async function getPublicShopInfo(slug: string) {
     serviceCity: shop.serviceCity,
     deliveryFee: shop.deliveryFee.toString(),
     outOfStockDisplay: shop.outOfStockDisplay,
+    deliveryRates: await listDeliveryRates(),
   }
 }
 

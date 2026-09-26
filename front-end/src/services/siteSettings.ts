@@ -1,5 +1,5 @@
 import { api } from '@/services/api'
-import type { SiteSettings } from '@/types/api'
+import type { SiteSettings, WilayaDeliveryRate } from '@/types/api'
 
 export async function getPublicHomeBanner(): Promise<SiteSettings> {
   const { data } = await api.get<{ data: SiteSettings }>('/global-store/banner')
@@ -32,5 +32,22 @@ export async function removeHomeBannerImage(imageId: string): Promise<SiteSettin
   const { data } = await api.delete<{ data: SiteSettings }>(
     `/settings/banner-image/${encodeURIComponent(imageId)}`,
   )
+  return data.data
+}
+
+export async function getDeliveryRates(): Promise<WilayaDeliveryRate[]> {
+  const { data } = await api.get<{ data: WilayaDeliveryRate[] }>('/settings/delivery-rates')
+  return data.data
+}
+
+export async function getPublicDeliveryRates(): Promise<WilayaDeliveryRate[]> {
+  const { data } = await api.get<{ data: WilayaDeliveryRate[] }>('/global-store/delivery-rates')
+  return data.data
+}
+
+export async function updateDeliveryRates(
+  rates: Array<{ wilaya: string; stopdeskFee: number; homeFee: number }>,
+): Promise<WilayaDeliveryRate[]> {
+  const { data } = await api.put<{ data: WilayaDeliveryRate[] }>('/settings/delivery-rates', { rates })
   return data.data
 }

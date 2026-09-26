@@ -34,6 +34,7 @@ export function customerOrderPresenter(order: CustomerOrderRecord) {
     orderNumber: order.orderNumber,
     status: order.status,
     fulfillmentType: order.fulfillmentType,
+    deliveryService: order.deliveryService,
     paymentMethod: order.paymentMethod,
     customerName: order.customerName,
     customerPhone: order.customerPhone,

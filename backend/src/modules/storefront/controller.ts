@@ -40,6 +40,7 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
     const slug = String(req.params.shopSlug)
     const {
       fulfillmentType,
+      deliveryService,
       customerName,
       customerPhone,
       customerWilaya,
@@ -52,6 +53,7 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
 
     const { order, customer } = await StorefrontService.checkout(slug, {
       fulfillmentType: (fulfillmentType as FulfillmentType) || FulfillmentType.PICKUP,
+      deliveryService,
       customerName,
       customerPhone,
       customerWilaya,

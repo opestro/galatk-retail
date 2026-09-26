@@ -17,8 +17,10 @@ import {
   DEFAULT_BANNER_TITLE,
   SITE_SETTINGS_ID,
 } from './constants.js'
-import { SiteSettingsWithImages } from './presenter.js'
-import { UpdateSiteSettingsInput } from './types.js'
+import { deliveryRatesPresenter, SiteSettingsWithImages } from './presenter.js'
+import { UpdateSiteSettingsInput, WilayaDeliveryRateInput } from './types.js'
+import { ALGERIA_WILAYAS, canonicalWilaya } from '../../shared/geo/algeriaWilayas.js'
+import { Decimal } from '@prisma/client/runtime/library'
 
 const settingsInclude = {
   images: { orderBy: { sortOrder: 'asc' as const } },
@@ -151,4 +153,56 @@ export async function removeBannerImage(imageId: string): Promise<SiteSettingsWi
   await prisma.siteBannerImage.delete({ where: { id: image.id } })
   deleteStoredImage(image.filename, BANNER_RELATIVE_DIR)
   return loadSettings()
+}
+
+function parseFee(value: unknown, field: string): Decimal {
+  const n = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(n) || n < 0) {
+    throw new CustomError('VALIDATION_ERROR', `${field} must be a number of 0 or more`, 400)
+  }
+  return new Decimal(Math.round(n * 100) / 100)
+}
+
+export async function listDeliveryRates() {
+  const rows = await prisma.wilayaDeliveryRate.findMany()
+  return deliveryRatesPresenter(rows, ALGERIA_WILAYAS)
+}
+
+/**
+ * Upserts every submitted wilaya. Omitted wilayas are left unchanged.
+ * Sending 0 marks that service as free.
+ */
+export async function updateDeliveryRates(input: { rates?: WilayaDeliveryRateInput[] }) {
+  if (!Array.isArray(input.rates) || input.rates.length === 0) {
+    throw new CustomError('VALIDATION_ERROR', 'rates must be a non-empty array', 400)
+  }
+
+  const seen = new Set<string>()
+  const parsed = input.rates.map((row, index) => {
+    const wilaya = canonicalWilaya(row?.wilaya)
+    if (!wilaya) {
+      throw new CustomError('VALIDATION_ERROR', `rates[${index}].wilaya is not a valid wilaya`, 400)
+    }
+    if (seen.has(wilaya)) {
+      throw new CustomError('VALIDATION_ERROR', `Duplicate wilaya: ${wilaya}`, 400)
+    }
+    seen.add(wilaya)
+    return {
+      wilaya,
+      stopdeskFee: parseFee(row.stopdeskFee, `rates[${index}].stopdeskFee`),
+      homeFee: parseFee(row.homeFee, `rates[${index}].homeFee`),
+    }
+  })
+
+  await prisma.$transaction(
+    parsed.map((row) =>
+      prisma.wilayaDeliveryRate.upsert({
+        where: { wilaya: row.wilaya },
+        create: row,
+        update: { stopdeskFee: row.stopdeskFee, homeFee: row.homeFee },
+      }),
+    ),
+  )
+
+  return listDeliveryRates()
 }

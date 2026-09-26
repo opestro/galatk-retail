@@ -55,6 +55,7 @@ export function orderPresenter(order: OrderWithLines) {
     orderNumber: order.orderNumber,
     status: order.status,
     fulfillmentType: order.fulfillmentType,
+    deliveryService: order.deliveryService,
     customerName: order.customerName,
     customerPhone: order.customerPhone,
     customerWilaya: order.customerWilaya,

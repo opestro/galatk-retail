@@ -103,6 +103,7 @@ export function onlineOrderPurchasePresenter(order: OnlineOrderWithLines): Onlin
     orderNumber: order.orderNumber,
     status: order.status,
     fulfillmentType: order.fulfillmentType,
+    deliveryService: order.deliveryService,
     total: order.total.toString(),
     createdAt: order.createdAt,
     lines: order.lines.map(onlineOrderLinePresenter),

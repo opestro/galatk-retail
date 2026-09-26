@@ -19,3 +19,18 @@ export interface SiteSettingsResponse {
   images: SiteBannerImageResponse[]
   updatedAt: Date
 }
+
+export interface WilayaDeliveryRateInput {
+  wilaya: string
+  stopdeskFee: number
+  homeFee: number
+}
+
+export interface WilayaDeliveryRateResponse {
+  wilaya: string
+  stopdeskFee: string
+  homeFee: string
+  /** True when the stop-desk charge is 0 (shown as free in admin). */
+  stopdeskFree: boolean
+  homeFree: boolean
+}

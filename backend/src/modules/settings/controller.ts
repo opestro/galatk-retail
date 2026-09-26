@@ -74,3 +74,21 @@ export async function removeImage(req: Request, res: Response, next: NextFunctio
     next(error)
   }
 }
+
+export async function getDeliveryRates(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const rates = await SettingsService.listDeliveryRates()
+    res.status(200).json({ data: rates })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function updateDeliveryRates(req: Request, res: Response, next: NextFunction) {
+  try {
+    const rates = await SettingsService.updateDeliveryRates({ rates: req.body?.rates })
+    res.status(200).json({ data: rates })
+  } catch (error) {
+    next(error)
+  }
+}

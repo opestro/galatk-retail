@@ -160,6 +160,7 @@ export async function globalCheckout(input: GlobalCheckoutInput) {
 
     const checkoutInput: CheckoutInput = {
       fulfillmentType: input.fulfillmentType,
+      deliveryService: input.deliveryService,
       customerName: input.customerName,
       customerPhone: customer.phone,
       customerWilaya: input.customerWilaya,

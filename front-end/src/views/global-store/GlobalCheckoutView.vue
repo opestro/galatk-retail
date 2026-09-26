@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { globalCheckout } from '@/services/globalStore'
+import { getPublicDeliveryRates } from '@/services/siteSettings'
 import { useGlobalStoreCartStore } from '@/stores/globalStoreCart'
 import { useCustomerAuthStore } from '@/stores/customerAuth'
 import GuestCustomerFields from '@/components/storefront/GuestCustomerFields.vue'
@@ -13,6 +14,9 @@ import {
 } from '@/utils/guestCheckout'
 import { normalizeAlgerianPhone } from '@/utils/algerianPhone'
 import { formatDzd } from '@/utils/formatMoney'
+import { deliveryFeeForWilaya } from '@/utils/deliveryFee'
+import type { DeliveryService, WilayaDeliveryRate } from '@/types/api'
+import { translate } from '@/i18n/translate'
 import { Minus, Plus, ShoppingBag, Store, Trash2 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -20,14 +24,25 @@ const cart = useGlobalStoreCartStore()
 const customerAuth = useCustomerAuthStore()
 
 const form = ref<GuestFields>(emptyGuestCustomer())
+const method = ref<'PICKUP' | DeliveryService>('PICKUP')
+const deliveryAddress = ref('')
 const fieldErrors = ref({ name: '', phone: '', wilaya: '' })
 const error = ref('')
 const submitting = ref(false)
+const rates = ref<WilayaDeliveryRate[]>([])
 
 if (customerAuth.customer) {
   form.value.customerName = customerAuth.customer.name
   form.value.customerPhone = customerAuth.customer.phone
 }
+
+onMounted(async () => {
+  try {
+    rates.value = await getPublicDeliveryRates()
+  } catch {
+    rates.value = []
+  }
+})
 
 const linesByShop = computed(() => {
   const groups = new Map<string, { shopName: string; lines: typeof cart.lines }>()
@@ -42,20 +57,48 @@ const linesByShop = computed(() => {
   return groups
 })
 
+const isDelivery = computed(() => method.value !== 'PICKUP')
+
+function feeLabel(service: DeliveryService) {
+  if (!form.value.customerWilaya) return translate('common.emDash')
+  const fee = deliveryFeeForWilaya(rates.value, form.value.customerWilaya, service, 0)
+  return fee === 0 ? translate('shop.checkout.free') : formatDzd(fee)
+}
+
+const selectedDeliveryFee = computed(() => {
+  if (!isDelivery.value) return 0
+  return deliveryFeeForWilaya(
+    rates.value,
+    form.value.customerWilaya,
+    method.value as DeliveryService,
+    0,
+  )
+})
+
+const shopCount = computed(() => linesByShop.value.size)
+const grandTotal = computed(() => cart.total + selectedDeliveryFee.value * shopCount.value)
+
 async function submit() {
   error.value = ''
   const { valid, errors } = validateGuestCustomer(form.value)
   fieldErrors.value = errors
   if (!valid) return
+  if (method.value === 'HOME' && !deliveryAddress.value.trim()) {
+    error.value = translate('shop.checkout.errorAddress')
+    return
+  }
   submitting.value = true
   try {
     const phone = normalizeAlgerianPhone(form.value.customerPhone) ?? form.value.customerPhone
     const result = await globalCheckout({
-      fulfillmentType: 'PICKUP',
+      fulfillmentType: isDelivery.value ? 'DELIVERY' : 'PICKUP',
+      deliveryService: isDelivery.value ? (method.value as DeliveryService) : undefined,
       customerName: form.value.customerName.trim(),
       customerPhone: phone,
       customerWilaya: form.value.customerWilaya,
       customerEmail: customerAuth.customer?.email ?? undefined,
+      deliveryAddress: method.value === 'HOME' ? deliveryAddress.value.trim() : undefined,
+      deliveryCity: form.value.customerWilaya,
       lines: cart.lines.map((l) => ({ productId: l.productId, shopId: l.shopId, quantity: l.quantity })),
     })
     if (result.account) {
@@ -170,9 +213,40 @@ async function submit() {
 
         <GuestCustomerFields v-model="form" :errors="fieldErrors" />
 
-        <div class="flex items-center justify-between border-t border-gray-100 pt-4 text-base font-semibold text-gray-900">
-          <span>{{ $t('shop.checkout.total') }}</span>
-          <span>{{ formatDzd(cart.total) }}</span>
+        <div class="flex flex-col gap-2">
+          <label class="flex items-center gap-2 text-sm text-gray-700">
+            <input v-model="method" type="radio" value="PICKUP" />
+            {{ $t('shop.checkout.pickup') }}
+          </label>
+          <label class="flex items-center gap-2 text-sm text-gray-700">
+            <input v-model="method" type="radio" value="STOPDESK" />
+            {{ $t('shop.checkout.stopdesk') }}
+            <span class="text-gray-500">({{ feeLabel('STOPDESK') }})</span>
+          </label>
+          <label class="flex items-center gap-2 text-sm text-gray-700">
+            <input v-model="method" type="radio" value="HOME" />
+            {{ $t('shop.checkout.home') }}
+            <span class="text-gray-500">({{ feeLabel('HOME') }})</span>
+          </label>
+        </div>
+
+        <input
+          v-if="method === 'HOME'"
+          v-model="deliveryAddress"
+          :placeholder="$t('shop.checkout.placeholderAddress')"
+          required
+          class="input"
+        />
+
+        <div class="flex flex-col gap-2 border-t border-gray-100 pt-4 text-sm">
+          <div v-if="selectedDeliveryFee > 0" class="flex items-center justify-between text-gray-700">
+            <span>{{ $t('shop.checkout.home') }} / {{ $t('shop.checkout.stopdesk') }}</span>
+            <span>{{ formatDzd(selectedDeliveryFee * shopCount) }}</span>
+          </div>
+          <div class="flex items-center justify-between text-base font-semibold text-gray-900">
+            <span>{{ $t('shop.checkout.total') }}</span>
+            <span>{{ formatDzd(grandTotal) }}</span>
+          </div>
         </div>
 
         <p v-if="error" class="text-sm text-red-600">{{ error }}</p>

@@ -159,6 +159,9 @@ watch(() => [auth.selectedShopId, orderId.value], load)
             <p class="text-xs text-gray-500">{{ new Date(order.createdAt).toLocaleString() }}</p>
             <p class="mt-1 text-xs text-gray-500">
               {{ order.fulfillmentType === 'PICKUP' ? t('admin.orderDetail.pickup') : t('admin.orderDetail.delivery') }}
+              <span v-if="order.deliveryService">
+                · {{ t(`common.deliveryService.${order.deliveryService}`) }}
+              </span>
               <span v-if="order.paymentMethod"> · {{ paymentMethodLabel(order.paymentMethod) }}</span>
             </p>
           </div>

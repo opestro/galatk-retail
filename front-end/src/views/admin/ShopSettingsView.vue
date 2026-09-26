@@ -7,6 +7,7 @@ import type { Shop } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonForm from '@/components/ui/SkeletonForm.vue'
 import HomeBannerSettings from '@/components/admin/HomeBannerSettings.vue'
+import DeliveryRatesSettings from '@/components/admin/DeliveryRatesSettings.vue'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -54,6 +55,8 @@ watch(() => auth.selectedShopId, loadShop)
 
     <HomeBannerSettings />
 
+    <DeliveryRatesSettings />
+
     <h3 class="section-title">{{ t('admin.settings.selectedShop') }}</h3>
 
     <SkeletonForm v-if="loading" :fields="4" />
@@ -74,6 +77,7 @@ watch(() => auth.selectedShopId, loadShop)
       <div>
         <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.settings.fieldDeliveryFee') }}</label>
         <input v-model.number="form.deliveryFee" type="number" class="input" />
+        <p class="mt-1 text-xs text-gray-500">{{ t('admin.settings.deliveryFeeFallbackHint') }}</p>
       </div>
       <div>
         <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.settings.fieldReminderDays') }}</label>

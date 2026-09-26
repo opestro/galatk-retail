@@ -9,6 +9,11 @@ export async function getBanner(req: Request, res: Response, next: NextFunction)
   return SettingsController.getPublic(req, res, next)
 }
 
+/** Public wilaya courier table so checkout can price stop desk vs home. */
+export async function getDeliveryRates(req: Request, res: Response, next: NextFunction) {
+  return SettingsController.getDeliveryRates(req, res, next)
+}
+
 export async function listShops(_req: Request, res: Response, next: NextFunction) {
   try {
     const shops = await GlobalStoreService.listGlobalShops()
@@ -51,6 +56,7 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
   try {
     const {
       fulfillmentType,
+      deliveryService,
       customerName,
       customerPhone,
       customerWilaya,
@@ -63,6 +69,7 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
 
     const { orders, customer } = await GlobalStoreService.globalCheckout({
       fulfillmentType: (fulfillmentType as FulfillmentType) || FulfillmentType.PICKUP,
+      deliveryService,
       customerName,
       customerPhone,
       customerWilaya,
