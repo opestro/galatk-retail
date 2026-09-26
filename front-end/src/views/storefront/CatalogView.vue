@@ -43,7 +43,7 @@ onMounted(async () => {
         class="btn-secondary flex items-center gap-2"
       >
         <ShoppingCart class="h-4 w-4" />
-        Cart ({{ cart.lines.length }})
+        {{ $t('shop.catalog.cartWithCount', { n: cart.lines.length }) }}
       </RouterLink>
     </header>
 
@@ -64,16 +64,16 @@ onMounted(async () => {
           >
             <div>
               <p class="text-sm font-medium text-gray-900">{{ variantDisplay(product) }}</p>
-              <p class="text-xs text-gray-500">{{ product.sellPrice }} DZD</p>
+              <p class="text-xs text-gray-500">{{ product.sellPrice }} {{ $t('common.currency') }}</p>
             </div>
             <button
               v-if="product.inStock"
               class="btn-primary px-3 py-1.5 text-xs"
               @click="cart.addProduct(product)"
             >
-              Add
+              {{ $t('shop.catalog.add') }}
             </button>
-            <span v-else class="text-xs text-red-600">Out of stock</span>
+            <span v-else class="text-xs text-red-600">{{ $t('shop.catalog.outOfStock') }}</span>
           </div>
         </div>
       </div>

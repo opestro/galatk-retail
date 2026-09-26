@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import type { Shop } from '@/types/api'
@@ -7,6 +8,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonForm from '@/components/ui/SkeletonForm.vue'
 import HomeBannerSettings from '@/components/admin/HomeBannerSettings.vue'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const shop = ref<Shop | null>(null)
 const loading = ref(true)
@@ -38,7 +40,7 @@ async function save() {
   const shopId = auth.selectedShopId
   if (!shopId) return
   await api.patch(`/shops/${shopId}`, form.value)
-  message.value = 'Settings saved'
+  message.value = t('admin.settings.saved')
   await loadShop()
 }
 
@@ -48,38 +50,38 @@ watch(() => auth.selectedShopId, loadShop)
 
 <template>
   <div class="page-shell">
-    <PageHeader title="Shop settings" />
+    <PageHeader :title="t('admin.settings.title')" />
 
     <HomeBannerSettings />
 
-    <h3 class="section-title">Selected shop</h3>
+    <h3 class="section-title">{{ t('admin.settings.selectedShop') }}</h3>
 
     <SkeletonForm v-if="loading" :fields="4" />
 
     <form v-else-if="shop" class="card flex max-w-md flex-col gap-4" @submit.prevent="save">
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">Shop</label>
+        <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.settings.fieldShop') }}</label>
         <p class="text-gray-900">{{ shop.name }}</p>
       </div>
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">Address</label>
+        <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.settings.fieldAddress') }}</label>
         <input v-model="form.address" class="input" />
       </div>
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">Service city (delivery)</label>
+        <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.settings.fieldServiceCity') }}</label>
         <input v-model="form.serviceCity" class="input" />
       </div>
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">Delivery fee (DZD)</label>
+        <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.settings.fieldDeliveryFee') }}</label>
         <input v-model.number="form.deliveryFee" type="number" class="input" />
       </div>
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">Credit reminder days</label>
+        <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.settings.fieldReminderDays') }}</label>
         <input v-model.number="form.creditReminderDays" type="number" min="1" class="input" />
-        <p class="mt-1 text-xs text-gray-500">Days overdue before client appears on reminder list</p>
+        <p class="mt-1 text-xs text-gray-500">{{ t('admin.settings.reminderDaysHint') }}</p>
       </div>
       <p v-if="message" class="text-sm text-green-600">{{ message }}</p>
-      <button type="submit" class="btn-primary">Save</button>
+      <button type="submit" class="btn-primary">{{ t('common.save') }}</button>
     </form>
   </div>
 </template>

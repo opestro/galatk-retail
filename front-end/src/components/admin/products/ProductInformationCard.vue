@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 defineProps<{
   name: string
   description: string
@@ -6,6 +8,8 @@ defineProps<{
   isActive: boolean
   disabled?: boolean
 }>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   'update:name': [value: string]
@@ -18,31 +22,31 @@ const emit = defineEmits<{
 <template>
   <div class="flex h-full flex-col gap-5">
     <label class="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
-      Product name
+      {{ t('admin.product.name') }}
       <input
         class="input text-base"
         :value="name"
         :disabled="disabled"
         maxlength="120"
-        placeholder="Cotton"
+        :placeholder="t('admin.product.namePlaceholder')"
         @input="emit('update:name', ($event.target as HTMLInputElement).value)"
       />
     </label>
 
     <label class="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
-      Description
+      {{ t('admin.product.description') }}
       <textarea
         class="input min-h-36 resize-y"
         :value="description"
         :disabled="disabled"
         maxlength="4000"
-        placeholder="Add a product description to help customers understand this product."
+        :placeholder="t('admin.product.descriptionPlaceholder')"
         @input="emit('update:description', ($event.target as HTMLTextAreaElement).value)"
       />
     </label>
 
     <div class="flex flex-col gap-3 border-t border-gray-100 pt-4">
-      <h4 class="text-sm font-semibold text-gray-800">Visibility</h4>
+      <h4 class="text-sm font-semibold text-gray-800">{{ t('admin.product.visibility') }}</h4>
       <label class="flex items-start gap-3 text-sm text-gray-800">
         <input
           type="checkbox"
@@ -52,8 +56,8 @@ const emit = defineEmits<{
           @change="emit('update:availableOnline', ($event.target as HTMLInputElement).checked)"
         />
         <span>
-          <span class="font-medium">Available online</span>
-          <span class="mt-0.5 block text-xs font-normal text-gray-500">This product can appear in the customer store.</span>
+          <span class="font-medium">{{ t('admin.product.availableOnline') }}</span>
+          <span class="mt-0.5 block text-xs font-normal text-gray-500">{{ t('admin.product.availableOnlineHint') }}</span>
         </span>
       </label>
       <label class="flex items-start gap-3 text-sm text-gray-800">
@@ -65,8 +69,8 @@ const emit = defineEmits<{
           @change="emit('update:isActive', ($event.target as HTMLInputElement).checked)"
         />
         <span>
-          <span class="font-medium">Active</span>
-          <span class="mt-0.5 block text-xs font-normal text-gray-500">This product is active in the system.</span>
+          <span class="font-medium">{{ t('admin.product.active') }}</span>
+          <span class="mt-0.5 block text-xs font-normal text-gray-500">{{ t('admin.product.activeHint') }}</span>
         </span>
       </label>
     </div>

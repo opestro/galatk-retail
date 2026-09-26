@@ -1,5 +1,6 @@
 import { api } from '@/services/api'
 import type { OnlineOrder } from '@/types/api'
+import { translate } from '@/i18n/translate'
 
 export const ORDER_STATUSES = [
   'PLACED',
@@ -48,7 +49,9 @@ export async function cancelShopOrder(shopId: string, orderId: string, reason?: 
 }
 
 export function orderStatusLabel(status: string): string {
-  if (status === 'PLACED') return 'Pending'
+  const key = `common.orderStatus.${status}`
+  const label = translate(key)
+  if (label !== key) return label
   return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
 }
 

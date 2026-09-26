@@ -1,4 +1,5 @@
 import type { Sale } from '@/types/api'
+import { numberLocale, translate } from '@/i18n/translate'
 
 export interface SaleReceiptData {
   type: 'sale'
@@ -39,12 +40,33 @@ function escapeHtml(value: string): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString()
+  return new Date(iso).toLocaleString(numberLocale())
+}
+
+function documentLangDir(): { lang: string; dir: string } {
+  return {
+    lang: document.documentElement.lang || 'en',
+    dir: document.documentElement.dir || 'ltr',
+  }
+}
+
+function paymentMethodLabel(method: string): string {
+  const key = `common.paymentMethod.${method}`
+  const label = translate(key)
+  return label !== key ? label : method
+}
+
+function currency(): string {
+  return translate('common.currency')
 }
 
 function receiptHtml(data: ReceiptData): string {
+  const { lang, dir } = documentLangDir()
+  const method = escapeHtml(paymentMethodLabel(data.paymentMethod))
+  const dzd = escapeHtml(currency())
+
   if (data.type === 'payment') {
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Payment receipt</title>
+    return `<!DOCTYPE html><html lang="${escapeHtml(lang)}" dir="${escapeHtml(dir)}"><head><meta charset="utf-8"><title>${escapeHtml(translate('pos.receipt.paymentDocTitle'))}</title>
 <style>
   @page { size: auto; margin: 8mm; }
   body { font-family: ui-monospace, monospace; font-size: 12px; max-width: 280px; margin: 16px auto; color: #111; }
@@ -54,30 +76,30 @@ function receiptHtml(data: ReceiptData): string {
   .total { font-weight: bold; border-top: 1px dashed #999; margin-top: 8px; padding-top: 8px; }
   hr { border: none; border-top: 1px dashed #999; margin: 8px 0; }
 </style></head><body>
-<h1>CLIENT PAYMENT</h1>
+<h1>${escapeHtml(translate('pos.receipt.paymentHeading'))}</h1>
 <p class="muted">${escapeHtml(formatDate(data.createdAt))}</p>
 <p><strong>${escapeHtml(data.clientName)}</strong><br>${escapeHtml(data.clientPhone)}</p>
 <hr>
-<div class="row"><span>Amount paid</span><span>${escapeHtml(data.amount)} DZD</span></div>
-<div class="row"><span>Method</span><span>${escapeHtml(data.paymentMethod)}</span></div>
-<div class="row"><span>Previous balance</span><span>${escapeHtml(data.previousBalance)} DZD</span></div>
-<div class="row total"><span>New balance</span><span>${escapeHtml(data.newBalance)} DZD</span></div>
-<p class="muted">Receipt #${escapeHtml(data.paymentId.slice(0, 8))} · ${escapeHtml(data.cashierName)}</p>
+<div class="row"><span>${escapeHtml(translate('pos.receipt.amountPaid'))}</span><span>${escapeHtml(data.amount)} ${dzd}</span></div>
+<div class="row"><span>${escapeHtml(translate('pos.receipt.method'))}</span><span>${method}</span></div>
+<div class="row"><span>${escapeHtml(translate('pos.receipt.previousBalance'))}</span><span>${escapeHtml(data.previousBalance)} ${dzd}</span></div>
+<div class="row total"><span>${escapeHtml(translate('pos.receipt.newBalance'))}</span><span>${escapeHtml(data.newBalance)} ${dzd}</span></div>
+<p class="muted">${escapeHtml(translate('pos.receipt.paymentFooter', { id: data.paymentId.slice(0, 8), cashier: data.cashierName }))}</p>
 </body></html>`
   }
 
   const lines = data.lines
     .map(
       (l) =>
-        `<div class="row"><span>${escapeHtml(l.name)} × ${l.quantity}</span><span>${escapeHtml(String(l.lineTotal))} DZD</span></div>`,
+        `<div class="row"><span>${escapeHtml(l.name)} × ${l.quantity}</span><span>${escapeHtml(String(l.lineTotal))} ${dzd}</span></div>`,
     )
     .join('')
 
   const clientBlock = data.clientName
-    ? `<p><strong>Client:</strong> ${escapeHtml(data.clientName)}${data.clientPhone ? ` · ${escapeHtml(data.clientPhone)}` : ''}</p>`
+    ? `<p><strong>${escapeHtml(translate('pos.receipt.clientLabel'))}</strong> ${escapeHtml(data.clientName)}${data.clientPhone ? ` · ${escapeHtml(data.clientPhone)}` : ''}</p>`
     : ''
 
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sale receipt</title>
+  return `<!DOCTYPE html><html lang="${escapeHtml(lang)}" dir="${escapeHtml(dir)}"><head><meta charset="utf-8"><title>${escapeHtml(translate('pos.receipt.saleDocTitle'))}</title>
 <style>
   @page { size: auto; margin: 8mm; }
   body { font-family: ui-monospace, monospace; font-size: 12px; max-width: 280px; margin: 16px auto; color: #111; }
@@ -87,16 +109,16 @@ function receiptHtml(data: ReceiptData): string {
   .total { font-weight: bold; border-top: 1px dashed #999; margin-top: 8px; padding-top: 8px; }
   hr { border: none; border-top: 1px dashed #999; margin: 8px 0; }
 </style></head><body>
-<h1>SALE RECEIPT</h1>
+<h1>${escapeHtml(translate('pos.receipt.saleHeading'))}</h1>
 <p class="muted">${escapeHtml(formatDate(data.createdAt))}</p>
 ${clientBlock}
 <hr>
 ${lines}
-<div class="row total"><span>Total</span><span>${escapeHtml(String(data.total))} DZD</span></div>
-<div class="row"><span>Paid now</span><span>${escapeHtml(String(data.amountPaid))} DZD</span></div>
-${Number(data.amountOnCredit) > 0 ? `<div class="row"><span>On credit</span><span>${escapeHtml(String(data.amountOnCredit))} DZD</span></div>` : ''}
-<div class="row"><span>Method</span><span>${escapeHtml(data.paymentMethod)}</span></div>
-<p class="muted">Sale #${escapeHtml(data.saleId.slice(0, 8))} · ${escapeHtml(data.cashierName)}</p>
+<div class="row total"><span>${escapeHtml(translate('pos.receipt.total'))}</span><span>${escapeHtml(String(data.total))} ${dzd}</span></div>
+<div class="row"><span>${escapeHtml(translate('pos.receipt.paidNow'))}</span><span>${escapeHtml(String(data.amountPaid))} ${dzd}</span></div>
+${Number(data.amountOnCredit) > 0 ? `<div class="row"><span>${escapeHtml(translate('pos.receipt.onCredit'))}</span><span>${escapeHtml(String(data.amountOnCredit))} ${dzd}</span></div>` : ''}
+<div class="row"><span>${escapeHtml(translate('pos.receipt.method'))}</span><span>${method}</span></div>
+<p class="muted">${escapeHtml(translate('pos.receipt.saleFooter', { id: data.saleId.slice(0, 8), cashier: data.cashierName }))}</p>
 </body></html>`
 }
 
@@ -119,7 +141,7 @@ export function printHtmlDocument(html: string) {
   const win = iframe.contentWindow
   if (!doc || !win) {
     iframe.remove()
-    throw new Error('Could not open the receipt printer.')
+    throw new Error(translate('pos.receipt.printerError'))
   }
 
   doc.open()
@@ -137,15 +159,15 @@ export function printHtmlDocument(html: string) {
   }, 50)
 }
 
-export function saleToReceipt(sale: Sale, cashierFallback = 'Staff'): SaleReceiptData {
+export function saleToReceipt(sale: Sale, cashierFallback?: string): SaleReceiptData {
   return {
     type: 'sale',
     saleId: sale.id,
     createdAt: sale.createdAt,
-    cashierName: sale.cashier?.name ?? cashierFallback,
+    cashierName: sale.cashier?.name ?? cashierFallback ?? translate('common.staff'),
     paymentMethod: sale.paymentMethod,
     lines: (sale.lines ?? []).map((l) => ({
-      name: l.product?.name ?? 'Item',
+      name: l.product?.name ?? translate('pos.receipt.itemFallback'),
       quantity: l.quantity,
       lineTotal: l.lineTotal,
     })),

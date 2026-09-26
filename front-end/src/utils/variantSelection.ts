@@ -1,3 +1,5 @@
+import { translate } from '@/i18n/translate'
+
 /**
  * Resolves storefront option UI from actual variant rows.
  * Never invents size/color values — only attributes present on variants.
@@ -26,7 +28,7 @@ export function displayOptionValue(key: string, value: string): string {
   const trimmed = value.trim()
   if (!trimmed) return trimmed
   if (key === 'size') {
-    if (normalizeOptionValue(trimmed) === 'unique') return 'Unique'
+    if (normalizeOptionValue(trimmed) === 'unique') return translate('shop.variant.unique')
     return trimmed.toUpperCase()
   }
   return trimmed
@@ -76,8 +78,8 @@ export function optionValues(variants: SelectableVariant[], key: string): string
 }
 
 export function labelForOptionKey(key: string): string {
-  if (key === 'color') return 'Color'
-  if (key === 'size') return 'Size'
+  if (key === 'color') return translate('shop.variant.color')
+  if (key === 'size') return translate('shop.variant.size')
   return key.charAt(0).toUpperCase() + key.slice(1)
 }
 

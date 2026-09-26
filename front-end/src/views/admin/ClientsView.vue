@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { listClients, createClient } from '@/services/clientApi'
 import type { Client } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const clients = ref<Client[]>([])
 const search = ref('')
@@ -56,10 +58,10 @@ async function handleCreate() {
     await createClient(shopId, body)
     form.value = { name: '', phone: '', email: '', address: '', notes: '', creditLimit: '' }
     showForm.value = false
-    message.value = 'Client created'
+    message.value = t('admin.clients.created')
     await load()
   } catch {
-    error.value = 'Failed to create client — phone may already exist'
+    error.value = t('admin.clients.createFailed')
   }
 }
 
@@ -75,28 +77,28 @@ watch(() => auth.selectedShopId, load)
 
 <template>
   <div class="page-shell">
-    <PageHeader title="Clients">
+    <PageHeader :title="t('admin.clients.title')">
       <template #actions>
         <button v-if="auth.isManager" class="btn-primary" @click="showForm = !showForm">
-          Add client
+          {{ t('admin.clients.add') }}
         </button>
       </template>
     </PageHeader>
 
-    <input v-model="search" placeholder="Search by name or phone…" class="input max-w-md" />
+    <input v-model="search" :placeholder="t('admin.clients.searchPlaceholder')" class="input max-w-md" />
 
     <form v-if="showForm && auth.isManager" class="card flex max-w-md flex-col gap-4" @submit.prevent="handleCreate">
-      <input v-model="form.name" placeholder="Name" required class="input" />
-      <input v-model="form.phone" placeholder="Phone" required class="input" />
-      <input v-model="form.email" type="email" placeholder="Email (optional)" class="input" />
-      <input v-model="form.address" placeholder="Address (optional)" class="input" />
-      <textarea v-model="form.notes" placeholder="Notes (optional)" class="input min-h-20" />
+      <input v-model="form.name" :placeholder="t('admin.clients.namePlaceholder')" required class="input" />
+      <input v-model="form.phone" :placeholder="t('admin.clients.phonePlaceholder')" required class="input" />
+      <input v-model="form.email" type="email" :placeholder="t('admin.clients.emailOptional')" class="input" />
+      <input v-model="form.address" :placeholder="t('admin.clients.addressOptional')" class="input" />
+      <textarea v-model="form.notes" :placeholder="t('admin.clients.notesOptional')" class="input min-h-20" />
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">Credit limit (DZD, blank = unlimited)</label>
+        <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.clients.creditLimitLabel') }}</label>
         <input v-model="form.creditLimit" type="number" min="0" class="input" />
       </div>
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
-      <button type="submit" class="btn-primary">Create</button>
+      <button type="submit" class="btn-primary">{{ t('common.create') }}</button>
     </form>
 
     <p v-if="message" class="text-sm text-green-600">{{ message }}</p>
@@ -110,9 +112,9 @@ watch(() => auth.selectedShopId, load)
           </RouterLink>
           <p class="text-sm text-gray-500">{{ client.phone }}</p>
         </div>
-        <div class="text-right">
-          <p class="font-medium text-gray-900">{{ client.balance }} DZD</p>
-          <p v-if="client.creditLimit" class="text-xs text-gray-500">Limit: {{ client.creditLimit }}</p>
+        <div class="text-end">
+          <p class="font-medium text-gray-900">{{ client.balance }} {{ t('common.currency') }}</p>
+          <p v-if="client.creditLimit" class="text-xs text-gray-500">{{ t('admin.clients.limit', { n: client.creditLimit }) }}</p>
         </div>
       </li>
     </ul>

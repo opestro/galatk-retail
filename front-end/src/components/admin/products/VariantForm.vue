@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { DEFAULT_COLORS, DEFAULT_SIZES } from '@/services/products'
 import type { VariantDraft } from './variantDraft'
 
 export type { VariantDraft } from './variantDraft'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: VariantDraft
@@ -42,12 +45,12 @@ function patch(partial: Partial<VariantDraft>) {
 <template>
   <div class="grid gap-3" :class="stackedLayout ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-6'">
     <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      Color
+      {{ t('admin.variant.color') }}
       <input
         :list="colorListId"
         class="input"
         :value="modelValue.color"
-        placeholder="Vert"
+        :placeholder="t('admin.variant.colorPlaceholder')"
         @input="patch({ color: ($event.target as HTMLInputElement).value })"
       />
       <datalist :id="colorListId">
@@ -55,12 +58,12 @@ function patch(partial: Partial<VariantDraft>) {
       </datalist>
     </label>
     <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      Size
+      {{ t('admin.variant.size') }}
       <input
         :list="sizeListId"
         class="input"
         :value="modelValue.size"
-        placeholder="M"
+        :placeholder="t('admin.variant.sizePlaceholder')"
         @input="patch({ size: ($event.target as HTMLInputElement).value })"
       />
       <datalist :id="sizeListId">
@@ -68,7 +71,7 @@ function patch(partial: Partial<VariantDraft>) {
       </datalist>
     </label>
     <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      Unit cost
+      {{ t('admin.variant.unitCost') }}
       <input
         :value="modelValue.unitCost"
         type="number"
@@ -79,7 +82,7 @@ function patch(partial: Partial<VariantDraft>) {
       />
     </label>
     <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      Sell price
+      {{ t('admin.variant.sellPrice') }}
       <input
         :value="modelValue.sellPrice"
         type="number"
@@ -90,7 +93,7 @@ function patch(partial: Partial<VariantDraft>) {
       />
     </label>
     <label v-if="showQuantity !== false" class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      {{ quantityLabel ?? 'Quantity' }}
+      {{ quantityLabel ?? t('admin.variant.quantity') }}
       <input
         :value="modelValue.quantity"
         type="number"
@@ -108,7 +111,7 @@ function patch(partial: Partial<VariantDraft>) {
           :checked="modelValue.availableOnline"
           @change="patch({ availableOnline: ($event.target as HTMLInputElement).checked })"
         />
-        Online
+        {{ t('admin.variant.online') }}
       </label>
       <label class="inline-flex items-center gap-2 text-sm text-gray-700">
         <input
@@ -117,7 +120,7 @@ function patch(partial: Partial<VariantDraft>) {
           :checked="modelValue.isActive"
           @change="patch({ isActive: ($event.target as HTMLInputElement).checked })"
         />
-        Active
+        {{ t('admin.variant.active') }}
       </label>
     </div>
   </div>

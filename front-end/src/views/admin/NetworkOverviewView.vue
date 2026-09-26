@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '@/services/api'
 import { getNetworkFinancialSummary } from '@/services/clientApi'
 import type { DashboardSummary, NetworkFinancialSummary } from '@/types/api'
@@ -12,6 +13,7 @@ interface NetworkShop extends DashboardSummary {
   shopSlug: string
 }
 
+const { t } = useI18n()
 const shops = ref<NetworkShop[]>([])
 const financial = ref<NetworkFinancialSummary | null>(null)
 const loading = ref(true)
@@ -36,12 +38,12 @@ onMounted(load)
 
 <template>
   <div class="page-shell">
-    <PageHeader title="Network overview">
+    <PageHeader :title="t('admin.network.title')">
       <template #actions>
         <div class="flex flex-wrap gap-2">
           <input v-model="dateRange.from" type="date" class="input max-w-36" />
           <input v-model="dateRange.to" type="date" class="input max-w-36" />
-          <button class="btn-secondary" @click="load">Apply</button>
+          <button class="btn-secondary" @click="load">{{ t('common.apply') }}</button>
         </div>
       </template>
     </PageHeader>
@@ -49,39 +51,39 @@ onMounted(load)
     <SkeletonStatCards v-if="loading" :count="2" />
 
     <div v-else-if="financial?.totals" class="card flex flex-col gap-4">
-      <h3 class="font-medium text-gray-900">Network totals</h3>
+      <h3 class="font-medium text-gray-900">{{ t('admin.network.totals') }}</h3>
       <div class="grid grid-cols-2 gap-4 text-sm md:grid-cols-4 lg:grid-cols-8">
         <div>
-          <p class="text-gray-500">Gross revenue</p>
-          <p class="mt-1 font-semibold">{{ financial.totals.grossRevenue }} DZD</p>
+          <p class="text-gray-500">{{ t('admin.network.grossRevenue') }}</p>
+          <p class="mt-1 font-semibold">{{ financial.totals.grossRevenue }} {{ t('common.currency') }}</p>
         </div>
         <div>
-          <p class="text-gray-500">COGS</p>
-          <p class="mt-1 font-semibold">{{ financial.totals.costOfGoodsSold }} DZD</p>
+          <p class="text-gray-500">{{ t('admin.network.cogs') }}</p>
+          <p class="mt-1 font-semibold">{{ financial.totals.costOfGoodsSold }} {{ t('common.currency') }}</p>
         </div>
         <div>
-          <p class="text-gray-500">Gross profit</p>
-          <p class="mt-1 font-semibold text-green-700">{{ financial.totals.grossProfit }} DZD</p>
+          <p class="text-gray-500">{{ t('admin.network.grossProfit') }}</p>
+          <p class="mt-1 font-semibold text-green-700">{{ financial.totals.grossProfit }} {{ t('common.currency') }}</p>
         </div>
         <div>
-          <p class="text-gray-500">POS collected</p>
-          <p class="mt-1 font-semibold">{{ financial.totals.posCollected }} DZD</p>
+          <p class="text-gray-500">{{ t('admin.network.posCollected') }}</p>
+          <p class="mt-1 font-semibold">{{ financial.totals.posCollected }} {{ t('common.currency') }}</p>
         </div>
         <div>
-          <p class="text-gray-500">Client payments</p>
-          <p class="mt-1 font-semibold">{{ financial.totals.clientPaymentsReceived }} DZD</p>
+          <p class="text-gray-500">{{ t('admin.network.clientPayments') }}</p>
+          <p class="mt-1 font-semibold">{{ financial.totals.clientPaymentsReceived }} {{ t('common.currency') }}</p>
         </div>
         <div>
-          <p class="text-gray-500">Total cash in</p>
-          <p class="mt-1 font-semibold">{{ financial.totals.totalCashIn }} DZD</p>
+          <p class="text-gray-500">{{ t('admin.network.totalCashIn') }}</p>
+          <p class="mt-1 font-semibold">{{ financial.totals.totalCashIn }} {{ t('common.currency') }}</p>
         </div>
         <div>
-          <p class="text-gray-500">Outstanding credit</p>
-          <p class="mt-1 font-semibold">{{ financial.totals.outstandingCredit }} DZD</p>
+          <p class="text-gray-500">{{ t('admin.network.outstandingCredit') }}</p>
+          <p class="mt-1 font-semibold">{{ financial.totals.outstandingCredit }} {{ t('common.currency') }}</p>
         </div>
         <div>
-          <p class="text-gray-500">Total charges</p>
-          <p class="mt-1 font-semibold">{{ financial.totals.totalCharges }} DZD</p>
+          <p class="text-gray-500">{{ t('admin.network.totalCharges') }}</p>
+          <p class="mt-1 font-semibold">{{ financial.totals.totalCharges }} {{ t('common.currency') }}</p>
         </div>
       </div>
     </div>
@@ -96,28 +98,28 @@ onMounted(load)
         </div>
         <div class="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p class="text-gray-500">Gross profit</p>
-            <p class="mt-1 font-semibold text-green-700">{{ shop.grossProfit }} DZD</p>
+            <p class="text-gray-500">{{ t('admin.network.grossProfit') }}</p>
+            <p class="mt-1 font-semibold text-green-700">{{ shop.grossProfit }} {{ t('common.currency') }}</p>
           </div>
           <div>
-            <p class="text-gray-500">Gross revenue</p>
-            <p class="mt-1 font-semibold">{{ shop.grossRevenue }} DZD</p>
+            <p class="text-gray-500">{{ t('admin.network.grossRevenue') }}</p>
+            <p class="mt-1 font-semibold">{{ shop.grossRevenue }} {{ t('common.currency') }}</p>
           </div>
           <div>
-            <p class="text-gray-500">POS collected</p>
-            <p class="mt-1 font-semibold">{{ shop.posCollected }} DZD</p>
+            <p class="text-gray-500">{{ t('admin.network.posCollected') }}</p>
+            <p class="mt-1 font-semibold">{{ shop.posCollected }} {{ t('common.currency') }}</p>
           </div>
           <div>
-            <p class="text-gray-500">Client payments</p>
-            <p class="mt-1 font-semibold">{{ shop.clientPaymentsReceived }} DZD</p>
+            <p class="text-gray-500">{{ t('admin.network.clientPayments') }}</p>
+            <p class="mt-1 font-semibold">{{ shop.clientPaymentsReceived }} {{ t('common.currency') }}</p>
           </div>
           <div>
-            <p class="text-gray-500">Outstanding credit</p>
-            <p class="mt-1 font-semibold">{{ shop.outstandingCredit }} DZD</p>
+            <p class="text-gray-500">{{ t('admin.network.outstandingCredit') }}</p>
+            <p class="mt-1 font-semibold">{{ shop.outstandingCredit }} {{ t('common.currency') }}</p>
           </div>
           <div>
-            <p class="text-gray-500">Total charges</p>
-            <p class="mt-1 font-semibold">{{ shop.totalCharges }} DZD</p>
+            <p class="text-gray-500">{{ t('admin.network.totalCharges') }}</p>
+            <p class="mt-1 font-semibold">{{ shop.totalCharges }} {{ t('common.currency') }}</p>
           </div>
         </div>
       </div>

@@ -64,7 +64,7 @@ onUnmounted(clearTimer)
   <section
     v-if="enabled"
     class="overflow-hidden border-b border-gray-200"
-    aria-label="Store banner"
+    :aria-label="$t('shop.hero.ariaBanner')"
     @mouseenter="clearTimer"
     @mouseleave="startTimer"
   >
@@ -83,9 +83,9 @@ onUnmounted(clearTimer)
       />
       <div
         v-if="canRotate"
-        class="absolute bottom-3 left-0 right-0 z-10 flex justify-center gap-2"
+        class="absolute bottom-3 start-0 end-0 z-10 flex justify-center gap-2"
         role="tablist"
-        aria-label="Banner slides"
+        :aria-label="$t('shop.hero.ariaSlides')"
       >
         <button
           v-for="(slide, i) in slides"
@@ -93,7 +93,7 @@ onUnmounted(clearTimer)
           type="button"
           class="h-2.5 w-2.5 rounded-full border border-white/80"
           :class="i === index ? 'bg-white' : 'bg-white/30'"
-          :aria-label="`Show banner ${i + 1}`"
+          :aria-label="$t('shop.hero.ariaShowSlide', { n: i + 1 })"
           :aria-selected="i === index"
           role="tab"
           @click="goTo(i); startTimer()"

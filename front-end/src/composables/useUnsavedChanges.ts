@@ -1,7 +1,10 @@
 import { onBeforeUnmount, type Ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
+import { translate } from '@/i18n/translate'
 
-const LEAVE_MESSAGE = 'You have unsaved changes. Are you sure you want to leave?'
+function leaveMessage() {
+  return translate('common.unsavedChanges')
+}
 
 /**
  * Warns before leaving a dirty admin form via in-app navigation or browser unload.
@@ -10,7 +13,7 @@ export function useUnsavedChanges(isDirty: Ref<boolean>) {
   function onBeforeUnload(event: BeforeUnloadEvent) {
     if (!isDirty.value) return
     event.preventDefault()
-    event.returnValue = LEAVE_MESSAGE
+    event.returnValue = leaveMessage()
   }
 
   window.addEventListener('beforeunload', onBeforeUnload)
@@ -18,6 +21,6 @@ export function useUnsavedChanges(isDirty: Ref<boolean>) {
 
   onBeforeRouteLeave(() => {
     if (!isDirty.value) return true
-    return window.confirm(LEAVE_MESSAGE)
+    return window.confirm(leaveMessage())
   })
 }

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '@/services/api'
 import type { Shop } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 
+const { t } = useI18n()
 const shops = ref<Shop[]>([])
 const loading = ref(true)
 const form = ref({ name: '', slug: '', address: '', serviceCity: '', deliveryFee: 0 })
@@ -32,19 +34,19 @@ onMounted(loadShops)
 
 <template>
   <div class="page-shell">
-    <PageHeader title="Shops">
+    <PageHeader :title="t('admin.shops.title')">
       <template #actions>
-        <button class="btn-primary" @click="showForm = !showForm">Add shop</button>
+        <button class="btn-primary" @click="showForm = !showForm">{{ t('admin.shops.add') }}</button>
       </template>
     </PageHeader>
 
     <form v-if="showForm" class="card flex flex-col gap-4" @submit.prevent="createShop">
-      <input v-model="form.name" placeholder="Name" required class="input" />
-      <input v-model="form.slug" placeholder="Slug (optional)" class="input" />
-      <input v-model="form.address" placeholder="Address" required class="input" />
-      <input v-model="form.serviceCity" placeholder="Service city" required class="input" />
-      <input v-model.number="form.deliveryFee" type="number" placeholder="Delivery fee" required class="input" />
-      <button type="submit" class="btn-primary">Create</button>
+      <input v-model="form.name" :placeholder="t('admin.shops.namePlaceholder')" required class="input" />
+      <input v-model="form.slug" :placeholder="t('admin.shops.slugPlaceholder')" class="input" />
+      <input v-model="form.address" :placeholder="t('admin.shops.addressPlaceholder')" required class="input" />
+      <input v-model="form.serviceCity" :placeholder="t('admin.shops.serviceCityPlaceholder')" required class="input" />
+      <input v-model.number="form.deliveryFee" type="number" :placeholder="t('admin.shops.deliveryFeePlaceholder')" required class="input" />
+      <button type="submit" class="btn-primary">{{ t('common.create') }}</button>
     </form>
 
     <SkeletonList v-if="loading" />

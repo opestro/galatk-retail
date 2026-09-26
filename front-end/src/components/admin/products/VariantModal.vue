@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { X } from 'lucide-vue-next'
 import VariantForm, { type VariantDraft } from './VariantForm.vue'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   title: string
@@ -33,7 +36,7 @@ const draft = computed({
     <div class="w-full max-w-lg rounded-lg border border-gray-200 bg-white">
       <header class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
         <h2 class="text-lg font-semibold text-gray-900">{{ title }}</h2>
-        <button type="button" class="rounded-md p-2 text-gray-500 hover:bg-gray-50" aria-label="Close" @click="emit('cancel')">
+        <button type="button" class="rounded-md p-2 text-gray-500 hover:bg-gray-50" :aria-label="t('admin.a11y.close')" @click="emit('cancel')">
           <X class="h-5 w-5" />
         </button>
       </header>
@@ -49,9 +52,9 @@ const draft = computed({
         />
         <p v-if="quantityHint" class="text-xs text-gray-500">{{ quantityHint }}</p>
         <div class="flex justify-end gap-2">
-          <button type="button" class="btn-secondary" :disabled="submitting" @click="emit('cancel')">Cancel</button>
+          <button type="button" class="btn-secondary" :disabled="submitting" @click="emit('cancel')">{{ t('common.cancel') }}</button>
           <button type="button" class="btn-primary" :disabled="submitting" @click="emit('submit')">
-            {{ submitting ? 'Saving…' : (submitLabel ?? 'Save') }}
+            {{ submitting ? t('common.saving') : (submitLabel ?? t('common.save')) }}
           </button>
         </div>
       </div>

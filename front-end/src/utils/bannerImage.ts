@@ -1,3 +1,5 @@
+import { translate } from '@/i18n/translate'
+
 /** YouTube-style homepage banner (16:9). */
 export const BANNER_RECOMMENDED_WIDTH = 2560
 export const BANNER_RECOMMENDED_HEIGHT = 1440
@@ -9,11 +11,11 @@ export const BANNER_MAX_BYTES = 8 * 1024 * 1024
 
 export function bannerSizeError(width: number, height: number): string | null {
   if (width < BANNER_MIN_WIDTH || height < BANNER_MIN_HEIGHT) {
-    return 'Banner images must be at least 2048 × 1152 px (16:9). Recommended size is 2560 × 1440 px.'
+    return translate('admin.banner.minSize')
   }
   const ratio = width / height
   if (Math.abs(ratio - BANNER_ASPECT_RATIO) / BANNER_ASPECT_RATIO > BANNER_ASPECT_TOLERANCE) {
-    return 'Banner images must use a 16:9 aspect ratio (recommended 2560 × 1440 px).'
+    return translate('admin.banner.aspectRatio')
   }
   return null
 }
@@ -28,7 +30,7 @@ export function readFilePixelSize(file: File): Promise<{ width: number; height: 
     }
     image.onerror = () => {
       URL.revokeObjectURL(url)
-      reject(new Error('Could not read image dimensions'))
+      reject(new Error(translate('admin.banner.dimensionReadError')))
     }
     image.src = url
   })

@@ -62,18 +62,18 @@ function productTo(product: PublicCatalogProductSummary) {
   <div class="flex flex-col gap-6">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
       <div class="relative flex-1">
-        <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <Search class="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <input
           v-model="searchQuery"
           type="search"
-          placeholder="Search products..."
-          class="input pl-9"
+          :placeholder="$t('shop.catalog.searchPlaceholder')"
+          class="input ps-9"
         />
       </div>
       <div class="relative sm:w-56">
-        <MapPin class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        <select v-model="shopFilter" class="input appearance-none pl-9">
-          <option value="all">All shops</option>
+        <MapPin class="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <select v-model="shopFilter" class="input appearance-none ps-9">
+          <option value="all">{{ $t('shop.catalog.allShops') }}</option>
           <option v-for="shop in allShops" :key="shop.id" :value="shop.id">{{ shop.name }}</option>
         </select>
       </div>
@@ -83,12 +83,12 @@ function productTo(product: PublicCatalogProductSummary) {
 
     <div v-else-if="loadError" class="flex flex-col items-center gap-3 py-16 text-center">
       <Package class="h-10 w-10 text-gray-300" />
-      <p class="text-gray-500">Could not load the store. Please try again.</p>
+      <p class="text-gray-500">{{ $t('shop.catalog.loadError') }}</p>
     </div>
 
     <div v-else-if="filteredProducts.length === 0" class="flex flex-col items-center gap-3 py-16 text-center">
       <Package class="h-10 w-10 text-gray-300" />
-      <p class="text-gray-500">No products found.</p>
+      <p class="text-gray-500">{{ $t('shop.catalog.empty') }}</p>
     </div>
 
     <div v-else class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">

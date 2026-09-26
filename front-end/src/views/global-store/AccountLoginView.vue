@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useCustomerAuthStore } from '@/stores/customerAuth'
 import { normalizeAlgerianPhone, validateCustomerName } from '@/utils/algerianPhone'
@@ -7,6 +8,7 @@ import { normalizeEmail } from '@/utils/email'
 import { MIN_CUSTOMER_PASSWORD_LENGTH } from '@/utils/guestCheckout'
 import axios from 'axios'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const customerAuth = useCustomerAuthStore()
@@ -44,11 +46,11 @@ async function submit() {
   error.value = ''
   const canonicalEmail = normalizeEmail(email.value)
   if (!canonicalEmail) {
-    error.value = 'Please enter a valid email address.'
+    error.value = t('shop.auth.errorEmail')
     return
   }
   if (password.value.length < MIN_CUSTOMER_PASSWORD_LENGTH) {
-    error.value = `Use at least ${MIN_CUSTOMER_PASSWORD_LENGTH} characters for your password.`
+    error.value = t('shop.auth.errorPasswordLength', { n: MIN_CUSTOMER_PASSWORD_LENGTH })
     return
   }
 
@@ -56,18 +58,18 @@ async function submit() {
   try {
     if (mode.value === 'register') {
       if (!validateCustomerName(name.value)) {
-        error.value = 'Please enter your full name.'
+        error.value = t('shop.auth.errorName')
         submitting.value = false
         return
       }
       const canonicalPhone = normalizeAlgerianPhone(phone.value)
       if (!canonicalPhone) {
-        error.value = 'Please enter a valid Algerian phone number (05, 06, or 07).'
+        error.value = t('shop.auth.errorPhone')
         submitting.value = false
         return
       }
       if (password.value !== passwordConfirm.value) {
-        error.value = 'Passwords do not match.'
+        error.value = t('shop.auth.errorPasswordMatch')
         submitting.value = false
         return
       }
@@ -78,9 +80,9 @@ async function submit() {
     await router.replace(nextPath.value)
   } catch (err) {
     if (axios.isAxiosError(err)) {
-      error.value = (err.response?.data?.message as string) || 'Could not continue. Please try again.'
+      error.value = (err.response?.data?.message as string) || t('shop.auth.errorGeneric')
     } else {
-      error.value = 'Could not continue. Please try again.'
+      error.value = t('shop.auth.errorGeneric')
     }
   } finally {
     submitting.value = false
@@ -92,13 +94,13 @@ async function submit() {
   <div class="mx-auto flex max-w-md flex-col gap-6">
     <div>
       <h1 class="text-2xl font-semibold text-gray-900">
-        {{ mode === 'register' ? 'Create your account' : 'Sign in' }}
+        {{ mode === 'register' ? $t('shop.auth.registerTitle') : $t('shop.auth.signInTitle') }}
       </h1>
       <p class="mt-1 text-sm text-gray-600">
         {{
           mode === 'register'
-            ? 'Create an account with your email to place orders and follow them here.'
-            : 'Sign in with your email and password.'
+            ? $t('shop.auth.registerSubtitle')
+            : $t('shop.auth.loginSubtitle')
         }}
       </p>
     </div>
@@ -110,7 +112,7 @@ async function submit() {
         :class="mode === 'login' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:text-gray-900'"
         @click="switchMode('login')"
       >
-        Sign in
+        {{ $t('shop.auth.signIn') }}
       </button>
       <button
         type="button"
@@ -118,25 +120,25 @@ async function submit() {
         :class="mode === 'register' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:text-gray-900'"
         @click="switchMode('register')"
       >
-        Create account
+        {{ $t('shop.auth.createAccount') }}
       </button>
     </div>
 
     <form class="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5" @submit.prevent="submit">
       <label v-if="mode === 'register'" class="flex flex-col gap-1.5">
-        <span class="text-sm text-gray-700">Full name</span>
+        <span class="text-sm text-gray-700">{{ $t('shop.auth.fullName') }}</span>
         <input v-model="name" type="text" autocomplete="name" class="input" />
       </label>
       <label class="flex flex-col gap-1.5">
-        <span class="text-sm text-gray-700">Email</span>
+        <span class="text-sm text-gray-700">{{ $t('shop.auth.email') }}</span>
         <input v-model="email" type="email" autocomplete="email" class="input" />
       </label>
       <label v-if="mode === 'register'" class="flex flex-col gap-1.5">
-        <span class="text-sm text-gray-700">Phone number</span>
-        <input v-model="phone" type="tel" autocomplete="tel" placeholder="05XXXXXXXX" class="input" />
+        <span class="text-sm text-gray-700">{{ $t('shop.auth.phone') }}</span>
+        <input v-model="phone" type="tel" autocomplete="tel" :placeholder="$t('shop.auth.phonePlaceholder')" class="input" />
       </label>
       <label class="flex flex-col gap-1.5">
-        <span class="text-sm text-gray-700">Password</span>
+        <span class="text-sm text-gray-700">{{ $t('shop.auth.password') }}</span>
         <input
           v-model="password"
           type="password"
@@ -145,7 +147,7 @@ async function submit() {
         />
       </label>
       <label v-if="mode === 'register'" class="flex flex-col gap-1.5">
-        <span class="text-sm text-gray-700">Confirm password</span>
+        <span class="text-sm text-gray-700">{{ $t('shop.auth.confirmPassword') }}</span>
         <input v-model="passwordConfirm" type="password" autocomplete="new-password" class="input" />
       </label>
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
@@ -153,11 +155,11 @@ async function submit() {
         {{
           submitting
             ? mode === 'register'
-              ? 'Creating account…'
-              : 'Signing in…'
+              ? $t('shop.auth.creatingAccount')
+              : $t('shop.auth.signingIn')
             : mode === 'register'
-              ? 'Create account'
-              : 'Sign in'
+              ? $t('shop.auth.createAccount')
+              : $t('shop.auth.signIn')
         }}
       </button>
     </form>

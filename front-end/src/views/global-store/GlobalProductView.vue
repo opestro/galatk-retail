@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import { getGlobalProduct, type PublicCatalogProductDetail, type PublicCatalogShop, type PublicCatalogVariant } from '@/services/globalStore'
 import { useGlobalStoreCartStore } from '@/stores/globalStoreCart'
@@ -21,6 +22,7 @@ import {
 } from '@/utils/variantSelection'
 import { Check, Loader2, Minus, Plus, ShoppingBag } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const route = useRoute()
 const cart = useGlobalStoreCartStore()
 const customerAuth = useCustomerAuthStore()
@@ -162,6 +164,13 @@ function addToCart() {
     if (addState.value === 'added') addState.value = 'idle'
   }, 1400)
 }
+
+const addButtonLabel = computed(() => {
+  if (addState.value === 'adding') return t('shop.product.adding')
+  if (addState.value === 'added') return t('shop.product.added')
+  if (!selectedVariant.value) return t('shop.product.unavailable')
+  return inStock.value ? t('shop.product.addToCart') : t('shop.product.outOfStockCta')
+})
 </script>
 
 <template>
@@ -169,15 +178,15 @@ function addToCart() {
     <ProductDetailSkeleton v-if="loading" />
 
     <div v-else-if="notFound" class="flex flex-col items-center gap-4 py-16 text-center">
-      <p class="text-lg font-medium text-gray-900">Product not found</p>
-      <p class="text-sm text-gray-500">This product is unavailable or no longer listed.</p>
-      <RouterLink to="/store" class="btn-primary">Back to Store</RouterLink>
+      <p class="text-lg font-medium text-gray-900">{{ $t('shop.product.notFoundTitle') }}</p>
+      <p class="text-sm text-gray-500">{{ $t('shop.product.notFoundBody') }}</p>
+      <RouterLink to="/store" class="btn-primary">{{ $t('shop.product.backToStore') }}</RouterLink>
     </div>
 
     <div v-else-if="loadError" class="flex flex-col items-center gap-4 py-16 text-center">
-      <p class="text-lg font-medium text-gray-900">Something went wrong</p>
-      <p class="text-sm text-gray-500">We could not load this product. Please try again.</p>
-      <RouterLink to="/store" class="btn-secondary">Back to Store</RouterLink>
+      <p class="text-lg font-medium text-gray-900">{{ $t('shop.product.loadErrorTitle') }}</p>
+      <p class="text-sm text-gray-500">{{ $t('shop.product.loadErrorBody') }}</p>
+      <RouterLink to="/store" class="btn-secondary">{{ $t('shop.product.backToStore') }}</RouterLink>
     </div>
 
     <div v-else-if="product" class="grid gap-8 lg:grid-cols-2 lg:items-start">
@@ -221,7 +230,7 @@ function addToCart() {
           v-if="shopFilter === 'all' && shopsForVariant.length > 1"
           class="flex flex-col gap-2"
         >
-          <p class="text-sm font-medium text-gray-900">Shop</p>
+          <p class="text-sm font-medium text-gray-900">{{ $t('shop.product.shopLabel') }}</p>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="shop in shopsForVariant"
@@ -237,19 +246,19 @@ function addToCart() {
               @click="selectedShopId = shop.shopId"
             >
               {{ shop.shopName }}
-              <span v-if="!shop.inStock"> · out of stock</span>
+              <span v-if="!shop.inStock">{{ $t('shop.product.shopOutOfStockSuffix') }}</span>
             </button>
           </div>
         </div>
 
         <p v-if="selectedVariant" class="text-sm text-gray-600">
-          <template v-if="inStock">Available: {{ availableQty }}</template>
-          <template v-else>Out of stock</template>
+          <template v-if="inStock">{{ $t('shop.product.available', { qty: availableQty }) }}</template>
+          <template v-else>{{ $t('shop.product.outOfStock') }}</template>
         </p>
-        <p v-else class="text-sm text-gray-500">This combination is not available.</p>
+        <p v-else class="text-sm text-gray-500">{{ $t('shop.product.comboUnavailable') }}</p>
 
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium text-gray-900">Quantity</span>
+          <span class="text-sm font-medium text-gray-900">{{ $t('shop.product.quantity') }}</span>
           <div class="flex items-center rounded-md border border-gray-200">
             <button
               type="button"
@@ -280,31 +289,21 @@ function addToCart() {
           <Loader2 v-if="addState === 'adding'" class="h-4 w-4 animate-spin" />
           <Check v-else-if="addState === 'added'" class="h-4 w-4" />
           <ShoppingBag v-else class="h-4 w-4" />
-          {{
-            addState === 'adding'
-              ? 'Adding...'
-              : addState === 'added'
-                ? 'Added to Cart'
-                : !selectedVariant
-                  ? 'Unavailable'
-                  : inStock
-                    ? 'Add to Cart'
-                    : 'Out of Stock'
-          }}
+          {{ addButtonLabel }}
         </button>
         <RouterLink
           v-if="addState === 'added'"
           to="/store/checkout"
           class="btn-secondary w-full text-center"
         >
-          Go to cart
+          {{ $t('shop.product.goToCart') }}
         </RouterLink>
         <RouterLink
           v-if="!customerAuth.isAuthenticated"
           :to="{ path: '/login', query: { create: '1', next: '/store/checkout' } }"
           class="text-center text-sm text-gray-600 hover:text-gray-900"
         >
-          Create an account to place an order
+          {{ $t('shop.product.createAccountCta') }}
         </RouterLink>
       </div>
     </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import type { OnlineOrder, Shop } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -18,6 +19,7 @@ import { api } from '@/services/api'
 import { formatDzd } from '@/utils/formatMoney'
 import { saveOrderReceiptPdf } from '@/utils/orderReceiptPdf'
 
+const { t } = useI18n()
 const route = useRoute()
 const auth = useAuthStore()
 const order = ref<OnlineOrder | null>(null)
@@ -51,6 +53,12 @@ function attributeEntries(attrs: Record<string, string> | undefined) {
   return Object.entries(attrs ?? {}).filter(([, value]) => value?.trim())
 }
 
+function paymentMethodLabel(method: string) {
+  const key = `common.paymentMethod.${method}`
+  const label = t(key)
+  return label !== key ? label : method.replace(/_/g, ' ')
+}
+
 async function load() {
   const shopId = auth.selectedShopId
   if (!shopId) {
@@ -68,7 +76,7 @@ async function load() {
     draftStatus.value = loaded.status
     shop.value = shopRes?.data.data ?? null
   } catch {
-    error.value = 'Order not found.'
+    error.value = t('admin.orderDetail.notFound')
     order.value = null
   } finally {
     loading.value = false
@@ -90,11 +98,11 @@ async function saveStatus() {
 
   if (next === 'CANCELLED') {
     if (!auth.isManager) {
-      actionError.value = 'Only a manager can cancel an order.'
+      actionError.value = t('admin.orderDetail.cancelManagerOnly')
       draftStatus.value = order.value.status
       return
     }
-    if (!window.confirm('Cancel this order and restore stock?')) {
+    if (!window.confirm(t('admin.orderDetail.confirmCancel'))) {
       draftStatus.value = order.value.status
       return
     }
@@ -103,13 +111,13 @@ async function saveStatus() {
   savingStatus.value = true
   try {
     if (next === 'CANCELLED') {
-      order.value = await cancelShopOrder(shopId, order.value.id, 'Staff cancelled')
+      order.value = await cancelShopOrder(shopId, order.value.id, t('admin.orderDetail.cancelReason'))
     } else {
       order.value = await updateShopOrderStatus(shopId, order.value.id, next)
     }
     draftStatus.value = order.value.status
   } catch (err) {
-    actionError.value = apiErrorMessage(err, 'Could not update order status.')
+    actionError.value = apiErrorMessage(err, t('admin.orderDetail.statusUpdateError'))
     draftStatus.value = order.value.status
   } finally {
     savingStatus.value = false
@@ -121,7 +129,7 @@ function downloadReceipt() {
   try {
     saveOrderReceiptPdf(order.value, shop.value)
   } catch (err) {
-    actionError.value = err instanceof Error ? err.message : 'Could not open the receipt.'
+    actionError.value = err instanceof Error ? err.message : t('admin.orderDetail.receiptError')
   }
 }
 
@@ -131,12 +139,12 @@ watch(() => [auth.selectedShopId, orderId.value], load)
 
 <template>
   <div class="page-shell">
-    <PageHeader title="Order details">
+    <PageHeader :title="t('admin.orderDetail.title')">
       <template #actions>
         <button type="button" class="btn-secondary text-sm" :disabled="!order" @click="downloadReceipt">
-          Save receipt as PDF
+          {{ t('admin.orderDetail.savePdf') }}
         </button>
-        <RouterLink to="/admin/orders" class="btn-secondary text-sm">Back to orders</RouterLink>
+        <RouterLink to="/admin/orders" class="btn-secondary text-sm">{{ t('admin.orderDetail.back') }}</RouterLink>
       </template>
     </PageHeader>
 
@@ -150,8 +158,8 @@ watch(() => [auth.selectedShopId, orderId.value], load)
             <h2 class="text-lg font-semibold text-gray-900">{{ order.orderNumber }}</h2>
             <p class="text-xs text-gray-500">{{ new Date(order.createdAt).toLocaleString() }}</p>
             <p class="mt-1 text-xs text-gray-500">
-              {{ order.fulfillmentType === 'PICKUP' ? 'Pickup' : 'Delivery' }}
-              <span v-if="order.paymentMethod"> · {{ order.paymentMethod.replace(/_/g, ' ') }}</span>
+              {{ order.fulfillmentType === 'PICKUP' ? t('admin.orderDetail.pickup') : t('admin.orderDetail.delivery') }}
+              <span v-if="order.paymentMethod"> · {{ paymentMethodLabel(order.paymentMethod) }}</span>
             </p>
           </div>
           <span class="rounded-md border border-gray-200 px-2 py-1 text-sm text-gray-700">
@@ -161,10 +169,10 @@ watch(() => [auth.selectedShopId, orderId.value], load)
 
         <div v-if="!terminal" class="flex flex-col gap-2 sm:flex-row sm:items-end">
           <label class="flex flex-1 flex-col gap-1.5 text-sm text-gray-700">
-            Change status
+            {{ t('admin.orderDetail.changeStatus') }}
             <select v-model="draftStatus" class="input">
               <option v-for="status in statusChoices" :key="status" :value="status">
-                {{ orderStatusLabel(status) }}{{ status === 'COMPLETED' ? ' (collect payment)' : '' }}
+                {{ orderStatusLabel(status) }}{{ status === 'COMPLETED' ? ` ${t('admin.orderDetail.collectPaymentSuffix')}` : '' }}
               </option>
             </select>
           </label>
@@ -174,30 +182,30 @@ watch(() => [auth.selectedShopId, orderId.value], load)
             :disabled="!canSaveStatus"
             @click="saveStatus"
           >
-            {{ savingStatus ? 'Saving…' : 'Save status' }}
+            {{ savingStatus ? t('common.saving') : t('admin.orderDetail.saveStatus') }}
           </button>
         </div>
         <p v-if="actionError" class="text-sm text-red-600">{{ actionError }}</p>
       </section>
 
       <section class="card flex flex-col gap-2">
-        <h3 class="text-sm font-semibold text-gray-900">Customer</h3>
-        <p class="text-sm text-gray-800"><span class="text-gray-500">Full name:</span> {{ order.customerName }}</p>
-        <p class="text-sm text-gray-800"><span class="text-gray-500">Phone:</span> {{ order.customerPhone }}</p>
+        <h3 class="text-sm font-semibold text-gray-900">{{ t('admin.orderDetail.customer') }}</h3>
+        <p class="text-sm text-gray-800"><span class="text-gray-500">{{ t('admin.orderDetail.fieldName') }}</span> {{ order.customerName }}</p>
+        <p class="text-sm text-gray-800"><span class="text-gray-500">{{ t('admin.orderDetail.fieldPhone') }}</span> {{ order.customerPhone }}</p>
         <p v-if="order.customerEmail" class="text-sm text-gray-800">
-          <span class="text-gray-500">Email:</span> {{ order.customerEmail }}
+          <span class="text-gray-500">{{ t('admin.orderDetail.fieldEmail') }}</span> {{ order.customerEmail }}
         </p>
         <p class="text-sm text-gray-800">
-          <span class="text-gray-500">Wilaya:</span> {{ order.customerWilaya || order.deliveryCity || '—' }}
+          <span class="text-gray-500">{{ t('admin.orderDetail.fieldWilaya') }}</span> {{ order.customerWilaya || order.deliveryCity || t('common.emDash') }}
         </p>
         <p v-if="order.deliveryAddress" class="text-sm text-gray-800">
-          <span class="text-gray-500">Address:</span> {{ order.deliveryAddress }}
+          <span class="text-gray-500">{{ t('admin.orderDetail.fieldAddress') }}</span> {{ order.deliveryAddress }}
         </p>
       </section>
 
       <section class="overflow-hidden rounded-lg border border-gray-200">
         <h3 class="border-b border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-900">
-          Products
+          {{ t('admin.orderDetail.products') }}
         </h3>
         <ul class="divide-y divide-gray-100">
           <li
@@ -226,7 +234,7 @@ watch(() => [auth.selectedShopId, orderId.value], load)
                   <span v-else>{{ line.productName }}</span>
                 </p>
                 <p v-if="line.variantLabel" class="text-sm text-gray-600">{{ line.variantLabel }}</p>
-                <p v-if="line.sku" class="text-xs text-gray-500">SKU {{ line.sku }}</p>
+                <p v-if="line.sku" class="text-xs text-gray-500">{{ t('admin.orderDetail.sku', { sku: line.sku }) }}</p>
                 <p v-if="attributeEntries(line.attributes).length" class="mt-1 flex flex-wrap gap-1">
                   <span
                     v-for="[key, value] in attributeEntries(line.attributes)"
@@ -236,7 +244,7 @@ watch(() => [auth.selectedShopId, orderId.value], load)
                     {{ key }}: {{ value }}
                   </span>
                 </p>
-                <p class="mt-1 text-xs text-gray-500">Qty {{ line.quantity }} · {{ formatDzd(line.unitPrice) }} each</p>
+                <p class="mt-1 text-xs text-gray-500">{{ t('admin.orderDetail.qtyEach', { n: line.quantity, price: formatDzd(line.unitPrice) }) }}</p>
               </div>
             </div>
             <p class="text-sm font-medium text-gray-900">{{ formatDzd(line.lineTotal) }}</p>
@@ -244,15 +252,15 @@ watch(() => [auth.selectedShopId, orderId.value], load)
         </ul>
         <div class="flex flex-col gap-1 border-t border-gray-200 px-4 py-3 text-sm text-gray-700">
           <div v-if="order.subtotal" class="flex justify-between">
-            <span>Subtotal</span>
+            <span>{{ t('admin.orderDetail.subtotal') }}</span>
             <span>{{ formatDzd(order.subtotal) }}</span>
           </div>
           <div v-if="order.deliveryFee && Number(order.deliveryFee) > 0" class="flex justify-between">
-            <span>Delivery</span>
+            <span>{{ t('admin.orderDetail.deliveryFee') }}</span>
             <span>{{ formatDzd(order.deliveryFee) }}</span>
           </div>
           <div class="flex justify-between font-semibold text-gray-900">
-            <span>Total</span>
+            <span>{{ t('admin.orderDetail.total') }}</span>
             <span>{{ formatDzd(order.total) }}</span>
           </div>
         </div>

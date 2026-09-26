@@ -8,7 +8,7 @@ defineProps<{
 
 <template>
   <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" role="status">
-    <span class="sr-only">Loading products…</span>
+    <span class="sr-only">{{ $t('shop.catalog.loading') }}</span>
     <div
       v-for="i in count ?? 8"
       :key="i"

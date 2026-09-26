@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import PayLaterConfirm from '@/components/pos/PayLaterConfirm.vue'
@@ -13,6 +14,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ close: []; completed: [] }>()
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const paymentMethod = ref<'CASH' | 'CARD'>('CASH')
 const checkoutMode = ref<'full' | 'partial' | 'payLater'>('full')
@@ -64,7 +66,7 @@ async function submitComplete(creditLimitOverride = false) {
     await api.post(`/shops/${shopId}/orders/${props.order.id}/complete`, body)
     showSuccess.value = true
   } catch {
-    error.value = 'Could not complete order — check payment or credit limit'
+    error.value = t('pos.orderComplete.errorFailed')
   } finally {
     loading.value = false
     showManagerConfirm.value = false
@@ -78,7 +80,7 @@ function handleComplete() {
     return
   }
   if (creditLimitExceeded.value && !auth.isManager) {
-    error.value = 'Credit limit exceeded — manager approval required'
+    error.value = t('pos.orderComplete.errorCreditLimit')
     return
   }
   submitComplete(creditLimitExceeded.value && auth.isManager)
@@ -88,8 +90,8 @@ function handleComplete() {
 <template>
   <PosSuccessDialog
     v-if="showSuccess"
-    title="Order completed"
-    :message="`${order.orderNumber} · ${order.total} DZD collected.`"
+    :title="$t('pos.orderComplete.successTitle')"
+    :message="$t('pos.orderComplete.successMessage', { orderNumber: order.orderNumber, total: order.total })"
     @close="emit('completed')"
     @print="saveOrderReceiptPdf(order)"
   />
@@ -97,47 +99,47 @@ function handleComplete() {
   <div v-else class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
     <div class="card flex max-h-[90vh] w-full max-w-md flex-col gap-4 overflow-y-auto">
       <div>
-        <h3 class="text-lg font-semibold text-gray-900">Complete order</h3>
+        <h3 class="text-lg font-semibold text-gray-900">{{ $t('pos.orderComplete.title') }}</h3>
         <p class="text-sm text-gray-500">{{ order.orderNumber }} · {{ order.customerName }}</p>
-        <p class="mt-1 text-sm font-medium text-gray-900">Total: {{ order.total }} DZD</p>
+        <p class="mt-1 text-sm font-medium text-gray-900">{{ $t('pos.orderComplete.total', { total: order.total }) }}</p>
         <p v-if="client" class="text-sm text-gray-600">
-          Client: {{ client.name }} · Balance {{ client.balance }} DZD
+          {{ $t('pos.orderComplete.clientBalance', { name: client.name, balance: client.balance }) }}
         </p>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium text-gray-700">Payment recovery</label>
+        <label class="text-sm font-medium text-gray-700">{{ $t('pos.orderComplete.paymentRecovery') }}</label>
         <select
           :value="checkoutMode"
           class="input"
           @change="onModeChange(($event.target as HTMLSelectElement).value as 'full' | 'partial' | 'payLater')"
         >
-          <option value="full">Full payment collected</option>
-          <option value="partial">Partial payment</option>
-          <option v-if="auth.isManager" value="payLater">Pay later (full credit)</option>
+          <option value="full">{{ $t('pos.orderComplete.modeFull') }}</option>
+          <option value="partial">{{ $t('pos.orderComplete.modePartial') }}</option>
+          <option v-if="auth.isManager" value="payLater">{{ $t('pos.orderComplete.modePayLater') }}</option>
         </select>
       </div>
 
       <div v-if="checkoutMode === 'partial'">
-        <label class="mb-1 block text-sm font-medium text-gray-700">Amount collected (DZD)</label>
+        <label class="mb-1 block text-sm font-medium text-gray-700">{{ $t('pos.orderComplete.amountCollected') }}</label>
         <input v-model.number="amountPaid" type="number" min="0" :max="total" step="0.01" class="input" />
       </div>
 
       <p v-if="amountOnCredit > 0" class="text-sm text-amber-700">
-        On credit: {{ amountOnCredit.toFixed(2) }} DZD
+        {{ $t('pos.orderComplete.onCredit', { amount: amountOnCredit.toFixed(2) }) }}
       </p>
 
       <select v-model="paymentMethod" class="input">
-        <option value="CASH">Cash</option>
-        <option value="CARD">Card</option>
+        <option value="CASH">{{ $t('common.paymentMethod.CASH') }}</option>
+        <option value="CARD">{{ $t('common.paymentMethod.CARD') }}</option>
       </select>
 
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
 
       <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <button type="button" class="btn-secondary" @click="emit('close')">Cancel</button>
+        <button type="button" class="btn-secondary" @click="emit('close')">{{ $t('common.cancel') }}</button>
         <button type="button" class="btn-primary" :disabled="loading" @click="handleComplete">
-          {{ loading ? 'Saving…' : 'Complete order' }}
+          {{ loading ? $t('pos.orderComplete.saving') : $t('pos.orderComplete.submit') }}
         </button>
       </div>
     </div>

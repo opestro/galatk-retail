@@ -4,7 +4,7 @@ import Skeleton from '@/components/ui/Skeleton.vue'
 
 <template>
   <div class="grid gap-8 lg:grid-cols-2" role="status">
-    <span class="sr-only">Loading product…</span>
+    <span class="sr-only">{{ $t('shop.product.loading') }}</span>
     <div class="flex flex-col gap-3">
       <Skeleton height="h-80" rounded="rounded-xl" />
       <div class="flex gap-2">

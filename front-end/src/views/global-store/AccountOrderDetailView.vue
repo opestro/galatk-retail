@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getMyOrder } from '@/services/customerAccount'
 import { orderStatusLabel } from '@/services/orders'
 import { formatDzd } from '@/utils/formatMoney'
 import type { CustomerOrder } from '@/types/api'
 import { ArrowLeft } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const route = useRoute()
 const order = ref<CustomerOrder | null>(null)
 const loading = ref(true)
@@ -16,7 +18,7 @@ onMounted(async () => {
   try {
     order.value = await getMyOrder(String(route.params.orderId))
   } catch {
-    error.value = 'This order could not be found.'
+    error.value = t('shop.account.orderNotFound')
   } finally {
     loading.value = false
   }
@@ -27,11 +29,11 @@ onMounted(async () => {
   <div class="flex flex-col gap-6">
     <RouterLink to="/store/account" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
       <ArrowLeft class="h-4 w-4" />
-      All orders
+      {{ $t('shop.account.allOrders') }}
     </RouterLink>
 
     <div v-if="loading" class="skeleton h-48 rounded-xl" />
-    <p v-else-if="error || !order" class="text-sm text-red-600">{{ error || 'Order not found.' }}</p>
+    <p v-else-if="error || !order" class="text-sm text-red-600">{{ error || $t('shop.account.orderNotFoundFallback') }}</p>
 
     <div v-else class="flex flex-col gap-4">
       <div class="flex flex-wrap items-start justify-between gap-3">
@@ -50,19 +52,24 @@ onMounted(async () => {
             <div class="min-w-0">
               <p class="truncate text-sm font-medium text-gray-900">{{ line.productName }}</p>
               <p v-if="line.variantLabel" class="text-xs text-gray-500">{{ line.variantLabel }}</p>
-              <p class="text-xs text-gray-500">Qty {{ line.quantity }}</p>
+              <p class="text-xs text-gray-500">{{ $t('shop.account.lineQty', { n: line.quantity }) }}</p>
             </div>
             <p class="text-sm font-medium text-gray-900">{{ formatDzd(line.lineTotal) }}</p>
           </li>
         </ul>
         <div class="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-900">
-          <span>Total</span>
+          <span>{{ $t('shop.account.total') }}</span>
           <span>{{ formatDzd(order.total) }}</span>
         </div>
       </section>
 
       <p class="text-sm text-gray-500">
-        Pickup / delivery for {{ order.customerWilaya || 'your wilaya' }}. We will contact you at {{ order.customerPhone }}.
+        {{
+          $t('shop.account.fulfillmentNote', {
+            wilaya: order.customerWilaya || $t('shop.account.yourWilayaFallback'),
+            phone: order.customerPhone,
+          })
+        }}
       </p>
     </div>
   </div>

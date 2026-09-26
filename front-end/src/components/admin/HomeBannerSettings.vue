@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ImagePlus, Trash2 } from 'lucide-vue-next'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import { mediaUrl, apiErrorMessage } from '@/services/products'
@@ -17,6 +18,7 @@ import {
   readFilePixelSize,
 } from '@/utils/bannerImage'
 
+const { t } = useI18n()
 const MAX_IMAGES = 10
 
 const loading = ref(true)
@@ -47,7 +49,7 @@ async function load() {
       images: settings.images ?? [],
     }
   } catch (e) {
-    error.value = apiErrorMessage(e, 'Could not load homepage banner settings')
+    error.value = apiErrorMessage(e, t('admin.banner.loadError'))
   } finally {
     loading.value = false
   }
@@ -69,9 +71,9 @@ async function save() {
     form.value.bannerSubtitle = settings.bannerSubtitle
     form.value.intervalSeconds = Math.round(settings.bannerIntervalMs / 1000)
     form.value.images = settings.images
-    message.value = 'Homepage banner saved'
+    message.value = t('admin.banner.saved')
   } catch (e) {
-    error.value = apiErrorMessage(e, 'Could not save homepage banner')
+    error.value = apiErrorMessage(e, t('admin.banner.saveError'))
   } finally {
     saving.value = false
   }
@@ -85,18 +87,18 @@ async function onImageChange(event: Event) {
 
   const remaining = MAX_IMAGES - form.value.images.length
   if (remaining <= 0) {
-    error.value = `You can add at most ${MAX_IMAGES} banner images`
+    error.value = t('admin.banner.maxImages', { n: MAX_IMAGES })
     return
   }
 
   const accepted: File[] = []
   for (const file of files.slice(0, remaining)) {
     if (!IMAGE_MIME.has(file.type)) {
-      error.value = 'Images must be JPEG, PNG, WebP, or GIF'
+      error.value = t('admin.banner.invalidType')
       continue
     }
     if (file.size > BANNER_MAX_BYTES) {
-      error.value = 'Banner images must be 8MB or smaller'
+      error.value = t('admin.banner.tooLarge')
       continue
     }
     try {
@@ -107,7 +109,7 @@ async function onImageChange(event: Event) {
         continue
       }
     } catch {
-      error.value = 'Could not read image dimensions'
+      error.value = t('admin.banner.dimensionReadError')
       continue
     }
     accepted.push(file)
@@ -126,9 +128,11 @@ async function onImageChange(event: Event) {
     }
     form.value.images = latest
     message.value =
-      accepted.length === 1 ? 'Banner image added' : `${accepted.length} banner images added`
+      accepted.length === 1
+        ? t('admin.banner.imageAdded')
+        : t('admin.banner.imagesAdded', { n: accepted.length })
   } catch (e) {
-    error.value = apiErrorMessage(e, 'Could not upload banner image')
+    error.value = apiErrorMessage(e, t('admin.banner.uploadError'))
   } finally {
     uploading.value = false
   }
@@ -141,9 +145,9 @@ async function removeImage(imageId: string) {
   try {
     const settings = await removeHomeBannerImage(imageId)
     form.value.images = settings.images
-    message.value = 'Banner image removed'
+    message.value = t('admin.banner.imageRemoved')
   } catch (e) {
-    error.value = apiErrorMessage(e, 'Could not remove banner image')
+    error.value = apiErrorMessage(e, t('admin.banner.removeError'))
   } finally {
     uploading.value = false
   }
@@ -155,15 +159,14 @@ onMounted(load)
 <template>
   <section class="card flex max-w-2xl flex-col gap-4">
     <div>
-      <h3 class="text-base font-medium text-gray-900">Homepage banner</h3>
+      <h3 class="text-base font-medium text-gray-900">{{ t('admin.banner.title') }}</h3>
       <p class="mt-1 text-sm text-gray-500">
-        Shown at the top of the public store home page. When you add more than one image, the store
-        rotates them automatically.
+        {{ t('admin.banner.description') }}
       </p>
     </div>
 
     <div v-if="loading" class="flex flex-col gap-3" role="status">
-      <span class="sr-only">Loading…</span>
+      <span class="sr-only">{{ t('common.loading') }}</span>
       <Skeleton height="h-10" width="w-full" />
       <Skeleton height="h-10" width="w-full" />
       <Skeleton height="h-24" width="w-full" />
@@ -173,21 +176,21 @@ onMounted(load)
     <form v-else class="flex flex-col gap-4" @submit.prevent="save">
       <label class="flex items-center gap-2 text-sm text-gray-800">
         <input v-model="form.bannerEnabled" type="checkbox" class="h-4 w-4 rounded border-gray-300" />
-        Show banner on the home page
+        {{ t('admin.banner.enabled') }}
       </label>
 
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">Title</label>
+        <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.banner.titleField') }}</label>
         <input v-model="form.bannerTitle" class="input" maxlength="120" required />
       </div>
 
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">Subtitle</label>
+        <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.banner.subtitleField') }}</label>
         <textarea v-model="form.bannerSubtitle" class="input min-h-24" maxlength="400" rows="3" />
       </div>
 
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">Slide interval (seconds)</label>
+        <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.banner.interval') }}</label>
         <input
           v-model.number="form.intervalSeconds"
           type="number"
@@ -195,13 +198,13 @@ onMounted(load)
           max="60"
           class="input max-w-32"
         />
-        <p class="mt-1 text-xs text-gray-500">Used when two or more images are uploaded. 2–60 seconds.</p>
+        <p class="mt-1 text-xs text-gray-500">{{ t('admin.banner.intervalHint') }}</p>
       </div>
 
       <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700">Banner images</label>
+        <label class="mb-2 block text-sm font-medium text-gray-700">{{ t('admin.banner.imagesLabel') }}</label>
         <div v-if="form.images.length === 0" class="mb-3 rounded-md border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-500">
-          No banner images yet. The home page will show the title on a plain background.
+          {{ t('admin.banner.emptyImages') }}
         </div>
         <div v-else class="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div
@@ -212,8 +215,8 @@ onMounted(load)
             <img :src="mediaUrl(image.url)" alt="" class="h-full w-full object-cover object-center" />
             <button
               type="button"
-              class="absolute right-1.5 top-1.5 rounded bg-white p-1.5 text-red-600"
-              aria-label="Remove banner image"
+              class="absolute end-1.5 top-1.5 rounded bg-white p-1.5 text-red-600"
+              :aria-label="t('admin.banner.removeAria')"
               :disabled="uploading"
               @click="removeImage(image.id)"
             >
@@ -235,19 +238,18 @@ onMounted(load)
           :disabled="uploading || form.images.length >= MAX_IMAGES"
           @click="imageInput?.click()"
         >
-          <ImagePlus class="mr-2 h-4 w-4" />
-          {{ uploading ? 'Uploading…' : 'Add images' }}
+          <ImagePlus class="me-2 h-4 w-4" />
+          {{ uploading ? t('common.uploading') : t('admin.banner.addImages') }}
         </button>
         <p class="mt-1 text-xs text-gray-500">
-          JPEG, PNG, WebP, or GIF. 16:9 only. Recommended 2560 × 1440 px. Minimum 2048 × 1152 px.
-          Max 8MB. The store shows a compact center crop of the image.
+          {{ t('admin.banner.imageRequirements') }}
         </p>
       </div>
 
       <p v-if="message" class="text-sm text-green-600">{{ message }}</p>
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
       <button type="submit" class="btn-primary self-start" :disabled="saving">
-        {{ saving ? 'Saving…' : 'Save banner' }}
+        {{ saving ? t('common.saving') : t('admin.banner.save') }}
       </button>
     </form>
   </section>

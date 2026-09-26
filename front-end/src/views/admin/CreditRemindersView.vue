@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { getCreditDashboard, getCreditReminders, logReminderContact } from '@/services/clientApi'
 import type { CreditDashboardEntry, CreditReminderEntry } from '@/types/api'
@@ -8,6 +9,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import SkeletonStatCards from '@/components/ui/SkeletonStatCards.vue'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const dashboard = ref<CreditDashboardEntry[]>([])
 const reminders = ref<CreditReminderEntry[]>([])
@@ -34,9 +36,9 @@ async function load() {
 }
 
 async function markContacted(clientId: string) {
-  const note = prompt('Contact note (optional)') ?? undefined
+  const note = prompt(t('admin.credit.contactNotePrompt')) ?? undefined
   await logReminderContact(clientId, note)
-  message.value = 'Contact logged'
+  message.value = t('admin.credit.contactLogged')
   await load()
 }
 
@@ -46,17 +48,17 @@ watch(() => auth.selectedShopId, load)
 
 <template>
   <div class="page-shell">
-    <PageHeader title="Credit reminders" />
+    <PageHeader :title="t('admin.credit.title')" />
 
     <SkeletonStatCards v-if="loading" :count="2" />
 
     <div v-else class="grid gap-6 md:grid-cols-2">
       <div class="card">
-        <p class="text-sm text-gray-500">Clients with outstanding credit</p>
+        <p class="text-sm text-gray-500">{{ t('admin.credit.outstandingCount') }}</p>
         <p class="mt-2 text-2xl font-semibold">{{ dashboard.length }}</p>
       </div>
       <div class="card">
-        <p class="text-sm text-gray-500">Due for reminder</p>
+        <p class="text-sm text-gray-500">{{ t('admin.credit.dueCount') }}</p>
         <p class="mt-2 text-2xl font-semibold">{{ reminders.length }}</p>
       </div>
     </div>
@@ -64,7 +66,7 @@ watch(() => auth.selectedShopId, load)
     <p v-if="message" class="text-sm text-green-600">{{ message }}</p>
 
     <div class="flex flex-col gap-4">
-      <h3 class="section-title">Outstanding credit</h3>
+      <h3 class="section-title">{{ t('admin.credit.outstandingSection') }}</h3>
       <SkeletonList v-if="loading" />
       <ul v-else class="list-panel">
         <li v-for="entry in dashboard" :key="entry.clientId" class="list-row">
@@ -74,16 +76,16 @@ watch(() => auth.selectedShopId, load)
             </RouterLink>
             <p class="text-sm text-gray-500">{{ entry.phone }}</p>
           </div>
-          <div class="text-right">
-            <p class="font-medium">{{ entry.balance }} DZD</p>
-            <p class="text-xs text-gray-500">{{ entry.oldestDebtDays }} days</p>
+          <div class="text-end">
+            <p class="font-medium">{{ entry.balance }} {{ t('common.currency') }}</p>
+            <p class="text-xs text-gray-500">{{ t('admin.credit.days', { n: entry.oldestDebtDays }) }}</p>
           </div>
         </li>
       </ul>
     </div>
 
     <div class="flex flex-col gap-4">
-      <h3 class="section-title">Reminder list</h3>
+      <h3 class="section-title">{{ t('admin.credit.reminderList') }}</h3>
       <SkeletonList v-if="loading" />
       <ul v-else class="list-panel">
         <li v-for="entry in reminders" :key="entry.clientId" class="list-row">
@@ -91,14 +93,14 @@ watch(() => auth.selectedShopId, load)
             <RouterLink :to="`/admin/clients/${entry.clientId}`" class="font-medium hover:underline">
               {{ entry.clientName }}
             </RouterLink>
-            <p class="text-sm text-gray-500">{{ entry.phone }} · {{ entry.oldestDebtDays }} days overdue</p>
+            <p class="text-sm text-gray-500">{{ entry.phone }} · {{ t('admin.credit.daysOverdue', { n: entry.oldestDebtDays }) }}</p>
             <p v-if="entry.lastContactedAt" class="text-xs text-gray-400">
-              Last contact: {{ new Date(entry.lastContactedAt).toLocaleDateString() }}
+              {{ t('admin.credit.lastContact', { date: new Date(entry.lastContactedAt).toLocaleDateString() }) }}
             </p>
           </div>
           <div class="flex flex-col items-end gap-2">
-            <span class="font-medium">{{ entry.balance }} DZD</span>
-            <button class="btn-secondary text-xs" @click="markContacted(entry.clientId)">Mark contacted</button>
+            <span class="font-medium">{{ entry.balance }} {{ t('common.currency') }}</span>
+            <button class="btn-secondary text-xs" @click="markContacted(entry.clientId)">{{ t('admin.credit.markContacted') }}</button>
           </div>
         </li>
       </ul>

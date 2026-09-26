@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Printer } from 'lucide-vue-next'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
@@ -8,7 +9,9 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import VoidSaleDialog from '@/components/pos/VoidSaleDialog.vue'
 import { printPosReceipt, saleToReceipt } from '@/utils/printPosReceipt'
+import { numberLocale } from '@/i18n/translate'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const sales = ref<Sale[]>([])
 const loading = ref(true)
@@ -30,12 +33,24 @@ async function loadSales() {
   }
 }
 
+function paymentMethodLabel(method: string): string {
+  return t(`common.paymentMethod.${method}`)
+}
+
+function saleStatusLabel(status: string): string {
+  return t(`common.saleStatus.${status}`)
+}
+
+function formatSaleDate(iso: string): string {
+  return new Date(iso).toLocaleString(numberLocale())
+}
+
 function printSale(sale: Sale) {
   printError.value = ''
   try {
-    printPosReceipt(saleToReceipt(sale, auth.staff?.name ?? 'Staff'))
+    printPosReceipt(saleToReceipt(sale, auth.staff?.name ?? t('common.staff')))
   } catch (err) {
-    printError.value = err instanceof Error ? err.message : 'Could not print the receipt.'
+    printError.value = err instanceof Error ? err.message : t('pos.receipt.printError')
   }
 }
 
@@ -53,16 +68,18 @@ onMounted(loadSales)
 
 <template>
   <div class="page-shell max-w-full">
-    <PageHeader title="Sales history" />
+    <PageHeader :title="$t('pos.history.title')" />
     <p v-if="printError" class="text-sm text-red-600">{{ printError }}</p>
 
     <SkeletonList v-if="loading" />
     <ul v-else class="list-panel">
       <li v-for="sale in sales" :key="sale.id" class="list-row">
         <div>
-          <p class="font-medium text-gray-900">{{ sale.total }} DZD · {{ sale.paymentMethod }}</p>
+          <p class="font-medium text-gray-900">
+            {{ $t('pos.history.saleMeta', { total: sale.total, paymentMethod: paymentMethodLabel(sale.paymentMethod) }) }}
+          </p>
           <p class="mt-0.5 text-sm text-gray-500">
-            {{ sale.cashier.name }} · {{ new Date(sale.createdAt).toLocaleString() }}
+            {{ sale.cashier.name }} · {{ formatSaleDate(sale.createdAt) }}
           </p>
         </div>
         <div class="flex items-center gap-3">
@@ -70,7 +87,7 @@ onMounted(loadSales)
             class="rounded px-2 py-1 text-xs"
             :class="sale.status === 'CANCELLED' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'"
           >
-            {{ sale.status }}
+            {{ saleStatusLabel(sale.status) }}
           </span>
           <button
             type="button"
@@ -78,14 +95,14 @@ onMounted(loadSales)
             @click="printSale(sale)"
           >
             <Printer class="h-3.5 w-3.5" />
-            Print
+            {{ $t('pos.history.print') }}
           </button>
           <button
             v-if="sale.status === 'COMPLETED'"
             class="text-sm text-red-600 underline"
             @click="openVoid(sale)"
           >
-            Void
+            {{ $t('pos.history.void') }}
           </button>
         </div>
       </li>

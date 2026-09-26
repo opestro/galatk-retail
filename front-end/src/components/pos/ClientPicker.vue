@@ -89,27 +89,27 @@ defineExpose({
 <template>
   <div class="flex flex-col gap-2">
     <label class="text-sm font-medium text-gray-700">
-      {{ props.debtOnly ? 'Client with outstanding credit' : 'Client (optional)' }}
+      {{ props.debtOnly ? $t('pos.clientPicker.labelDebtOnly') : $t('pos.clientPicker.labelOptional') }}
     </label>
     <div class="relative">
       <input
         ref="inputRef"
         v-model="search"
-        placeholder="Search by name or phone…"
-        class="input pr-16"
+        :placeholder="$t('pos.clientPicker.searchPlaceholder')"
+        class="input pe-16"
         @focus="searchClients(search)"
         @keydown="onKeydown"
       />
       <button
         v-if="props.modelValue"
         type="button"
-        class="absolute right-0 top-0 flex h-full min-w-[44px] items-center justify-center px-3 text-sm text-gray-500 hover:text-gray-700"
+        class="absolute end-0 top-0 flex h-full min-w-[44px] items-center justify-center px-3 text-sm text-gray-500 hover:text-gray-700"
         @click="clearClient"
       >
-        Clear
+        {{ $t('pos.clientPicker.clear') }}
       </button>
     </div>
-    <p v-if="loading" class="text-sm text-gray-500">Searching…</p>
+    <p v-if="loading" class="text-sm text-gray-500">{{ $t('pos.clientPicker.searching') }}</p>
     <ul v-else-if="results.length && !props.modelValue" class="list-panel max-h-52 overflow-y-auto">
       <li
         v-for="(client, i) in results"
@@ -122,14 +122,14 @@ defineExpose({
           <p class="font-medium text-gray-900">{{ client.name }}</p>
           <p class="text-xs text-gray-500">{{ client.phone }}</p>
         </div>
-        <span class="text-sm text-gray-600">{{ client.balance }} DZD</span>
+        <span class="text-sm text-gray-600">{{ $t('pos.clientPicker.resultBalance', { balance: client.balance }) }}</span>
       </li>
     </ul>
     <div v-if="props.modelValue" class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
       <p class="font-medium text-gray-900">{{ props.modelValue.name }}</p>
       <p class="text-gray-500">
-        Balance: {{ props.modelValue.balance }} DZD
-        <span v-if="props.modelValue.creditLimit"> · Limit: {{ props.modelValue.creditLimit }} DZD</span>
+        {{ $t('pos.clientPicker.balance', { balance: props.modelValue.balance }) }}
+        <span v-if="props.modelValue.creditLimit">{{ $t('pos.clientPicker.limit', { limit: props.modelValue.creditLimit }) }}</span>
       </p>
     </div>
   </div>

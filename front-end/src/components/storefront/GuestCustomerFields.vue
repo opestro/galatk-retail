@@ -65,7 +65,7 @@ watch(
 <template>
   <div class="flex flex-col gap-4">
     <label class="flex flex-col gap-1.5">
-      <span class="text-sm text-gray-700">Full name</span>
+        <span class="text-sm text-gray-700">{{ $t('shop.guest.fullName') }}</span>
       <input
         :value="modelValue.customerName"
         type="text"
@@ -77,38 +77,38 @@ watch(
     </label>
 
     <label class="flex flex-col gap-1.5">
-      <span class="text-sm text-gray-700">Phone number</span>
+        <span class="text-sm text-gray-700">{{ $t('shop.guest.phone') }}</span>
       <div class="relative">
         <input
           :value="modelValue.customerPhone"
           type="tel"
           inputmode="tel"
           autocomplete="tel"
-          placeholder="05XXXXXXXX"
+          :placeholder="$t('shop.guest.phonePlaceholder')"
           class="input"
           @input="patch({ customerPhone: ($event.target as HTMLInputElement).value })"
         />
         <Loader2
           v-if="lookupStatus === 'loading'"
-          class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400"
+          class="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400"
         />
         <Check
           v-else-if="lookupStatus === 'found'"
-          class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600"
+          class="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600"
         />
       </div>
-      <p v-if="lookupStatus === 'found'" class="text-xs text-green-600">Welcome back — details filled in.</p>
+      <p v-if="lookupStatus === 'found'" class="text-xs text-green-600">{{ $t('shop.guest.welcomeBack') }}</p>
       <p v-if="errors?.phone" class="text-xs text-red-600">{{ errors.phone }}</p>
     </label>
 
     <label class="flex flex-col gap-1.5">
-      <span class="text-sm text-gray-700">Wilaya</span>
+        <span class="text-sm text-gray-700">{{ $t('shop.guest.wilaya') }}</span>
       <select
         :value="modelValue.customerWilaya"
         class="input"
         @change="patch({ customerWilaya: ($event.target as HTMLSelectElement).value })"
       >
-        <option value="">Select wilaya</option>
+        <option value="">{{ $t('shop.guest.selectWilaya') }}</option>
         <option v-for="wilaya in ALGERIA_WILAYAS" :key="wilaya" :value="wilaya">{{ wilaya }}</option>
       </select>
       <p v-if="errors?.wilaya" class="text-xs text-red-600">{{ errors.wilaya }}</p>

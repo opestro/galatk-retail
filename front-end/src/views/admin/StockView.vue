@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import type { ShopStockItem } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonTable from '@/components/ui/SkeletonTable.vue'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const stock = ref<ShopStockItem[]>([])
 const loading = ref(true)
@@ -31,24 +33,24 @@ watch(() => auth.selectedShopId, loadStock)
 
 <template>
   <div class="page-shell">
-    <PageHeader title="Stock overview" />
+    <PageHeader :title="t('admin.stock.title')" />
 
     <SkeletonTable v-if="loading" />
     <div v-else class="overflow-x-auto rounded-lg border border-gray-200 bg-white">
       <table class="min-w-full text-sm">
         <thead class="border-b border-gray-200 bg-gray-50">
           <tr>
-            <th class="px-5 py-3 text-left font-medium text-gray-700">Product</th>
-            <th class="px-5 py-3 text-right font-medium text-gray-700">Price</th>
-            <th class="px-5 py-3 text-right font-medium text-gray-700">Quantity</th>
+            <th class="px-5 py-3 text-start font-medium text-gray-700">{{ t('admin.stock.colProduct') }}</th>
+            <th class="px-5 py-3 text-end font-medium text-gray-700">{{ t('admin.stock.colPrice') }}</th>
+            <th class="px-5 py-3 text-end font-medium text-gray-700">{{ t('admin.stock.colQuantity') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
           <tr v-for="item in stock" :key="item.id">
             <td class="px-5 py-4">{{ item.product.name }}</td>
-            <td class="px-5 py-4 text-right">{{ item.product.sellPrice }} DZD</td>
+            <td class="px-5 py-4 text-end">{{ item.product.sellPrice }} {{ t('common.currency') }}</td>
             <td
-              class="px-5 py-4 text-right"
+              class="px-5 py-4 text-end"
               :class="item.quantity <= 5 ? 'font-medium text-red-600' : ''"
             >
               {{ item.quantity }}

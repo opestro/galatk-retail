@@ -68,6 +68,24 @@ async function main() {
     create: { staffId: owner.id, shopId: shop.id },
   })
 
+  const cashierEmail = 'cashier@galatk.com'
+  const cashier = await prisma.staffUser.upsert({
+    where: { email: cashierEmail },
+    update: { name: 'Main Cashier', role: StaffRole.CASHIER, isActive: true, passwordHash },
+    create: {
+      email: cashierEmail,
+      passwordHash,
+      name: 'Main Cashier',
+      role: StaffRole.CASHIER,
+    },
+  })
+
+  await prisma.staffShopAssignment.upsert({
+    where: { staffId_shopId: { staffId: cashier.id, shopId: shop.id } },
+    update: {},
+    create: { staffId: cashier.id, shopId: shop.id },
+  })
+
   const products = [
     { name: 'Cotton Fabric Roll', sellPrice: 2500, description: 'Premium cotton fabric' },
     { name: 'Silk Blend', sellPrice: 4500, description: 'Luxury silk blend material' },
@@ -216,6 +234,7 @@ async function main() {
 
   console.log('Seed complete:', {
     owner: owner.email,
+    cashier: cashier.email,
     integrationStaffId: integrationStaff.id,
     shops: [shop.slug, shop2.slug],
     clients: [client1.phone, client2.phone],
