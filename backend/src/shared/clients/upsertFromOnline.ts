@@ -1,12 +1,17 @@
 import prisma from '../../resources/database/initDatabase.js'
 import { Prisma } from '@prisma/client'
 import { phoneLookupKeys, normalizeAlgerianPhone } from '../validation/algerianPhone.js'
+import { CustomError } from '../types/error_type.js'
 
 export interface OnlineCustomerInput {
   name: string
   phone: string
   email?: string
   address?: string
+  /** Plain password from checkout when the shopper is not already signed in. */
+  password?: string
+  /** When set, checkout is tied to this account and no password is required. */
+  authenticatedCustomerId?: string
 }
 
 async function findCustomerByPhone(phone: string) {
@@ -17,40 +22,28 @@ async function findCustomerByPhone(phone: string) {
 }
 
 /**
- * Resolves the global Customer identity for a phone number, creating one if needed.
+ * Resolves the global Customer for checkout. Orders require a signed-in account.
  */
-async function findOrCreateCustomer(input: OnlineCustomerInput) {
-  const canonical = normalizeAlgerianPhone(input.phone) ?? input.phone.trim()
+export async function ensureCustomerForCheckout(input: OnlineCustomerInput) {
+  if (!input.authenticatedCustomerId) {
+    throw new CustomError('UNAUTHORIZED', 'Create an account to place an order.', 401)
+  }
+
+  const customer = await prisma.customer.findUnique({
+    where: { id: input.authenticatedCustomerId },
+  })
+  if (!customer) {
+    throw new CustomError('UNAUTHORIZED', 'Sign in to continue.', 401)
+  }
+
   const name = input.name.trim()
-
-  const existing = await findCustomerByPhone(input.phone)
-  if (existing) {
-    if (existing.name !== name || (input.email && existing.email !== input.email.trim())) {
-      return prisma.customer.update({
-        where: { id: existing.id },
-        data: {
-          name,
-          email: input.email?.trim() ?? existing.email,
-        },
-      })
-    }
-    return existing
-  }
-
-  try {
-    return await prisma.customer.create({
-      data: {
-        name,
-        phone: canonical,
-        email: input.email?.trim() ?? null,
-      },
+  if (name && name !== customer.name) {
+    return prisma.customer.update({
+      where: { id: customer.id },
+      data: { name, email: input.email?.trim() ?? customer.email },
     })
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      return prisma.customer.findUniqueOrThrow({ where: { phone: canonical } })
-    }
-    throw error
   }
+  return customer
 }
 
 /**
@@ -76,6 +69,7 @@ export async function lookupCustomerByPhone(phone: string) {
     email: customer.email,
     phone: customer.phone,
     wilaya: lastOrder?.customerWilaya ?? null,
+    hasPassword: Boolean(customer.passwordHash),
   }
 }
 
@@ -88,30 +82,34 @@ export async function findOrCreateClientFromOnlineOrder(shopId: string, input: O
   const phone = normalizeAlgerianPhone(input.phone) ?? input.phone.trim()
   const name = input.name.trim()
 
-  const customer = await findOrCreateCustomer(input)
+  const customer = await ensureCustomerForCheckout(input)
 
   const existingClient = await prisma.client.findUnique({
-    where: { shopId_phone: { shopId, phone } },
+    where: { shopId_phone: { shopId, phone: customer.phone || phone } },
   })
   if (existingClient) {
     return existingClient
   }
+
+  const clientPhone = customer.phone || phone
 
   try {
     return await prisma.client.create({
       data: {
         shopId,
         customerId: customer.id,
-        name,
-        phone,
-        email: input.email?.trim() ?? null,
+        name: customer.name || name,
+        phone: clientPhone,
+        email: input.email?.trim() ?? customer.email,
         address: input.address?.trim() ?? null,
         notes: 'Auto-registered from online order',
       },
     })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      return prisma.client.findUniqueOrThrow({ where: { shopId_phone: { shopId, phone } } })
+      return prisma.client.findUniqueOrThrow({
+        where: { shopId_phone: { shopId, phone: clientPhone } },
+      })
     }
     throw error
   }

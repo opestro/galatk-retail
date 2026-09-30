@@ -1,0 +1,1 @@
+export const MIN_CUSTOMER_PASSWORD_LENGTH = 6

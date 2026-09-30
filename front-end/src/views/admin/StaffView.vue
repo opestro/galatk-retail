@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '@/services/api'
 import type { Shop } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -14,11 +15,18 @@ interface StaffMember {
   shopAssignments: Array<{ shop: { id: string; name: string } }>
 }
 
+const { t } = useI18n()
 const staff = ref<StaffMember[]>([])
 const shops = ref<Shop[]>([])
 const loading = ref(true)
 const form = ref({ email: '', password: '', name: '', role: 'CASHIER', shopIds: [] as string[] })
 const showForm = ref(false)
+
+function roleLabel(role: string) {
+  const key = `admin.staff.role.${role}`
+  const label = t(key)
+  return label !== key ? label : role
+}
 
 async function load() {
   loading.value = true
@@ -46,20 +54,20 @@ onMounted(load)
 
 <template>
   <div class="page-shell">
-    <PageHeader title="Staff">
+    <PageHeader :title="t('admin.staff.title')">
       <template #actions>
-        <button class="btn-primary" @click="showForm = !showForm">Add staff</button>
+        <button class="btn-primary" @click="showForm = !showForm">{{ t('admin.staff.add') }}</button>
       </template>
     </PageHeader>
 
     <form v-if="showForm" class="card flex flex-col gap-4" @submit.prevent="createStaff">
-      <input v-model="form.name" placeholder="Name" required class="input" />
-      <input v-model="form.email" type="email" placeholder="Email" required class="input" />
-      <input v-model="form.password" type="password" placeholder="Password" required class="input" />
+      <input v-model="form.name" :placeholder="t('admin.staff.namePlaceholder')" required class="input" />
+      <input v-model="form.email" type="email" :placeholder="t('admin.staff.email')" required class="input" />
+      <input v-model="form.password" type="password" :placeholder="t('admin.staff.password')" required class="input" />
       <select v-model="form.role" class="input">
-        <option value="CASHIER">Cashier</option>
-        <option value="MANAGER">Manager</option>
-        <option value="OWNER">Owner</option>
+        <option value="CASHIER">{{ t('admin.staff.role.CASHIER') }}</option>
+        <option value="MANAGER">{{ t('admin.staff.role.MANAGER') }}</option>
+        <option value="OWNER">{{ t('admin.staff.role.OWNER') }}</option>
       </select>
       <div class="flex flex-col gap-2">
         <label v-for="shop in shops" :key="shop.id" class="flex items-center gap-2 text-sm text-gray-700">
@@ -67,14 +75,14 @@ onMounted(load)
           {{ shop.name }}
         </label>
       </div>
-      <button type="submit" class="btn-primary">Create</button>
+      <button type="submit" class="btn-primary">{{ t('common.create') }}</button>
     </form>
 
     <SkeletonList v-if="loading" />
     <ul v-else class="list-panel">
       <li v-for="member in staff" :key="member.id" class="list-row flex-col items-start gap-1 sm:flex-row sm:items-center">
         <div>
-          <p class="font-medium text-gray-900">{{ member.name }} · {{ member.role }}</p>
+          <p class="font-medium text-gray-900">{{ member.name }} · {{ roleLabel(member.role) }}</p>
           <p class="text-sm text-gray-500">{{ member.email }}</p>
         </div>
       </li>

@@ -1,6 +1,18 @@
 import { Request, Response, NextFunction } from 'express'
 import * as GlobalStoreService from './service.js'
 import { FulfillmentType } from '@prisma/client'
+import * as SettingsController from '../settings/controller.js'
+import { issueCustomerSession } from '../account/service.js'
+
+/** Public homepage hero — same payload admins edit under /settings. */
+export async function getBanner(req: Request, res: Response, next: NextFunction) {
+  return SettingsController.getPublic(req, res, next)
+}
+
+/** Public wilaya courier table so checkout can price stop desk vs home. */
+export async function getDeliveryRates(req: Request, res: Response, next: NextFunction) {
+  return SettingsController.getDeliveryRates(req, res, next)
+}
 
 export async function listShops(_req: Request, res: Response, next: NextFunction) {
   try {
@@ -44,23 +56,28 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
   try {
     const {
       fulfillmentType,
+      deliveryService,
       customerName,
       customerPhone,
       customerWilaya,
       customerEmail,
       deliveryAddress,
       deliveryCity,
+      password,
       lines,
     } = req.body
 
-    const orders = await GlobalStoreService.globalCheckout({
+    const { orders, customer } = await GlobalStoreService.globalCheckout({
       fulfillmentType: (fulfillmentType as FulfillmentType) || FulfillmentType.PICKUP,
+      deliveryService,
       customerName,
       customerPhone,
       customerWilaya,
       customerEmail,
       deliveryAddress,
       deliveryCity,
+      password,
+      authenticatedCustomerId: req.customer?.id,
       lines,
     })
 
@@ -72,6 +89,7 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
         total: order.total.toString(),
         status: order.status,
       })),
+      account: issueCustomerSession(customer),
     })
   } catch (error) {
     next(error)

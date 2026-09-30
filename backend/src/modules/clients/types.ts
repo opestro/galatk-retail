@@ -74,6 +74,7 @@ export interface OnlineOrderPurchaseResponse {
   orderNumber: string
   status: string
   fulfillmentType: string
+  deliveryService?: string | null
   total: string
   createdAt: Date
   lines: PurchaseLineResponse[]

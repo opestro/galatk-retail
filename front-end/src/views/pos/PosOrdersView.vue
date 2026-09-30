@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import type { OnlineOrder } from '@/types/api'
@@ -7,7 +8,9 @@ import OrderCompleteModal from '@/components/pos/OrderCompleteModal.vue'
 import ClientPurchasesModal from '@/components/pos/ClientPurchasesModal.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import { ShoppingBag } from 'lucide-vue-next'
+import { orderStatusLabel } from '@/services/orders'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const orders = ref<OnlineOrder[]>([])
 const loading = ref(true)
@@ -30,6 +33,10 @@ const displayed = computed(() =>
 const pendingCount = computed(
   () => orders.value.filter((o) => activeStatuses.includes(o.status)).length,
 )
+
+function fulfillmentLabel(type: string): string {
+  return t(`common.fulfillment.${type}`)
+}
 
 async function loadOrders() {
   const shopId = auth.selectedShopId
@@ -72,10 +79,6 @@ function openPurchases(order: OnlineOrder) {
   purchasesClientName.value = order.client.name
 }
 
-function statusLabel(status: string): string {
-  return status.replace(/_/g, ' ').toLowerCase()
-}
-
 onMounted(loadOrders)
 watch(() => auth.selectedShopId, loadOrders)
 </script>
@@ -84,16 +87,16 @@ watch(() => auth.selectedShopId, loadOrders)
   <div class="page-shell max-w-full">
     <div class="page-header">
       <div>
-        <h2 class="page-title">Online orders</h2>
-        <p class="text-sm text-gray-500">{{ pendingCount }} active · accept and collect payment on handoff</p>
+        <h2 class="page-title">{{ $t('pos.orders.title') }}</h2>
+        <p class="text-sm text-gray-500">{{ $t('pos.orders.subtitle', { n: pendingCount }) }}</p>
       </div>
       <select v-model="filter" class="input w-auto">
-        <option value="active">Active only</option>
-        <option value="all">All orders</option>
+        <option value="active">{{ $t('pos.orders.filterActive') }}</option>
+        <option value="all">{{ $t('pos.orders.filterAll') }}</option>
       </select>
     </div>
 
-    <input v-model="search" placeholder="Search by name, phone, or email…" class="input max-w-sm" />
+    <input v-model="search" :placeholder="$t('pos.orders.searchPlaceholder')" class="input max-w-sm" />
 
     <SkeletonList v-if="loading" :rows="4" />
     <ul v-else class="flex flex-col gap-4">
@@ -103,17 +106,17 @@ watch(() => auth.selectedShopId, loadOrders)
             <p class="font-semibold text-gray-900">{{ order.orderNumber }}</p>
             <p class="text-sm text-gray-600">{{ order.customerName }} · {{ order.customerPhone }}</p>
             <p v-if="order.client" class="text-xs text-gray-500">
-              Client register: {{ order.client.name }} ({{ order.client.balance }} DZD owed)
+              {{ $t('pos.orders.clientRegister', { name: order.client.name, balance: order.client.balance }) }}
             </p>
           </div>
-          <span class="rounded-md border border-gray-200 px-2 py-1 text-xs capitalize text-gray-600">
-            {{ statusLabel(order.status) }}
+          <span class="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-600">
+            {{ orderStatusLabel(order.status) }}
           </span>
         </div>
 
         <p class="text-sm text-gray-700">
-          {{ order.total }} DZD · {{ order.fulfillmentType }}
-          <span v-if="order.lines?.length"> · {{ order.lines.length }} item(s)</span>
+          {{ $t('pos.orders.orderMeta', { total: order.total, fulfillment: fulfillmentLabel(order.fulfillmentType) }) }}
+          <span v-if="order.lines?.length"> {{ $t('pos.orders.itemCount', { n: order.lines.length }) }}</span>
         </p>
 
         <div class="flex flex-wrap gap-2">
@@ -122,14 +125,14 @@ watch(() => auth.selectedShopId, loadOrders)
             class="btn-primary px-3 py-1.5 text-xs"
             @click="markReady(order)"
           >
-            Accept & mark ready
+            {{ $t('pos.orders.acceptReady') }}
           </button>
           <button
             v-if="['READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'].includes(order.status)"
             class="btn-primary px-3 py-1.5 text-xs"
             @click="openComplete(order)"
           >
-            Complete & collect payment
+            {{ $t('pos.orders.completeCollect') }}
           </button>
           <button
             v-if="order.client"
@@ -138,11 +141,11 @@ watch(() => auth.selectedShopId, loadOrders)
             @click="openPurchases(order)"
           >
             <ShoppingBag class="h-3.5 w-3.5" />
-            View purchases
+            {{ $t('pos.orders.viewPurchases') }}
           </button>
         </div>
       </li>
-      <li v-if="!displayed.length" class="card text-sm text-gray-500">No orders in this view.</li>
+      <li v-if="!displayed.length" class="card text-sm text-gray-500">{{ $t('pos.orders.empty') }}</li>
     </ul>
 
     <OrderCompleteModal

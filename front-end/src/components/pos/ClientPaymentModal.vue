@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { recordClientPayment } from '@/services/clientApi'
 import { playPosErrorSound, playPosSuccessSound } from '@/composables/usePosSounds'
@@ -11,6 +12,7 @@ import type { Client, ClientPayment } from '@/types/api'
 const props = defineProps<{ initialClient?: Client | null }>()
 const emit = defineEmits<{ close: [] }>()
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const client = ref<Client | null>(props.initialClient ?? null)
 const amount = ref(0)
@@ -48,7 +50,7 @@ async function submit() {
   const shopId = auth.selectedShopId
   if (!shopId || !client.value || amount.value <= 0) return
   if (amount.value > balance.value) {
-    error.value = 'Amount cannot exceed client balance'
+    error.value = t('pos.paymentModal.errorExceedsBalance')
     playPosErrorSound()
     return
   }
@@ -67,7 +69,7 @@ async function submit() {
       type: 'payment',
       paymentId: payment.id,
       createdAt: payment.createdAt,
-      cashierName: payment.recordedBy?.name ?? auth.staff?.name ?? 'Staff',
+      cashierName: payment.recordedBy?.name ?? auth.staff?.name ?? t('common.staff'),
       paymentMethod: paymentMethod.value,
       clientName: client.value.name,
       clientPhone: client.value.phone,
@@ -76,7 +78,7 @@ async function submit() {
       newBalance,
     }
   } catch {
-    error.value = 'Payment failed — check amount and try again'
+    error.value = t('pos.paymentModal.errorFailed')
     playPosErrorSound()
   } finally {
     loading.value = false
@@ -98,25 +100,25 @@ function onPrint() {
 <template>
   <div v-if="!successReceipt" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
     <div class="flex w-full max-w-md flex-col gap-4 rounded-lg border border-gray-200 bg-white p-6">
-      <h3 class="text-lg font-medium text-gray-900">Collect credit payment</h3>
-      <p class="text-sm text-gray-500">Search clients who owe money and record a payment (FIFO allocation).</p>
+      <h3 class="text-lg font-medium text-gray-900">{{ $t('pos.paymentModal.title') }}</h3>
+      <p class="text-sm text-gray-500">{{ $t('pos.paymentModal.subtitle') }}</p>
 
       <ClientPicker v-model="client" debt-only />
 
       <div v-if="client" class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-        Outstanding: <strong>{{ client.balance }} DZD</strong>
+        {{ $t('pos.paymentModal.outstanding', { balance: client.balance }) }}
       </div>
 
       <div>
         <div class="mb-1 flex items-center justify-between">
-          <label class="text-sm font-medium text-gray-700">Amount (DZD)</label>
+          <label class="text-sm font-medium text-gray-700">{{ $t('pos.paymentModal.amountLabel') }}</label>
           <button
             v-if="client && balance > 0"
             type="button"
             class="text-xs font-medium text-gray-700 underline hover:text-gray-900"
             @click="payFullBalance"
           >
-            Pay full balance
+            {{ $t('pos.paymentModal.payFullBalance') }}
           </button>
         </div>
         <input
@@ -130,24 +132,24 @@ function onPrint() {
       </div>
 
       <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">Payment method</label>
+        <label class="mb-1 block text-sm font-medium text-gray-700">{{ $t('pos.paymentModal.paymentMethod') }}</label>
         <select v-model="paymentMethod" class="input">
-          <option value="CASH">Cash</option>
-          <option value="CARD">Card</option>
+          <option value="CASH">{{ $t('common.paymentMethod.CASH') }}</option>
+          <option value="CARD">{{ $t('common.paymentMethod.CARD') }}</option>
         </select>
       </div>
 
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
 
       <div class="flex justify-end gap-3">
-        <button type="button" class="btn-secondary" @click="emit('close')">Cancel</button>
+        <button type="button" class="btn-secondary" @click="emit('close')">{{ $t('common.cancel') }}</button>
         <button
           type="button"
           :disabled="loading || !client || amount <= 0 || amount > maxAmount"
           class="btn-primary"
           @click="submit"
         >
-          {{ loading ? 'Processing…' : 'Record payment' }}
+          {{ loading ? $t('pos.paymentModal.processing') : $t('pos.paymentModal.submit') }}
         </button>
       </div>
     </div>
@@ -155,8 +157,8 @@ function onPrint() {
 
   <PosSuccessDialog
     v-else
-    title="Payment recorded"
-    :message="`${successReceipt.amount} DZD received from ${successReceipt.clientName}. New balance: ${successReceipt.newBalance} DZD.`"
+    :title="$t('pos.paymentModal.successTitle')"
+    :message="$t('pos.paymentModal.successMessage', { amount: successReceipt.amount, clientName: successReceipt.clientName, newBalance: successReceipt.newBalance })"
     @close="onSuccessClose"
     @print="onPrint"
   />

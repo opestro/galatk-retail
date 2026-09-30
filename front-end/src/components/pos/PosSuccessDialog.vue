@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { CheckCircle2, Printer } from 'lucide-vue-next'
 
 defineProps<{
@@ -7,6 +9,17 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{ close: []; print: [] }>()
+const { t } = useI18n()
+const printError = ref('')
+
+function onPrint() {
+  printError.value = ''
+  try {
+    emit('print')
+  } catch (err) {
+    printError.value = err instanceof Error ? err.message : t('pos.receipt.printError')
+  }
+}
 </script>
 
 <template>
@@ -19,12 +32,13 @@ const emit = defineEmits<{ close: []; print: [] }>()
         <h3 class="text-lg font-semibold text-gray-900">{{ title }}</h3>
         <p class="mt-1 text-sm text-gray-600">{{ message }}</p>
       </div>
+      <p v-if="printError" class="w-full text-sm text-red-600">{{ printError }}</p>
       <div class="flex w-full gap-2">
-        <button type="button" class="btn-secondary flex flex-1 items-center justify-center gap-2" @click="emit('print')">
+        <button type="button" class="btn-secondary flex flex-1 items-center justify-center gap-2" @click="onPrint">
           <Printer class="h-4 w-4" />
-          Print receipt
+          {{ $t('pos.success.printReceipt') }}
         </button>
-        <button type="button" class="btn-primary flex-1" @click="emit('close')">Done</button>
+        <button type="button" class="btn-primary flex-1" @click="emit('close')">{{ $t('pos.success.done') }}</button>
       </div>
     </div>
   </div>

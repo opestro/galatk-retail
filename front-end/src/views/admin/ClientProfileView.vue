@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import {
   getClient,
@@ -15,6 +16,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonForm from '@/components/ui/SkeletonForm.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 
+const { t } = useI18n()
 const route = useRoute()
 const auth = useAuthStore()
 const clientId = computed(() => route.params.clientId as string)
@@ -71,7 +73,7 @@ async function saveClient() {
   }
   await updateClient(clientId.value, body)
   editing.value = false
-  message.value = 'Client updated'
+  message.value = t('admin.clientProfile.updated')
   await load()
 }
 
@@ -86,10 +88,10 @@ async function submitPayment() {
     })
     showPayment.value = false
     paymentForm.value = { amount: 0, paymentMethod: 'CASH' }
-    message.value = 'Payment recorded'
+    message.value = t('admin.clientProfile.paymentRecorded')
     await load()
   } catch {
-    error.value = 'Payment failed'
+    error.value = t('admin.clientProfile.paymentFailed')
   }
 }
 
@@ -97,7 +99,7 @@ async function voidPayment(paymentId: string) {
   const shopId = auth.selectedShopId
   if (!shopId || !auth.isManager) return
   await voidClientPayment(shopId, clientId.value, paymentId)
-  message.value = 'Payment voided'
+  message.value = t('admin.clientProfile.paymentVoided')
   await load()
 }
 
@@ -108,7 +110,7 @@ async function submitAdjustment() {
     note: adjustmentForm.value.note || undefined,
   })
   adjustmentForm.value = { amount: 0, note: '' }
-  message.value = 'Adjustment recorded'
+  message.value = t('admin.clientProfile.adjustmentRecorded')
   await load()
 }
 
@@ -117,11 +119,11 @@ onMounted(load)
 
 <template>
   <div class="page-shell">
-    <PageHeader :title="client?.name ?? 'Client profile'">
+    <PageHeader :title="client?.name ?? t('admin.clientProfile.titleFallback')">
       <template #actions>
-        <button class="btn-primary" @click="showPayment = true">Record payment</button>
+        <button class="btn-primary" @click="showPayment = true">{{ t('admin.clientProfile.recordPayment') }}</button>
         <button v-if="auth.isManager" class="btn-secondary" @click="editing = !editing">
-          {{ editing ? 'Cancel edit' : 'Edit client' }}
+          {{ editing ? t('admin.clientProfile.cancelEdit') : t('admin.clientProfile.edit') }}
         </button>
       </template>
     </PageHeader>
@@ -131,15 +133,15 @@ onMounted(load)
     <template v-else-if="client">
       <div class="grid gap-6 md:grid-cols-3">
         <div class="card">
-          <p class="text-sm text-gray-500">Balance</p>
-          <p class="mt-2 text-2xl font-semibold">{{ client.balance }} DZD</p>
+          <p class="text-sm text-gray-500">{{ t('admin.clientProfile.balance') }}</p>
+          <p class="mt-2 text-2xl font-semibold">{{ client.balance }} {{ t('common.currency') }}</p>
         </div>
         <div class="card">
-          <p class="text-sm text-gray-500">Credit limit</p>
-          <p class="mt-2 text-2xl font-semibold">{{ client.creditLimit ?? 'Unlimited' }}</p>
+          <p class="text-sm text-gray-500">{{ t('admin.clientProfile.creditLimit') }}</p>
+          <p class="mt-2 text-2xl font-semibold">{{ client.creditLimit ?? t('admin.clientProfile.unlimited') }}</p>
         </div>
         <div class="card">
-          <p class="text-sm text-gray-500">Phone</p>
+          <p class="text-sm text-gray-500">{{ t('admin.clientProfile.phone') }}</p>
           <p class="mt-2 font-medium">{{ client.phone }}</p>
         </div>
       </div>
@@ -150,43 +152,43 @@ onMounted(load)
         <input v-model="editForm.email" class="input" />
         <input v-model="editForm.address" class="input" />
         <textarea v-model="editForm.notes" class="input min-h-20" />
-        <input v-model="editForm.creditLimit" type="number" placeholder="Credit limit (blank = unlimited)" class="input" />
+        <input v-model="editForm.creditLimit" type="number" :placeholder="t('admin.clientProfile.creditLimitPlaceholder')" class="input" />
         <label class="flex items-center gap-2 text-sm">
           <input v-model="editForm.isActive" type="checkbox" />
-          Active
+          {{ t('common.active') }}
         </label>
-        <button type="submit" class="btn-primary">Save</button>
+        <button type="submit" class="btn-primary">{{ t('common.save') }}</button>
       </form>
 
       <div v-if="showPayment" class="card flex max-w-md flex-col gap-4">
-        <h3 class="font-medium text-gray-900">Record payment</h3>
-        <input v-model.number="paymentForm.amount" type="number" min="0" step="0.01" placeholder="Amount" class="input" />
+        <h3 class="font-medium text-gray-900">{{ t('admin.clientProfile.recordPayment') }}</h3>
+        <input v-model.number="paymentForm.amount" type="number" min="0" step="0.01" :placeholder="t('admin.clientProfile.amountPlaceholder')" class="input" />
         <select v-model="paymentForm.paymentMethod" class="input">
-          <option value="CASH">Cash</option>
-          <option value="CARD">Card</option>
+          <option value="CASH">{{ t('common.paymentMethod.CASH') }}</option>
+          <option value="CARD">{{ t('common.paymentMethod.CARD') }}</option>
         </select>
         <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
         <div class="flex gap-3">
-          <button class="btn-secondary" @click="showPayment = false">Cancel</button>
-          <button class="btn-primary" @click="submitPayment">Record</button>
+          <button class="btn-secondary" @click="showPayment = false">{{ t('common.cancel') }}</button>
+          <button class="btn-primary" @click="submitPayment">{{ t('admin.clientProfile.record') }}</button>
         </div>
       </div>
 
       <form v-if="auth.isManager" class="card flex max-w-md flex-col gap-4" @submit.prevent="submitAdjustment">
-        <h3 class="font-medium text-gray-900">Balance adjustment</h3>
-        <input v-model.number="adjustmentForm.amount" type="number" step="0.01" placeholder="Amount (+/-)" class="input" />
-        <input v-model="adjustmentForm.note" placeholder="Note" class="input" />
-        <button type="submit" class="btn-secondary">Apply adjustment</button>
+        <h3 class="font-medium text-gray-900">{{ t('admin.clientProfile.adjustment') }}</h3>
+        <input v-model.number="adjustmentForm.amount" type="number" step="0.01" :placeholder="t('admin.clientProfile.adjustmentAmount')" class="input" />
+        <input v-model="adjustmentForm.note" :placeholder="t('admin.clientProfile.note')" class="input" />
+        <button type="submit" class="btn-secondary">{{ t('admin.clientProfile.applyAdjustment') }}</button>
       </form>
 
       <p v-if="message" class="text-sm text-green-600">{{ message }}</p>
 
       <div class="flex flex-col gap-4">
-        <h3 class="section-title">Ledger</h3>
+        <h3 class="section-title">{{ t('admin.clientProfile.ledger') }}</h3>
         <ul class="list-panel">
           <li v-for="entry in ledger" :key="entry.id" class="list-row flex-col items-start gap-1 sm:flex-row sm:items-center">
             <div>
-              <p class="font-medium text-gray-900">{{ entry.type }} · {{ entry.amount }} DZD</p>
+              <p class="font-medium text-gray-900">{{ entry.type }} · {{ entry.amount }} {{ t('common.currency') }}</p>
               <p class="text-sm text-gray-500">{{ new Date(entry.createdAt).toLocaleString() }}</p>
               <p v-if="entry.note" class="text-sm text-gray-500">{{ entry.note }}</p>
             </div>
@@ -195,7 +197,7 @@ onMounted(load)
               class="btn-danger text-xs"
               @click="voidPayment(entry.paymentId)"
             >
-              Void payment
+              {{ t('admin.clientProfile.voidPayment') }}
             </button>
           </li>
         </ul>

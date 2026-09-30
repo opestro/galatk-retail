@@ -1,15 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import axios from 'axios'
-import {
-  getGlobalProduct,
-  globalCheckout,
-  type PublicCatalogProductDetail,
-  type PublicCatalogShop,
-  type PublicCatalogVariant,
-} from '@/services/globalStore'
+import { getGlobalProduct, type PublicCatalogProductDetail, type PublicCatalogShop, type PublicCatalogVariant } from '@/services/globalStore'
 import { useGlobalStoreCartStore } from '@/stores/globalStoreCart'
+import { useCustomerAuthStore } from '@/stores/customerAuth'
 import ProductDetailSkeleton from '@/components/storefront/ProductDetailSkeleton.vue'
 import ProductGallery from '@/components/storefront/ProductGallery.vue'
 import VariantOptionGroup from '@/components/storefront/VariantOptionGroup.vue'
@@ -24,19 +20,12 @@ import {
   optionValues,
   type AttributeMap,
 } from '@/utils/variantSelection'
-import GuestCustomerFields from '@/components/storefront/GuestCustomerFields.vue'
-import {
-  checkoutErrorMessage,
-  emptyGuestCustomer,
-  validateGuestCustomer,
-  type GuestCustomerFields as GuestFields,
-} from '@/utils/guestCheckout'
-import { normalizeAlgerianPhone } from '@/utils/algerianPhone'
 import { Check, Loader2, Minus, Plus, ShoppingBag } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const route = useRoute()
-const router = useRouter()
 const cart = useGlobalStoreCartStore()
+const customerAuth = useCustomerAuthStore()
 
 const product = ref<PublicCatalogProductDetail | null>(null)
 const loading = ref(true)
@@ -47,10 +36,6 @@ const selection = ref<AttributeMap>({})
 const selectedShopId = ref<string | null>(null)
 const quantity = ref(1)
 const addState = ref<'idle' | 'adding' | 'added'>('idle')
-const guestForm = ref<GuestFields>(emptyGuestCustomer())
-const guestErrors = ref({ name: '', phone: '', wilaya: '' })
-const buyNowError = ref('')
-const buyingNow = ref(false)
 
 const shopFilter = computed(() => {
   const q = route.query.shop
@@ -180,48 +165,12 @@ function addToCart() {
   }, 1400)
 }
 
-async function orderThisItem() {
-  buyNowError.value = ''
-  if (!canAdd.value || buyingNow.value || !product.value || !selectedVariant.value || !selectedShop.value) {
-    return
-  }
-  const { valid, errors } = validateGuestCustomer(guestForm.value)
-  guestErrors.value = errors
-  if (!valid) return
-
-  buyingNow.value = true
-  try {
-    const phone = normalizeAlgerianPhone(guestForm.value.customerPhone) ?? guestForm.value.customerPhone
-    const orders = await globalCheckout({
-      fulfillmentType: 'PICKUP',
-      customerName: guestForm.value.customerName.trim(),
-      customerPhone: phone,
-      customerWilaya: guestForm.value.customerWilaya,
-      lines: [
-        {
-          productId: selectedVariant.value.id,
-          shopId: selectedShop.value.shopId,
-          quantity: quantity.value,
-        },
-      ],
-    })
-    const total = orders.reduce((sum, order) => sum + Number(order.total), 0)
-    await router.push({
-      path: '/store/confirmation',
-      query: {
-        orders: orders.map((o) => o.orderNumber).join(','),
-        total: String(total),
-        phone,
-        wilaya: guestForm.value.customerWilaya,
-        name: guestForm.value.customerName.trim(),
-      },
-    })
-  } catch (err) {
-    buyNowError.value = checkoutErrorMessage(err)
-  } finally {
-    buyingNow.value = false
-  }
-}
+const addButtonLabel = computed(() => {
+  if (addState.value === 'adding') return t('shop.product.adding')
+  if (addState.value === 'added') return t('shop.product.added')
+  if (!selectedVariant.value) return t('shop.product.unavailable')
+  return inStock.value ? t('shop.product.addToCart') : t('shop.product.outOfStockCta')
+})
 </script>
 
 <template>
@@ -229,15 +178,15 @@ async function orderThisItem() {
     <ProductDetailSkeleton v-if="loading" />
 
     <div v-else-if="notFound" class="flex flex-col items-center gap-4 py-16 text-center">
-      <p class="text-lg font-medium text-gray-900">Product not found</p>
-      <p class="text-sm text-gray-500">This product is unavailable or no longer listed.</p>
-      <RouterLink to="/store" class="btn-primary">Back to Store</RouterLink>
+      <p class="text-lg font-medium text-gray-900">{{ $t('shop.product.notFoundTitle') }}</p>
+      <p class="text-sm text-gray-500">{{ $t('shop.product.notFoundBody') }}</p>
+      <RouterLink to="/store" class="btn-primary">{{ $t('shop.product.backToStore') }}</RouterLink>
     </div>
 
     <div v-else-if="loadError" class="flex flex-col items-center gap-4 py-16 text-center">
-      <p class="text-lg font-medium text-gray-900">Something went wrong</p>
-      <p class="text-sm text-gray-500">We could not load this product. Please try again.</p>
-      <RouterLink to="/store" class="btn-secondary">Back to Store</RouterLink>
+      <p class="text-lg font-medium text-gray-900">{{ $t('shop.product.loadErrorTitle') }}</p>
+      <p class="text-sm text-gray-500">{{ $t('shop.product.loadErrorBody') }}</p>
+      <RouterLink to="/store" class="btn-secondary">{{ $t('shop.product.backToStore') }}</RouterLink>
     </div>
 
     <div v-else-if="product" class="grid gap-8 lg:grid-cols-2 lg:items-start">
@@ -281,7 +230,7 @@ async function orderThisItem() {
           v-if="shopFilter === 'all' && shopsForVariant.length > 1"
           class="flex flex-col gap-2"
         >
-          <p class="text-sm font-medium text-gray-900">Shop</p>
+          <p class="text-sm font-medium text-gray-900">{{ $t('shop.product.shopLabel') }}</p>
           <div class="flex flex-wrap gap-2">
             <button
               v-for="shop in shopsForVariant"
@@ -297,19 +246,19 @@ async function orderThisItem() {
               @click="selectedShopId = shop.shopId"
             >
               {{ shop.shopName }}
-              <span v-if="!shop.inStock"> · out of stock</span>
+              <span v-if="!shop.inStock">{{ $t('shop.product.shopOutOfStockSuffix') }}</span>
             </button>
           </div>
         </div>
 
         <p v-if="selectedVariant" class="text-sm text-gray-600">
-          <template v-if="inStock">Available: {{ availableQty }}</template>
-          <template v-else>Out of stock</template>
+          <template v-if="inStock">{{ $t('shop.product.available', { qty: availableQty }) }}</template>
+          <template v-else>{{ $t('shop.product.outOfStock') }}</template>
         </p>
-        <p v-else class="text-sm text-gray-500">This combination is not available.</p>
+        <p v-else class="text-sm text-gray-500">{{ $t('shop.product.comboUnavailable') }}</p>
 
         <div class="flex items-center gap-3">
-          <span class="text-sm font-medium text-gray-900">Quantity</span>
+          <span class="text-sm font-medium text-gray-900">{{ $t('shop.product.quantity') }}</span>
           <div class="flex items-center rounded-md border border-gray-200">
             <button
               type="button"
@@ -340,46 +289,22 @@ async function orderThisItem() {
           <Loader2 v-if="addState === 'adding'" class="h-4 w-4 animate-spin" />
           <Check v-else-if="addState === 'added'" class="h-4 w-4" />
           <ShoppingBag v-else class="h-4 w-4" />
-          {{
-            addState === 'adding'
-              ? 'Adding...'
-              : addState === 'added'
-                ? 'Added to Cart'
-                : !selectedVariant
-                  ? 'Unavailable'
-                  : inStock
-                    ? 'Add to Cart'
-                    : 'Out of Stock'
-          }}
+          {{ addButtonLabel }}
         </button>
         <RouterLink
           v-if="addState === 'added'"
           to="/store/checkout"
           class="btn-secondary w-full text-center"
         >
-          Go to cart
+          {{ $t('shop.product.goToCart') }}
         </RouterLink>
-
-        <div class="border-t border-gray-200 pt-5">
-          <h2 class="text-sm font-semibold text-gray-900">Order this item now</h2>
-          <p class="mt-1 text-xs text-gray-500">
-            Buying only this product? Fill your details here. To order several products, add them to
-            the cart first.
-          </p>
-          <div class="mt-4">
-            <GuestCustomerFields v-model="guestForm" :errors="guestErrors" />
-          </div>
-          <p v-if="buyNowError" class="mt-3 text-sm text-red-600">{{ buyNowError }}</p>
-          <button
-            type="button"
-            class="btn-primary mt-4 flex w-full items-center justify-center gap-2"
-            :disabled="!canAdd || buyingNow"
-            @click="orderThisItem"
-          >
-            <Loader2 v-if="buyingNow" class="h-4 w-4 animate-spin" />
-            {{ buyingNow ? 'Confirming…' : 'Confirm order' }}
-          </button>
-        </div>
+        <RouterLink
+          v-if="!customerAuth.isAuthenticated"
+          :to="{ path: '/login', query: { create: '1', next: '/store/checkout' } }"
+          class="text-center text-sm text-gray-600 hover:text-gray-900"
+        >
+          {{ $t('shop.product.createAccountCta') }}
+        </RouterLink>
       </div>
     </div>
   </div>

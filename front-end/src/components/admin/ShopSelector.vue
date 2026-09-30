@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { api } from '@/services/api'
 import type { Shop } from '@/types/api'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const shops = ref<Shop[]>([])
 
@@ -19,7 +21,7 @@ watch(() => auth.isOwner, loadShops)
 
 <template>
   <div v-if="auth.isOwner" class="mb-5 flex flex-col gap-1.5">
-    <label class="block text-xs font-medium text-gray-500">Active shop</label>
+    <label class="block text-xs font-medium text-gray-500">{{ t('admin.shopSelector.label') }}</label>
     <select
       :value="auth.selectedShopId ?? ''"
       class="input py-2 text-sm"

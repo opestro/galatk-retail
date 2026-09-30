@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import type { OnlineOrder } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -9,6 +10,7 @@ import { listShopOrders, orderStatusLabel } from '@/services/orders'
 import { ALGERIA_WILAYAS } from '@/data/algeriaWilayas'
 import { formatDzd } from '@/utils/formatMoney'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const router = useRouter()
 const orders = ref<OnlineOrder[]>([])
@@ -53,25 +55,25 @@ watch(() => auth.selectedShopId, loadOrders)
 
 <template>
   <div class="page-shell">
-    <PageHeader title="Orders" />
+    <PageHeader :title="t('admin.orders.title')" />
 
     <div class="flex flex-col gap-3 md:flex-row">
       <input
         v-model="search"
         type="search"
-        placeholder="Search order #, name, or phone…"
+        :placeholder="t('admin.orders.searchPlaceholder')"
         class="input flex-1"
       />
       <select v-model="statusFilter" class="input md:w-48">
-        <option value="">All statuses</option>
-        <option value="PLACED">Pending</option>
-        <option value="READY_FOR_PICKUP">Ready for pickup</option>
-        <option value="OUT_FOR_DELIVERY">Out for delivery</option>
-        <option value="COMPLETED">Completed</option>
-        <option value="CANCELLED">Cancelled</option>
+        <option value="">{{ t('admin.orders.allStatuses') }}</option>
+        <option value="PLACED">{{ t('common.orderStatus.PLACED') }}</option>
+        <option value="READY_FOR_PICKUP">{{ t('common.orderStatus.READY_FOR_PICKUP') }}</option>
+        <option value="OUT_FOR_DELIVERY">{{ t('common.orderStatus.OUT_FOR_DELIVERY') }}</option>
+        <option value="COMPLETED">{{ t('common.orderStatus.COMPLETED') }}</option>
+        <option value="CANCELLED">{{ t('common.orderStatus.CANCELLED') }}</option>
       </select>
       <select v-model="wilayaFilter" class="input md:w-48">
-        <option value="">All wilayas</option>
+        <option value="">{{ t('admin.orders.allWilayas') }}</option>
         <option v-for="wilaya in ALGERIA_WILAYAS" :key="wilaya" :value="wilaya">{{ wilaya }}</option>
       </select>
     </div>
@@ -79,20 +81,20 @@ watch(() => auth.selectedShopId, loadOrders)
     <SkeletonList v-if="loading" :rows="5" />
 
     <div v-else class="overflow-x-auto rounded-lg border border-gray-200">
-      <table class="min-w-full text-left text-sm">
+      <table class="min-w-full text-start text-sm">
         <thead class="border-b border-gray-200 bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500">
           <tr>
-            <th class="px-4 py-3">Order</th>
-            <th class="px-4 py-3">Customer</th>
-            <th class="px-4 py-3">Phone</th>
-            <th class="px-4 py-3">Wilaya</th>
-            <th class="px-4 py-3">Total</th>
-            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3">{{ t('admin.orders.colOrder') }}</th>
+            <th class="px-4 py-3">{{ t('admin.orders.colCustomer') }}</th>
+            <th class="px-4 py-3">{{ t('admin.orders.colPhone') }}</th>
+            <th class="px-4 py-3">{{ t('admin.orders.colWilaya') }}</th>
+            <th class="px-4 py-3">{{ t('admin.orders.colTotal') }}</th>
+            <th class="px-4 py-3">{{ t('admin.orders.colStatus') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
           <tr v-if="orders.length === 0">
-            <td colspan="6" class="px-4 py-10 text-center text-gray-500">No orders found.</td>
+            <td colspan="6" class="px-4 py-10 text-center text-gray-500">{{ t('admin.orders.empty') }}</td>
           </tr>
           <tr
             v-for="order in orders"
@@ -107,7 +109,7 @@ watch(() => auth.selectedShopId, loadOrders)
             </td>
             <td class="px-4 py-3 text-gray-700">{{ order.customerName }}</td>
             <td class="px-4 py-3 text-gray-700">{{ order.customerPhone }}</td>
-            <td class="px-4 py-3 text-gray-700">{{ order.customerWilaya || order.deliveryCity || '—' }}</td>
+            <td class="px-4 py-3 text-gray-700">{{ order.customerWilaya || order.deliveryCity || t('common.emDash') }}</td>
             <td class="px-4 py-3 font-medium text-gray-900">{{ formatDzd(order.total) }}</td>
             <td class="px-4 py-3 text-gray-600">{{ orderStatusLabel(order.status) }}</td>
           </tr>

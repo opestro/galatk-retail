@@ -42,7 +42,7 @@ const active = computed(() => {
         type="button"
         class="h-16 w-16 overflow-hidden rounded-md border"
         :class="active?.id === image.id ? 'border-gray-900' : 'border-gray-200'"
-        :aria-label="`View image`"
+        :aria-label="$t('shop.product.viewImage')"
         @click="emit('select', image.id)"
       >
         <img :src="mediaUrl(image.url)" :alt="productName" class="h-full w-full object-cover" />

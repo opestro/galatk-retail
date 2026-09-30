@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onActivated, nextTick, inject, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onActivated, nextTick, inject } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { ArrowLeft } from 'lucide-vue-next'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { usePosCartStore } from '@/stores/posCart'
@@ -7,17 +9,20 @@ import { usePosHotkeys } from '@/composables/usePosHotkeys'
 import PayLaterConfirm from '@/components/pos/PayLaterConfirm.vue'
 import PosSuccessDialog from '@/components/pos/PosSuccessDialog.vue'
 import { playPosErrorSound, playPosSuccessSound } from '@/composables/usePosSounds'
-import { printPosReceipt, type SaleReceiptData } from '@/utils/printPosReceipt'
+import { printPosReceipt, saleToReceipt, type SaleReceiptData } from '@/utils/printPosReceipt'
 import type { Client, PosProduct, Sale } from '@/types/api'
 import SkeletonProductGrid from '@/components/ui/SkeletonProductGrid.vue'
 import ClientPicker from '@/components/pos/ClientPicker.vue'
-import { groupByCategory, variantDisplay } from '@/utils/productFamily'
+import { groupByCategory, variantDisplay, type ProductFamilyGroup } from '@/utils/productFamily'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const cart = usePosCartStore()
 const products = ref<PosProduct[]>([])
 const loading = ref(true)
 const search = ref('')
+/** Currently opened product family; `null` shows the family picker. */
+const selectedFamily = ref<string | null>(null)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const paymentMethod = ref<'CASH' | 'CARD'>('CASH')
 const message = ref('')
@@ -43,11 +48,56 @@ const registerApi = inject<{ value: { focusSearch: () => void; completeSale: () 
   null,
 )
 
-const filtered = computed(() =>
-  products.value.filter((p) => p.name.toLowerCase().includes(search.value.toLowerCase())),
+const query = computed(() => search.value.trim().toLowerCase())
+
+const allFamilies = computed(() => groupByCategory(products.value))
+
+function variantMatchesQuery(product: PosProduct, q: string): boolean {
+  if (!q) return true
+  return (
+    product.name.toLowerCase().includes(q) ||
+    variantDisplay(product).toLowerCase().includes(q)
+  )
+}
+
+/** Family cards on the first screen; search matches family name or any variant. */
+const familyCards = computed(() => {
+  const q = query.value
+  if (!q) return allFamilies.value
+  return allFamilies.value.filter(
+    (group) =>
+      group.category.toLowerCase().includes(q) ||
+      group.variants.some((product) => variantMatchesQuery(product, q)),
+  )
+})
+
+const selectedGroup = computed(
+  () => allFamilies.value.find((group) => group.category === selectedFamily.value) ?? null,
 )
 
-const productGroups = computed(() => groupByCategory(filtered.value))
+/** Variants of the opened family, filtered by the search bar. */
+const variantCards = computed(() => {
+  const group = selectedGroup.value
+  if (!group) return []
+  return group.variants.filter((product) => variantMatchesQuery(product, query.value))
+})
+
+function familyStock(group: ProductFamilyGroup<PosProduct>): number {
+  return group.variants.reduce((sum, product) => sum + product.quantity, 0)
+}
+
+function selectFamily(category: string) {
+  selectedFamily.value = category
+  search.value = ''
+  highlightIndex.value = null
+  pendingQty.value = 1
+}
+
+function clearFamily() {
+  selectedFamily.value = null
+  highlightIndex.value = null
+  pendingQty.value = 1
+}
 
 watch(
   () => cart.total,
@@ -93,25 +143,8 @@ function onCheckoutModeChange(mode: 'full' | 'partial' | 'payLater') {
   cart.setCheckoutMode(mode)
 }
 
-function saleToReceipt(sale: Sale): SaleReceiptData {
-  return {
-    type: 'sale',
-    saleId: sale.id,
-    createdAt: sale.createdAt,
-    cashierName: sale.cashier?.name ?? auth.staff?.name ?? 'Staff',
-    paymentMethod: sale.paymentMethod,
-    lines: sale.lines.map((l) => ({
-      name: l.product?.name ?? 'Item',
-      quantity: l.quantity,
-      lineTotal: l.lineTotal,
-    })),
-    subtotal: sale.total,
-    total: sale.total,
-    amountPaid: sale.amountPaid ?? sale.total,
-    amountOnCredit: sale.amountOnCredit ?? '0',
-    clientName: sale.client?.name ?? null,
-    clientPhone: sale.client?.phone ?? null,
-  }
+function onPrintReceipt() {
+  if (successReceipt.value) printPosReceipt(successReceipt.value)
 }
 
 async function executeCheckout(creditLimitOverride = false) {
@@ -139,7 +172,7 @@ async function executeCheckout(creditLimitOverride = false) {
     }
     const { data } = await api.post<{ data: Sale }>(`/shops/${shopId}/pos/sales`, body)
     playPosSuccessSound()
-    successReceipt.value = saleToReceipt(data.data)
+    successReceipt.value = saleToReceipt(data.data, auth.staff?.name ?? t('common.staff'))
     cart.clear()
     showConfirm.value = false
     confirmStage.value = false
@@ -147,7 +180,7 @@ async function executeCheckout(creditLimitOverride = false) {
     message.value = ''
     await loadProducts()
   } catch {
-    error.value = 'Checkout failed — check stock, client, or credit limit'
+    error.value = t('pos.register.errorCheckoutFailed')
     playPosErrorSound()
   }
 }
@@ -157,7 +190,7 @@ function checkout() {
   if (cart.selectedClient && (cart.checkoutMode === 'payLater' || cart.checkoutMode === 'partial' || cart.amountOnCredit > 0)) {
     if (cart.creditLimitExceeded) {
       if (!auth.isManager) {
-        error.value = 'Credit limit exceeded — manager approval required'
+        error.value = t('pos.register.errorCreditLimit')
         return
       }
       pendingOverride.value = true
@@ -186,7 +219,8 @@ function scrollHighlightedIntoView() {
 }
 
 function onSearchKeydown(event: KeyboardEvent) {
-  const len = filtered.value.length
+  const items = selectedFamily.value ? variantCards.value : familyCards.value
+  const len = items.length
   if (event.key === 'ArrowDown') {
     event.preventDefault()
     if (!len) return
@@ -198,26 +232,34 @@ function onSearchKeydown(event: KeyboardEvent) {
     highlightIndex.value = highlightIndex.value === null ? 0 : Math.max(0, highlightIndex.value - 1)
     scrollHighlightedIntoView()
   } else if (event.key === 'ArrowRight') {
-    if (highlightIndex.value !== null) {
+    if (selectedFamily.value && highlightIndex.value !== null) {
       event.preventDefault()
       pendingQty.value += 1
     }
   } else if (event.key === 'ArrowLeft') {
-    if (highlightIndex.value !== null) {
+    if (selectedFamily.value && highlightIndex.value !== null) {
       event.preventDefault()
       pendingQty.value = Math.max(1, pendingQty.value - 1)
     }
   } else if (event.key === 'Enter') {
-    if (highlightIndex.value !== null) {
-      event.preventDefault()
-      const product = filtered.value[highlightIndex.value]
-      if (product) {
-        cart.addProductQty(product, pendingQty.value)
-        pendingQty.value = 1
-      }
+    if (highlightIndex.value === null) return
+    event.preventDefault()
+    if (!selectedFamily.value) {
+      const group = familyCards.value[highlightIndex.value]
+      if (group) selectFamily(group.category)
+      return
+    }
+    const product = variantCards.value[highlightIndex.value]
+    if (product) {
+      cart.addProductQty(product, pendingQty.value)
+      pendingQty.value = 1
     }
   } else if (event.key === 'Escape') {
     event.preventDefault()
+    if (selectedFamily.value) {
+      clearFamily()
+      return
+    }
     search.value = ''
     highlightIndex.value = null
     pendingQty.value = 1
@@ -271,7 +313,7 @@ onActivated(loadProducts)
         <input
           ref="searchInputRef"
           v-model="search"
-          placeholder="Search products…"
+          :placeholder="selectedFamily ? $t('pos.register.searchVariants') : $t('pos.register.searchFamilies')"
           class="input text-base"
           @keydown="onSearchKeydown"
         />
@@ -279,38 +321,79 @@ onActivated(loadProducts)
 
       <div class="min-h-0 flex-1 overflow-y-auto p-3">
         <SkeletonProductGrid v-if="loading" :count="8" />
-        <div v-else class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <div
-            v-for="group in productGroups"
+
+        <div v-else-if="!selectedFamily" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <button
+            v-for="(group, index) in familyCards"
+            :id="`pos-card-${index}`"
             :key="group.category"
-            class="card flex flex-col gap-3"
+            type="button"
+            class="card flex flex-col gap-2 text-start transition-colors"
+            :class="
+              highlightIndex === index
+                ? 'border-blue-600 bg-blue-50'
+                : 'hover:border-gray-400'
+            "
+            @click="selectFamily(group.category)"
           >
-            <div class="flex items-center justify-between gap-2">
-              <p class="font-semibold text-gray-900">{{ group.category }}</p>
-              <span class="text-xs text-gray-500">{{ group.variants.length }} variant{{ group.variants.length === 1 ? '' : 's' }}</span>
+            <p class="font-semibold text-gray-900">{{ group.category }}</p>
+            <p class="text-sm text-gray-500">
+              {{ $t('pos.register.variantCount', group.variants.length) }}
+              · {{ familyStock(group) }} {{ $t('pos.register.inStock') }}
+            </p>
+          </button>
+        </div>
+
+        <div v-else class="flex flex-col gap-3">
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="btn-secondary gap-2 px-3"
+              @click="clearFamily"
+            >
+              <ArrowLeft class="h-4 w-4" />
+              {{ $t('pos.register.allFamilies') }}
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="card flex items-center justify-between gap-3 border-blue-600 bg-blue-600 text-start text-white"
+            @click="clearFamily"
+          >
+            <div>
+              <p class="font-semibold">{{ selectedGroup?.category }}</p>
+              <p class="text-sm text-blue-100">
+                {{ $t('pos.register.variantCount', selectedGroup?.variants.length ?? 0) }}
+              </p>
             </div>
-            <div class="flex flex-wrap gap-2">
-              <button
-                v-for="product in group.variants"
-                :key="product.productId"
-                type="button"
-                class="min-h-11 rounded-md border px-3 py-2 text-left text-sm transition-colors"
-                :class="
-                  filtered.indexOf(product) === highlightIndex
-                    ? 'border-gray-900 bg-gray-900 text-white'
-                    : cart.lines.find((l) => l.productId === product.productId)
-                      ? 'border-gray-900 bg-gray-50'
-                      : 'border-gray-300 text-gray-800 hover:border-gray-400'
-                "
-                @click="cart.addProduct(product)"
-              >
-                <span class="block font-medium">{{ variantDisplay(product) }}</span>
-                <span class="block text-xs opacity-80">{{ product.sellPrice }} DZD · {{ product.quantity }} left</span>
-              </button>
-            </div>
+            <span class="text-sm text-blue-100">{{ $t('pos.register.changeFamily') }}</span>
+          </button>
+
+          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <button
+              v-for="(product, index) in variantCards"
+              :id="`pos-card-${index}`"
+              :key="product.productId"
+              type="button"
+              class="card flex flex-col gap-1 text-start transition-colors"
+              :class="
+                highlightIndex === index
+                  ? 'border-blue-600 bg-blue-600 text-white'
+                  : cart.lines.find((l) => l.productId === product.productId)
+                    ? 'border-blue-600 bg-blue-50'
+                    : 'hover:border-gray-400'
+              "
+              @click="cart.addProduct(product)"
+            >
+              <span class="block font-medium">{{ variantDisplay(product) }}</span>
+              <span class="block text-xs opacity-80">{{ $t('pos.register.variantMeta', { price: product.sellPrice, qty: product.quantity }) }}</span>
+            </button>
           </div>
         </div>
-        <p v-if="!loading && !filtered.length" class="text-sm text-gray-500">No products match your search.</p>
+
+        <p v-if="!loading && !selectedFamily && !familyCards.length" class="text-sm text-gray-500">{{ $t('pos.register.emptyFamilies') }}</p>
+        <p v-if="!loading && selectedFamily && !variantCards.length" class="mt-3 text-sm text-gray-500">{{ $t('pos.register.emptyVariants') }}</p>
       </div>
 
       <!-- Mobile floating cart bar (hidden on lg+) -->
@@ -323,54 +406,54 @@ onActivated(loadProducts)
           class="btn-primary flex w-full items-center justify-between px-4 py-3 text-base"
           @click="cartDrawerOpen = true"
         >
-          <span>Cart · {{ cart.itemCount }} items</span>
-          <span>{{ cart.total.toFixed(2) }} DZD</span>
+          <span>{{ $t('pos.register.cartBar', { n: cart.itemCount }) }}</span>
+          <span>{{ cart.total.toFixed(2) }} {{ $t('common.currency') }}</span>
         </button>
       </div>
     </div>
 
     <!-- Desktop cart panel (lg+ only) -->
-    <div class="hidden w-[380px] shrink-0 flex-col border-l border-gray-200 bg-white lg:flex">
+    <div class="hidden w-[380px] shrink-0 flex-col border-s border-gray-200 bg-white lg:flex">
       <div class="flex shrink-0 items-center justify-between border-b border-gray-100 px-4 py-3">
-        <h3 class="font-semibold text-gray-900">Cart</h3>
-        <span class="rounded-md bg-gray-100 px-2 py-0.5 text-sm text-gray-700">{{ cart.itemCount }} items</span>
+        <h3 class="font-semibold text-gray-900">{{ $t('pos.register.cartTitle') }}</h3>
+        <span class="rounded-md bg-gray-100 px-2 py-0.5 text-sm text-gray-700">{{ $t('pos.register.itemCount', { n: cart.itemCount }) }}</span>
       </div>
       <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         <ul v-if="cart.lines.length" class="flex flex-col gap-2">
           <li v-for="line in cart.lines" :key="line.productId" class="flex items-center justify-between gap-2 text-sm">
             <span class="min-w-0 truncate">{{ line.name }} × {{ line.quantity }}</span>
-            <button type="button" class="shrink-0 text-red-600 hover:text-red-800" @click="cart.removeLine(line.productId)">Remove</button>
+            <button type="button" class="shrink-0 text-red-600 hover:text-red-800" @click="cart.removeLine(line.productId)">{{ $t('pos.register.removeLine') }}</button>
           </li>
         </ul>
-        <p v-else class="text-sm text-gray-500">Tap products to add them.</p>
+        <p v-else class="text-sm text-gray-500">{{ $t('pos.register.emptyCart') }}</p>
         <div class="mt-4 border-t border-gray-100 pt-3">
-          <p class="text-2xl font-bold text-gray-900">{{ cart.total.toFixed(2) }} <span class="text-base font-normal text-gray-500">DZD</span></p>
+          <p class="text-2xl font-bold text-gray-900">{{ cart.total.toFixed(2) }} <span class="text-base font-normal text-gray-500">{{ $t('common.currency') }}</span></p>
         </div>
         <div class="mt-4" :class="confirmStage && !cart.selectedClient ? 'rounded-lg border-2 border-gray-900 p-2' : ''">
           <ClientPicker ref="clientPickerRef" :model-value="cart.selectedClient" @update:model-value="onClientChange" @confirm="onClientConfirm" />
         </div>
         <template v-if="cart.selectedClient">
           <div class="mt-4 flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700">Payment type</label>
+            <label class="text-sm font-medium text-gray-700">{{ $t('pos.register.paymentType') }}</label>
             <div class="grid grid-cols-3 gap-2">
-              <button type="button" class="min-h-11 rounded-md border px-2 py-2 text-sm" :class="cart.checkoutMode === 'full' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700'" @click="onCheckoutModeChange('full')">Full</button>
-              <button type="button" class="min-h-11 rounded-md border px-2 py-2 text-sm" :class="cart.checkoutMode === 'partial' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700'" @click="onCheckoutModeChange('partial')">Partial</button>
-              <button v-if="auth.isManager" type="button" class="min-h-11 rounded-md border px-2 py-2 text-sm" :class="cart.checkoutMode === 'payLater' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700'" @click="onCheckoutModeChange('payLater')">Later</button>
+              <button type="button" class="min-h-11 rounded-md border px-2 py-2 text-sm" :class="cart.checkoutMode === 'full' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700'" @click="onCheckoutModeChange('full')">{{ $t('pos.checkout.full') }}</button>
+              <button type="button" class="min-h-11 rounded-md border px-2 py-2 text-sm" :class="cart.checkoutMode === 'partial' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700'" @click="onCheckoutModeChange('partial')">{{ $t('pos.checkout.partial') }}</button>
+              <button v-if="auth.isManager" type="button" class="min-h-11 rounded-md border px-2 py-2 text-sm" :class="cart.checkoutMode === 'payLater' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700'" @click="onCheckoutModeChange('payLater')">{{ $t('pos.checkout.later') }}</button>
             </div>
           </div>
           <div v-if="cart.checkoutMode === 'partial'" class="mt-3">
-            <label class="mb-1 block text-sm font-medium text-gray-700">Paid now (DZD)</label>
+            <label class="mb-1 block text-sm font-medium text-gray-700">{{ $t('pos.register.paidNow') }}</label>
             <input v-model.number="cart.amountPaid" type="number" min="0" :max="cart.total" step="0.01" class="input" />
           </div>
-          <p v-if="cart.amountOnCredit > 0" class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">Credit: {{ cart.amountOnCredit.toFixed(2) }} DZD</p>
+          <p v-if="cart.amountOnCredit > 0" class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{{ $t('pos.register.creditAmount', { amount: cart.amountOnCredit.toFixed(2) }) }}</p>
         </template>
-        <select v-model="paymentMethod" class="input mt-4"><option value="CASH">Cash</option><option value="CARD">Card</option></select>
-        <p v-if="confirmStage && !cart.selectedClient" class="mt-3 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-600">Confirm as walk-in or pick a client below.</p>
+        <select v-model="paymentMethod" class="input mt-4"><option value="CASH">{{ $t('common.paymentMethod.CASH') }}</option><option value="CARD">{{ $t('common.paymentMethod.CARD') }}</option></select>
+        <p v-if="confirmStage && !cart.selectedClient" class="mt-3 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-600">{{ $t('pos.register.confirmWalkInHintDesktop') }}</p>
         <p v-if="message" class="mt-3 text-sm text-green-600">{{ message }}</p>
         <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
       </div>
       <div class="shrink-0 border-t border-gray-100 p-4">
-        <button type="button" :disabled="!cart.lines.length" class="btn-primary w-full py-3 text-base" @click="completeSale">Complete sale</button>
+        <button type="button" :disabled="!cart.lines.length" class="btn-primary w-full py-3 text-base" @click="completeSale">{{ $t('pos.register.completeSale') }}</button>
       </div>
     </div>
 
@@ -383,7 +466,7 @@ onActivated(loadProducts)
       class="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col overflow-hidden rounded-t-2xl bg-white lg:hidden"
     >
       <div class="flex shrink-0 items-center justify-between border-b border-gray-100 px-4 py-3">
-        <h3 class="font-semibold text-gray-900">Cart · {{ cart.itemCount }} items</h3>
+        <h3 class="font-semibold text-gray-900">{{ $t('pos.register.cartDrawerTitle', { n: cart.itemCount }) }}</h3>
         <button type="button" class="flex h-9 w-9 items-center justify-center text-gray-500" @click="cartDrawerOpen = false">✕</button>
       </div>
       <div class="flex-1 overflow-y-auto px-4 py-3">
@@ -399,33 +482,33 @@ onActivated(loadProducts)
           </li>
         </ul>
         <div class="mt-3 border-t border-gray-100 pt-3">
-          <p class="text-xl font-bold text-gray-900">{{ cart.total.toFixed(2) }} DZD</p>
+          <p class="text-xl font-bold text-gray-900">{{ cart.total.toFixed(2) }} {{ $t('common.currency') }}</p>
         </div>
         <div class="mt-4" :class="confirmStage && !cart.selectedClient ? 'rounded-lg border-2 border-gray-900 p-2' : ''">
           <ClientPicker :model-value="cart.selectedClient" @update:model-value="onClientChange" @confirm="onClientConfirm" />
         </div>
         <template v-if="cart.selectedClient">
           <div class="mt-4 flex flex-col gap-2">
-            <label class="text-sm font-medium text-gray-700">Payment type</label>
+            <label class="text-sm font-medium text-gray-700">{{ $t('pos.register.paymentType') }}</label>
             <div class="grid grid-cols-3 gap-2">
-              <button type="button" class="min-h-11 rounded-md border text-sm" :class="cart.checkoutMode === 'full' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700'" @click="onCheckoutModeChange('full')">Full</button>
-              <button type="button" class="min-h-11 rounded-md border text-sm" :class="cart.checkoutMode === 'partial' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700'" @click="onCheckoutModeChange('partial')">Partial</button>
-              <button v-if="auth.isManager" type="button" class="min-h-11 rounded-md border text-sm" :class="cart.checkoutMode === 'payLater' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700'" @click="onCheckoutModeChange('payLater')">Later</button>
+              <button type="button" class="min-h-11 rounded-md border text-sm" :class="cart.checkoutMode === 'full' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700'" @click="onCheckoutModeChange('full')">{{ $t('pos.checkout.full') }}</button>
+              <button type="button" class="min-h-11 rounded-md border text-sm" :class="cart.checkoutMode === 'partial' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700'" @click="onCheckoutModeChange('partial')">{{ $t('pos.checkout.partial') }}</button>
+              <button v-if="auth.isManager" type="button" class="min-h-11 rounded-md border text-sm" :class="cart.checkoutMode === 'payLater' ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-700'" @click="onCheckoutModeChange('payLater')">{{ $t('pos.checkout.later') }}</button>
             </div>
           </div>
           <div v-if="cart.checkoutMode === 'partial'" class="mt-3">
-            <label class="mb-1 block text-sm font-medium text-gray-700">Paid now (DZD)</label>
+            <label class="mb-1 block text-sm font-medium text-gray-700">{{ $t('pos.register.paidNow') }}</label>
             <input v-model.number="cart.amountPaid" type="number" min="0" :max="cart.total" step="0.01" class="input" />
           </div>
-          <p v-if="cart.amountOnCredit > 0" class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">Credit: {{ cart.amountOnCredit.toFixed(2) }} DZD</p>
+          <p v-if="cart.amountOnCredit > 0" class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{{ $t('pos.register.creditAmount', { amount: cart.amountOnCredit.toFixed(2) }) }}</p>
         </template>
-        <select v-model="paymentMethod" class="input mt-4"><option value="CASH">Cash</option><option value="CARD">Card</option></select>
-        <p v-if="confirmStage && !cart.selectedClient" class="mt-3 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-600">Pick a client or tap "Confirm walk-in" to proceed.</p>
+        <select v-model="paymentMethod" class="input mt-4"><option value="CASH">{{ $t('common.paymentMethod.CASH') }}</option><option value="CARD">{{ $t('common.paymentMethod.CARD') }}</option></select>
+        <p v-if="confirmStage && !cart.selectedClient" class="mt-3 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-600">{{ $t('pos.register.confirmWalkInHintMobile') }}</p>
         <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
       </div>
       <div class="shrink-0 border-t border-gray-100 p-4" style="padding-bottom: max(1rem, env(safe-area-inset-bottom))">
-        <button v-if="confirmStage && !cart.selectedClient" type="button" class="btn-secondary mb-2 w-full py-3 text-base" @click="onClientConfirm(null)">Confirm walk-in</button>
-        <button type="button" :disabled="!cart.lines.length" class="btn-primary w-full py-3 text-base" @click="completeSale">Complete sale</button>
+        <button v-if="confirmStage && !cart.selectedClient" type="button" class="btn-secondary mb-2 w-full py-3 text-base" @click="onClientConfirm(null)">{{ $t('pos.register.confirmWalkIn') }}</button>
+        <button type="button" :disabled="!cart.lines.length" class="btn-primary w-full py-3 text-base" @click="completeSale">{{ $t('pos.register.completeSale') }}</button>
       </div>
     </div>
   </div>
@@ -443,9 +526,9 @@ onActivated(loadProducts)
 
   <PosSuccessDialog
     v-if="successReceipt"
-    title="Sale completed"
-    :message="`Total ${successReceipt.total} DZD — ${successReceipt.amountPaid} DZD collected.`"
+    :title="$t('pos.register.successTitle')"
+    :message="$t('pos.register.successMessage', { total: successReceipt.total, paid: successReceipt.amountPaid })"
     @close="successReceipt = null"
-    @print="successReceipt && printPosReceipt(successReceipt)"
+    @print="onPrintReceipt"
   />
 </template>

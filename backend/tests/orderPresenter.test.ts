@@ -65,6 +65,7 @@ describe('orderPresenter', () => {
       orderNumber: 'CMD-1001',
       status: 'PLACED',
       fulfillmentType: 'DELIVERY',
+      deliveryService: 'HOME',
       customerName: 'Amine B.',
       customerPhone: '0550000000',
       customerWilaya: 'Alger',
@@ -84,5 +85,6 @@ describe('orderPresenter', () => {
     expect(presented.lines).toHaveLength(1)
     expect(presented.total).toBe('5400')
     expect(presented.deliveryFee).toBe('400')
+    expect(presented.deliveryService).toBe('HOME')
   })
 })

@@ -5,6 +5,7 @@ import { PrismaClient, StaffRole } from '@prisma/client'
 import { hashPassword } from '../src/shared/auth/password.js'
 import { findOrCreateProductFamily } from '../src/shared/products/findOrCreateFamily.js'
 import { parseProductFamily } from '../src/shared/products/productFamily.js'
+import { ALGERIA_WILAYAS } from '../src/shared/geo/algeriaWilayas.js'
 import {
   attributesKey,
   canonicalizeAttributes,
@@ -66,6 +67,24 @@ async function main() {
     where: { staffId_shopId: { staffId: owner.id, shopId: shop.id } },
     update: {},
     create: { staffId: owner.id, shopId: shop.id },
+  })
+
+  const cashierEmail = 'cashier@galatk.com'
+  const cashier = await prisma.staffUser.upsert({
+    where: { email: cashierEmail },
+    update: { name: 'Main Cashier', role: StaffRole.CASHIER, isActive: true, passwordHash },
+    create: {
+      email: cashierEmail,
+      passwordHash,
+      name: 'Main Cashier',
+      role: StaffRole.CASHIER,
+    },
+  })
+
+  await prisma.staffShopAssignment.upsert({
+    where: { staffId_shopId: { staffId: cashier.id, shopId: shop.id } },
+    update: {},
+    create: { staffId: cashier.id, shopId: shop.id },
   })
 
   const products = [
@@ -202,8 +221,36 @@ async function main() {
     },
   })
 
+  await prisma.siteSettings.upsert({
+    where: { id: 'default' },
+    update: {},
+    create: {
+      id: 'default',
+      bannerEnabled: true,
+      bannerTitle: 'Shop from All Our Stores',
+      bannerSubtitle:
+        'Browse products from multiple locations. Choose your preferred shop for each item and enjoy flexible pickup or delivery options.',
+    },
+  })
+
+  // Courier table: stop desk slightly cheaper than home; 0 remains free if edited later.
+  await Promise.all(
+    ALGERIA_WILAYAS.map((wilaya) =>
+      prisma.wilayaDeliveryRate.upsert({
+        where: { wilaya },
+        update: {},
+        create: {
+          wilaya,
+          stopdeskFee: 400,
+          homeFee: 500,
+        },
+      }),
+    ),
+  )
+
   console.log('Seed complete:', {
     owner: owner.email,
+    cashier: cashier.email,
     integrationStaffId: integrationStaff.id,
     shops: [shop.slug, shop2.slug],
     clients: [client1.phone, client2.phone],

@@ -8,6 +8,7 @@ import { canonicalWilaya } from '../../shared/geo/algeriaWilayas.js'
 import { normalizeAlgerianPhone, validateCustomerName } from '../../shared/validation/algerianPhone.js'
 import {
   ClientLedgerEntryType,
+  DeliveryService,
   FulfillmentType,
   OnlinePaymentMethod,
   OrderStatus,
@@ -16,9 +17,14 @@ import {
   Prisma,
   StaffRole,
 } from '@prisma/client'
-import { Decimal } from '@prisma/client/runtime/library'
+import { Decimal } from '@prisma/client/runtime/library' // money totals on checkout / complete
 import { withFamily } from '../../shared/products/withFamily.js'
 import { canTransitionOrderStatus } from '../../shared/orders/statusTransitions.js'
+import {
+  parseDeliveryService,
+  resolveDeliveryFee,
+} from '../../shared/delivery/resolveDeliveryFee.js'
+import { listDeliveryRates } from '../settings/service.js'
 
 export interface CheckoutLineInput {
   productId: string
@@ -27,12 +33,17 @@ export interface CheckoutLineInput {
 
 export interface CheckoutInput {
   fulfillmentType: FulfillmentType
+  /** Required when fulfillment is DELIVERY. Defaults to HOME if omitted. */
+  deliveryService?: DeliveryService | null
   customerName: string
   customerPhone: string
   customerWilaya: string
   customerEmail?: string
   deliveryAddress?: string
   deliveryCity?: string
+  /** Required for guest checkout; omitted when `authenticatedCustomerId` is set. */
+  password?: string
+  authenticatedCustomerId?: string
   lines: CheckoutLineInput[]
 }
 
@@ -63,12 +74,26 @@ export async function checkoutForShop(
     throw new CustomError('VALIDATION_ERROR', 'Cart is empty', 400)
   }
 
-  const customerName = validateCustomerName(input.customerName)
+  let customerName = validateCustomerName(input.customerName)
+  let customerPhone = normalizeAlgerianPhone(input.customerPhone)
+
+  if (input.authenticatedCustomerId) {
+    const account = await prisma.customer.findUnique({
+      where: { id: input.authenticatedCustomerId },
+    })
+    if (!account) {
+      throw new CustomError('UNAUTHORIZED', 'Sign in to continue.', 401)
+    }
+    customerPhone = account.phone
+    if (!customerName) {
+      customerName = account.name
+    }
+  }
+
   if (!customerName) {
     throw new CustomError('VALIDATION_ERROR', 'Please enter your full name.', 400)
   }
 
-  const customerPhone = normalizeAlgerianPhone(input.customerPhone)
   if (!customerPhone) {
     throw new CustomError(
       'VALIDATION_ERROR',
@@ -82,9 +107,11 @@ export async function checkoutForShop(
     throw new CustomError('VALIDATION_ERROR', 'Please select a wilaya.', 400)
   }
 
+  const deliveryService = parseDeliveryService(input.fulfillmentType, input.deliveryService)
+
   if (input.fulfillmentType === FulfillmentType.DELIVERY) {
-    if (!input.deliveryAddress?.trim() && !customerWilaya) {
-      throw new CustomError('VALIDATION_ERROR', 'Delivery address and city required', 400)
+    if (deliveryService === DeliveryService.HOME && !input.deliveryAddress?.trim()) {
+      throw new CustomError('VALIDATION_ERROR', 'Delivery address is required for home delivery', 400)
     }
   }
 
@@ -115,8 +142,15 @@ export async function checkoutForShop(
     new Decimal(0),
   )
 
-  const deliveryFee =
-    input.fulfillmentType === FulfillmentType.DELIVERY ? shop.deliveryFee : new Decimal(0)
+  const rate = await prisma.wilayaDeliveryRate.findUnique({
+    where: { wilaya: customerWilaya },
+  })
+  const deliveryFee = resolveDeliveryFee({
+    fulfillmentType: input.fulfillmentType,
+    deliveryService,
+    rate,
+    fallbackFee: shop.deliveryFee,
+  })
   const total = subtotal.add(deliveryFee)
   const orderNumber = await generateOrderNumber(shop.id)
 
@@ -125,6 +159,8 @@ export async function checkoutForShop(
     phone: customerPhone,
     email: input.customerEmail,
     address: customerWilaya,
+    password: input.password,
+    authenticatedCustomerId: input.authenticatedCustomerId,
   })
 
   return prisma.$transaction(async (tx) => {
@@ -139,6 +175,7 @@ export async function checkoutForShop(
         shopId: shop.id,
         orderNumber,
         fulfillmentType: input.fulfillmentType,
+        deliveryService,
         customerName,
         customerPhone,
         customerWilaya,
@@ -190,6 +227,7 @@ export async function getPublicShopInfo(slug: string) {
     serviceCity: shop.serviceCity,
     deliveryFee: shop.deliveryFee.toString(),
     outOfStockDisplay: shop.outOfStockDisplay,
+    deliveryRates: await listDeliveryRates(),
   }
 }
 
@@ -235,7 +273,15 @@ export async function checkout(slug: string, input: CheckoutInput) {
     throw new CustomError('SHOP_NOT_FOUND', 'Shop not found', 404)
   }
 
-  return checkoutForShop(shop, input)
+  const order = await checkoutForShop(shop, input)
+  const customer = order.clientId
+    ? await prisma.client.findUnique({
+        where: { id: order.clientId },
+        include: { customer: true },
+      }).then((row) => row?.customer ?? null)
+    : null
+
+  return { order, customer }
 }
 
 export async function listOrders(

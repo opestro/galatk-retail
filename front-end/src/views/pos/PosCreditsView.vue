@@ -65,13 +65,13 @@ watch(() => auth.selectedShopId, loadCredits)
   <div class="page-shell max-w-full">
     <div class="page-header">
       <div>
-        <h2 class="page-title">Client credit & debt</h2>
-        <p class="text-sm text-gray-500">Search debtors and record payments</p>
+        <h2 class="page-title">{{ $t('pos.credits.title') }}</h2>
+        <p class="text-sm text-gray-500">{{ $t('pos.credits.subtitle') }}</p>
       </div>
-      <p class="text-lg font-semibold text-gray-900">{{ totalOwed }} DZD total owed</p>
+      <p class="text-lg font-semibold text-gray-900">{{ $t('pos.credits.totalOwed', { amount: totalOwed }) }}</p>
     </div>
 
-    <input v-model="search" placeholder="Search client by name, phone, or email…" class="input max-w-sm" />
+    <input v-model="search" :placeholder="$t('pos.credits.searchPlaceholder')" class="input max-w-sm" />
 
     <SkeletonList v-if="loading" :rows="5" />
     <div v-else class="list-panel">
@@ -85,10 +85,10 @@ watch(() => auth.selectedShopId, loadCredits)
           <p class="text-xs text-gray-500">{{ entry.phone }}</p>
         </div>
         <div class="flex items-center gap-3">
-          <div class="text-right">
-            <p class="font-semibold text-amber-700">{{ entry.balance }} DZD</p>
+          <div class="text-end">
+            <p class="font-semibold text-amber-700">{{ entry.balance }} {{ $t('common.currency') }}</p>
             <p class="text-xs text-gray-500">
-              Oldest debt: {{ entry.oldestDebtAgeDays ?? entry.oldestDebtDays ?? 0 }} days
+              {{ $t('pos.credits.oldestDebt', { n: entry.oldestDebtAgeDays ?? entry.oldestDebtDays ?? 0 }) }}
             </p>
           </div>
           <button
@@ -97,15 +97,15 @@ watch(() => auth.selectedShopId, loadCredits)
             @click="openPurchases(entry)"
           >
             <ShoppingBag class="h-3.5 w-3.5" />
-            View purchases
+            {{ $t('pos.credits.viewPurchases') }}
           </button>
           <button type="button" class="btn-primary shrink-0 px-3 py-1.5 text-xs" @click="collectPayment(entry)">
-            Collect payment
+            {{ $t('pos.credits.collectPayment') }}
           </button>
         </div>
       </div>
       <p v-if="!filtered.length" class="px-5 py-8 text-center text-sm text-gray-500">
-        No clients with outstanding balance.
+        {{ $t('pos.credits.empty') }}
       </p>
     </div>
 

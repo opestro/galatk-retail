@@ -81,3 +81,7 @@ input, select, textarea, button {
     clip: rect(0, 0, 0, 0);
   }
 }
+
+html[dir="rtl"] {
+  font-family: "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+}

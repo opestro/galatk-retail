@@ -20,28 +20,28 @@ const override = ref(false)
     <div class="flex max-h-[90vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-lg border border-gray-200 bg-white p-5 sm:p-6">
       <div class="flex flex-col gap-2">
         <h3 class="text-lg font-medium text-gray-900">
-          {{ limitOverride ? 'Credit limit exceeded' : 'Confirm pay later' }}
+          {{ limitOverride ? $t('pos.payLater.titleLimitExceeded') : $t('pos.payLater.titleConfirm') }}
         </h3>
         <p class="text-sm text-gray-600">
-          {{ client.name }} will owe {{ amountOnCredit.toFixed(2) }} DZD
-          <span v-if="amountPaid > 0"> ({{ amountPaid.toFixed(2) }} DZD paid now)</span>.
+          {{ $t('pos.payLater.willOwe', { name: client.name, amount: amountOnCredit.toFixed(2) }) }}
+          <span v-if="amountPaid > 0"> {{ $t('pos.payLater.paidNowSuffix', { paid: amountPaid.toFixed(2) }) }}</span>.
         </p>
         <p v-if="client.creditLimit" class="text-sm text-gray-500">
-          Current balance: {{ client.balance }} DZD · Limit: {{ client.creditLimit }} DZD
+          {{ $t('pos.payLater.balanceLimit', { balance: client.balance, limit: client.creditLimit }) }}
         </p>
       </div>
       <label v-if="limitOverride" class="flex min-h-11 items-center gap-3 text-sm text-gray-700">
         <input v-model="override" type="checkbox" class="h-5 w-5" />
-        Manager override — allow sale over credit limit
+        {{ $t('pos.payLater.managerOverride') }}
       </label>
       <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-        <button class="btn-secondary" @click="emit('close')">Cancel</button>
+        <button class="btn-secondary" @click="emit('close')">{{ $t('common.cancel') }}</button>
         <button
           class="btn-primary"
           :disabled="limitOverride && !override"
           @click="emit('confirm', limitOverride ? override : false)"
         >
-          Confirm
+          {{ $t('common.confirm') }}
         </button>
       </div>
     </div>

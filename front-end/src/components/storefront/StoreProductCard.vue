@@ -35,7 +35,7 @@ const primaryImage = computed(() => {
           {{ formatFromPrice(product.fromPrice, product.hasPriceRange) }}
         </p>
       </div>
-      <span class="btn-secondary w-full text-center">View Product</span>
+      <span class="btn-secondary w-full text-center">{{ $t('shop.catalog.viewProduct') }}</span>
     </div>
   </article>
 </template>
