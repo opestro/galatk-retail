@@ -22,28 +22,62 @@ async function findCustomerByPhone(phone: string) {
 }
 
 /**
- * Resolves the global Customer for checkout. Orders require a signed-in account.
+ * Resolves the global Customer for checkout.
+ * Guests are matched by phone and created without a password when new.
  */
 export async function ensureCustomerForCheckout(input: OnlineCustomerInput) {
-  if (!input.authenticatedCustomerId) {
-    throw new CustomError('UNAUTHORIZED', 'Create an account to place an order.', 401)
+  if (input.authenticatedCustomerId) {
+    const customer = await prisma.customer.findUnique({
+      where: { id: input.authenticatedCustomerId },
+    })
+    if (!customer) {
+      throw new CustomError('UNAUTHORIZED', 'Sign in to continue.', 401)
+    }
+
+    const name = input.name.trim()
+    if (name && name !== customer.name) {
+      return prisma.customer.update({
+        where: { id: customer.id },
+        data: { name, email: input.email?.trim() ?? customer.email },
+      })
+    }
+    return customer
   }
 
-  const customer = await prisma.customer.findUnique({
-    where: { id: input.authenticatedCustomerId },
-  })
-  if (!customer) {
-    throw new CustomError('UNAUTHORIZED', 'Sign in to continue.', 401)
+  const phone = normalizeAlgerianPhone(input.phone)
+  if (!phone) {
+    throw new CustomError(
+      'VALIDATION_ERROR',
+      'Please enter a valid Algerian phone number (05, 06, or 07).',
+      400,
+    )
   }
 
   const name = input.name.trim()
-  if (name && name !== customer.name) {
-    return prisma.customer.update({
-      where: { id: customer.id },
-      data: { name, email: input.email?.trim() ?? customer.email },
-    })
+  if (!name) {
+    throw new CustomError('VALIDATION_ERROR', 'Please enter your full name.', 400)
   }
-  return customer
+
+  const email = input.email?.trim() || undefined
+  const existing = await findCustomerByPhone(phone)
+  if (existing) {
+    const data: Prisma.CustomerUpdateInput = {}
+    if (name !== existing.name) data.name = name
+    if (email && !existing.passwordHash && email !== (existing.email ?? '')) {
+      data.email = email
+    }
+    if (Object.keys(data).length === 0) return existing
+    return prisma.customer.update({ where: { id: existing.id }, data })
+  }
+
+  return prisma.customer.create({
+    data: {
+      name,
+      phone,
+      email: email ?? null,
+      passwordHash: null,
+    },
+  })
 }
 
 /**

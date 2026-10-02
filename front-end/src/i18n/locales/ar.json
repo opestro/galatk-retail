@@ -103,6 +103,10 @@
       "outOfStockCta": "غير متوفر",
       "goToCart": "الذهاب إلى السلة",
       "createAccountCta": "أنشئ حساباً لإتمام الطلب",
+      "orderFormTitle": "أتمم طلبك",
+      "fulfillmentLabel": "التوصيل",
+      "subtotal": "المجموع الفرعي",
+      "deliveryFee": "رسوم التوصيل",
       "loading": "جارٍ تحميل المنتج…",
       "viewImage": "عرض الصورة"
     },
@@ -494,7 +498,17 @@
       "amountCollected": "المحصّل",
       "remainingOnCredit": "المتبقي آجل",
       "clientBalance": "رصيد العميل",
-      "openClient": "فتح حساب العميل"
+      "openClient": "فتح حساب العميل",
+      "editProducts": "تعديل المنتجات",
+      "addProduct": "إضافة منتج",
+      "selectProduct": "اختر منتجاً متوفراً في المخزون",
+      "selectFamily": "اختر العائلة",
+      "selectVariant": "اختر المتغير",
+      "qty": "الكمية",
+      "removeLine": "حذف",
+      "confirmRemove": "حذف هذا المنتج من الطلب وإعادته للمخزون؟",
+      "lineUpdateError": "تعذر تحديث منتجات الطلب.",
+      "lastLine": "يجب أن يبقى منتج واحد على الأقل في الطلب."
     },
     "clients": {
       "created": "تم إنشاء العميل",

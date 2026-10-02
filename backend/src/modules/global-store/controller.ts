@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import * as GlobalStoreService from './service.js'
 import { FulfillmentType } from '@prisma/client'
 import * as SettingsController from '../settings/controller.js'
-import { issueCustomerSession } from '../account/service.js'
+import { checkoutAccountPayload } from '../account/service.js'
 
 /** Public homepage hero — same payload admins edit under /settings. */
 export async function getBanner(req: Request, res: Response, next: NextFunction) {
@@ -89,7 +89,7 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
         total: order.total.toString(),
         status: order.status,
       })),
-      account: issueCustomerSession(customer),
+      account: checkoutAccountPayload(customer, req.customer?.id),
     })
   } catch (error) {
     next(error)

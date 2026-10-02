@@ -47,6 +47,20 @@ export function issueCustomerSession(customer: { id: string; name: string; phone
 }
 
 /**
+ * Guest checkout issues a session only for new/password-less customers so a
+ * phone number cannot be used to take over an existing account.
+ */
+export function checkoutAccountPayload(
+  customer: { id: string; name: string; phone: string; email: string | null; passwordHash: string | null },
+  authenticatedCustomerId?: string,
+) {
+  if (authenticatedCustomerId || !customer.passwordHash) {
+    return issueCustomerSession(customer)
+  }
+  return null
+}
+
+/**
  * Email + password login for the store client space.
  */
 export async function login(input: CustomerLoginInput) {

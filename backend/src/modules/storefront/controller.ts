@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import * as StorefrontService from './service.js'
 import { FulfillmentType } from '@prisma/client'
 import { lookupCustomerByPhone } from '../../shared/clients/upsertFromOnline.js'
-import { issueCustomerSession } from '../account/service.js'
+import { checkoutAccountPayload } from '../account/service.js'
 import { CustomError } from '../../shared/types/error_type.js'
 
 export async function getShop(req: Request, res: Response, next: NextFunction) {
@@ -74,7 +74,7 @@ export async function checkout(req: Request, res: Response, next: NextFunction) 
       orderNumber: order.orderNumber,
       total: order.total.toString(),
       status: order.status,
-      account: issueCustomerSession(customer),
+      account: checkoutAccountPayload(customer, req.customer?.id),
     })
   } catch (error) {
     next(error)

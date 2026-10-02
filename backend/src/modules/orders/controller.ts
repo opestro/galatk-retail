@@ -75,3 +75,30 @@ export async function cancel(req: Request, res: Response, next: NextFunction) {
     next(error)
   }
 }
+
+export async function addLine(req: Request, res: Response, next: NextFunction) {
+  try {
+    const shopId = String(req.params.shopId)
+    const orderId = String(req.params.orderId)
+    const { productId, quantity } = req.body
+    const order = await StorefrontService.addOrderLine(req.staff!, shopId, orderId, {
+      productId,
+      quantity,
+    })
+    res.status(200).json({ data: orderPresenter(order) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function removeLine(req: Request, res: Response, next: NextFunction) {
+  try {
+    const shopId = String(req.params.shopId)
+    const orderId = String(req.params.orderId)
+    const lineId = String(req.params.lineId)
+    const order = await StorefrontService.removeOrderLine(req.staff!, shopId, orderId, lineId)
+    res.status(200).json({ data: orderPresenter(order) })
+  } catch (error) {
+    next(error)
+  }
+}

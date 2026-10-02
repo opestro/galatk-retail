@@ -27,15 +27,54 @@ describe('findOrCreateClientFromOnlineOrder', () => {
     vi.clearAllMocks()
   })
 
-  it('requires a signed-in customer to place an order', async () => {
+  it('creates a password-less Customer for guest checkout', async () => {
     const { findOrCreateClientFromOnlineOrder } = await import('../src/shared/clients/upsertFromOnline.js')
 
-    await expect(
-      findOrCreateClientFromOnlineOrder('shop-1', {
-        name: 'Ahmed',
-        phone: '0551234567',
-      }),
-    ).rejects.toMatchObject({ type: 'UNAUTHORIZED' })
+    mockPrisma.customer.findFirst.mockResolvedValue(null)
+    mockPrisma.customer.create.mockResolvedValue({
+      id: 'cust-guest',
+      phone: '0551234567',
+      name: 'Ahmed',
+      passwordHash: null,
+    })
+    mockPrisma.client.findUnique.mockResolvedValue(null)
+    mockPrisma.client.create.mockResolvedValue({
+      id: 'cli-guest',
+      shopId: 'shop-1',
+      customerId: 'cust-guest',
+    })
+
+    const client = await findOrCreateClientFromOnlineOrder('shop-1', {
+      name: 'Ahmed',
+      phone: '0551234567',
+    })
+
+    expect(client.id).toBe('cli-guest')
+    expect(mockPrisma.customer.create).toHaveBeenCalledWith({
+      data: { name: 'Ahmed', phone: '0551234567', email: null, passwordHash: null },
+    })
+  })
+
+  it('reuses an existing Customer by phone for guest checkout', async () => {
+    const { findOrCreateClientFromOnlineOrder } = await import('../src/shared/clients/upsertFromOnline.js')
+
+    mockPrisma.customer.findFirst.mockResolvedValue({
+      id: 'cust-1',
+      phone: '0551234567',
+      name: 'Ahmed',
+      email: null,
+      passwordHash: null,
+    })
+    mockPrisma.client.findUnique.mockResolvedValue(null)
+    mockPrisma.client.create.mockResolvedValue({ id: 'cli-2', shopId: 'shop-2', customerId: 'cust-1' })
+
+    const client = await findOrCreateClientFromOnlineOrder('shop-2', {
+      name: 'Ahmed',
+      phone: '0551234567',
+    })
+
+    expect(client.customerId).toBe('cust-1')
+    expect(mockPrisma.customer.create).not.toHaveBeenCalled()
   })
 
   it('reuses an existing Customer, creates a new per-shop Client', async () => {

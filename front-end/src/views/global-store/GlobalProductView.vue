@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import { getGlobalProduct, type PublicCatalogProductDetail, type PublicCatalogShop, type PublicCatalogVariant } from '@/services/globalStore'
 import { useGlobalStoreCartStore } from '@/stores/globalStoreCart'
-import { useCustomerAuthStore } from '@/stores/customerAuth'
 import ProductDetailSkeleton from '@/components/storefront/ProductDetailSkeleton.vue'
 import ProductGallery from '@/components/storefront/ProductGallery.vue'
 import VariantOptionGroup from '@/components/storefront/VariantOptionGroup.vue'
@@ -21,11 +20,13 @@ import {
   type AttributeMap,
 } from '@/utils/variantSelection'
 import { Check, Loader2, Minus, Plus, ShoppingBag } from 'lucide-vue-next'
+import ProductOrderForm from '@/components/storefront/ProductOrderForm.vue'
+
+const MAX_ORDER_QUANTITY = 99
 
 const { t } = useI18n()
 const route = useRoute()
 const cart = useGlobalStoreCartStore()
-const customerAuth = useCustomerAuthStore()
 
 const product = ref<PublicCatalogProductDetail | null>(null)
 const loading = ref(true)
@@ -100,12 +101,10 @@ const selectedShop = computed(() => {
   if (shopFilter.value !== 'all') {
     return shops.find((shop) => shop.shopId === shopFilter.value) ?? null
   }
-  return shops.find((shop) => shop.shopId === selectedShopId.value) ?? shops.find((shop) => shop.inStock) ?? shops[0] ?? null
+  return shops.find((shop) => shop.shopId === selectedShopId.value) ?? shops[0] ?? null
 })
 
-const availableQty = computed(() => selectedShop.value?.quantity ?? 0)
-const inStock = computed(() => (selectedShop.value?.inStock ?? false) && availableQty.value > 0)
-const canAdd = computed(() => Boolean(selectedVariant.value && selectedShop.value && inStock.value && quantity.value >= 1 && quantity.value <= availableQty.value))
+const canAdd = computed(() => Boolean(selectedVariant.value && selectedShop.value && quantity.value >= 1))
 
 watch(selectedVariant, (variant) => {
   if (!variant) return
@@ -114,12 +113,11 @@ watch(selectedVariant, (variant) => {
   if (shopFilter.value !== 'all') {
     shopId = shops.find((shop) => shop.shopId === shopFilter.value)?.shopId ?? null
   } else if (!shops.some((shop) => shop.shopId === shopId)) {
-    shopId = shops.find((shop) => shop.inStock)?.shopId ?? shops[0]?.shopId ?? null
+    shopId = shops[0]?.shopId ?? null
   }
   selectedShopId.value = shopId
-  const max = shops.find((shop) => shop.shopId === shopId)?.quantity ?? 0
-  if (quantity.value > max) {
-    quantity.value = Math.max(1, max || 1)
+  if (quantity.value > MAX_ORDER_QUANTITY) {
+    quantity.value = MAX_ORDER_QUANTITY
   }
 })
 
@@ -141,7 +139,7 @@ function decrement() {
 }
 
 function increment() {
-  quantity.value = Math.min(Math.max(1, availableQty.value), quantity.value + 1)
+  quantity.value = Math.min(MAX_ORDER_QUANTITY, quantity.value + 1)
 }
 
 function addToCart() {
@@ -157,7 +155,7 @@ function addToCart() {
     variantLabel: selectedVariant.value.variantLabel,
     sellPrice: selectedVariant.value.sellPrice,
     quantity: quantity.value,
-    maxQuantity: selectedShop.value.quantity,
+    maxQuantity: MAX_ORDER_QUANTITY,
   })
   addState.value = 'added'
   window.setTimeout(() => {
@@ -169,7 +167,7 @@ const addButtonLabel = computed(() => {
   if (addState.value === 'adding') return t('shop.product.adding')
   if (addState.value === 'added') return t('shop.product.added')
   if (!selectedVariant.value) return t('shop.product.unavailable')
-  return inStock.value ? t('shop.product.addToCart') : t('shop.product.outOfStockCta')
+  return t('shop.product.addToCart')
 })
 </script>
 
@@ -236,8 +234,7 @@ const addButtonLabel = computed(() => {
               v-for="shop in shopsForVariant"
               :key="shop.shopId"
               type="button"
-              :disabled="!shop.inStock"
-              class="min-h-9 rounded-full border px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
+              class="min-h-9 rounded-full border px-3 py-1.5 text-xs font-medium transition"
               :class="
                 selectedShop?.shopId === shop.shopId
                   ? 'border-gray-900 bg-gray-900 text-white'
@@ -246,16 +243,11 @@ const addButtonLabel = computed(() => {
               @click="selectedShopId = shop.shopId"
             >
               {{ shop.shopName }}
-              <span v-if="!shop.inStock">{{ $t('shop.product.shopOutOfStockSuffix') }}</span>
             </button>
           </div>
         </div>
 
-        <p v-if="selectedVariant" class="text-sm text-gray-600">
-          <template v-if="inStock">{{ $t('shop.product.available', { qty: availableQty }) }}</template>
-          <template v-else>{{ $t('shop.product.outOfStock') }}</template>
-        </p>
-        <p v-else class="text-sm text-gray-500">{{ $t('shop.product.comboUnavailable') }}</p>
+        <p v-if="!selectedVariant" class="text-sm text-gray-500">{{ $t('shop.product.comboUnavailable') }}</p>
 
         <div class="flex items-center gap-3">
           <span class="text-sm font-medium text-gray-900">{{ $t('shop.product.quantity') }}</span>
@@ -272,7 +264,7 @@ const addButtonLabel = computed(() => {
             <button
               type="button"
               class="flex h-11 w-11 items-center justify-center text-gray-600 disabled:opacity-40"
-              :disabled="!inStock || quantity >= availableQty"
+              :disabled="quantity >= MAX_ORDER_QUANTITY"
               @click="increment"
             >
               <Plus class="h-4 w-4" />
@@ -298,13 +290,14 @@ const addButtonLabel = computed(() => {
         >
           {{ $t('shop.product.goToCart') }}
         </RouterLink>
-        <RouterLink
-          v-if="!customerAuth.isAuthenticated"
-          :to="{ path: '/login', query: { create: '1', next: '/store/checkout' } }"
-          class="text-center text-sm text-gray-600 hover:text-gray-900"
-        >
-          {{ $t('shop.product.createAccountCta') }}
-        </RouterLink>
+
+        <ProductOrderForm
+          v-if="selectedVariant && selectedShop"
+          :product-id="selectedVariant.id"
+          :shop-id="selectedShop.shopId"
+          :sell-price="selectedVariant.sellPrice"
+          :quantity="quantity"
+        />
       </div>
     </div>
   </div>

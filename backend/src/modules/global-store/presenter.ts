@@ -5,7 +5,6 @@ import {
   normalizeToken,
   titleCaseWords,
 } from '../../shared/products/variantAttributes.js'
-import { OutOfStockDisplay } from '@prisma/client'
 import {
   PublicCatalogImage,
   PublicCatalogProductDetail,
@@ -25,11 +24,6 @@ function moneyString(value: { toString(): string } | string | number): string {
 
 function compareMoney(a: string, b: string): number {
   return Number(a) - Number(b)
-}
-
-export function isShopStockVisible(shop: Pick<Shop, 'outOfStockDisplay'>, quantity: number): boolean {
-  if (quantity > 0) return true
-  return shop.outOfStockDisplay === OutOfStockDisplay.SHOW_UNAVAILABLE
 }
 
 export function publicImages(images: ProductImage[]): PublicCatalogImage[] {
@@ -65,7 +59,7 @@ function shopsForVariant(
   for (const row of stock) {
     if (row.productId !== variantId) continue
     const shop = shopById.get(row.shopId)
-    if (!shop || !isShopStockVisible(shop, row.quantity)) continue
+    if (!shop) continue
     shops.push({
       shopId: shop.id,
       shopName: shop.name,

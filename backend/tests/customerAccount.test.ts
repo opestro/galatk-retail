@@ -361,3 +361,46 @@ describe('customer account credit and in-store sales', () => {
     await expect(getSale('cust-1', 'sale-other')).rejects.toMatchObject({ type: 'SALE_NOT_FOUND' })
   })
 })
+
+describe('checkoutAccountPayload', () => {
+  it('issues a session for password-less guest customers', async () => {
+    const { checkoutAccountPayload } = await import('../src/modules/account/service.js')
+    const payload = checkoutAccountPayload({
+      id: 'cust-guest',
+      name: 'Ahmed',
+      phone: '0551234567',
+      email: null,
+      passwordHash: null,
+    })
+    expect(payload?.token).toBeTruthy()
+    expect(payload?.customer.id).toBe('cust-guest')
+  })
+
+  it('does not issue a session for an existing password account used as a guest', async () => {
+    const { checkoutAccountPayload } = await import('../src/modules/account/service.js')
+    expect(
+      checkoutAccountPayload({
+        id: 'cust-1',
+        name: 'Ahmed',
+        phone: '0551234567',
+        email: 'a@example.com',
+        passwordHash: 'hashed:secret',
+      }),
+    ).toBeNull()
+  })
+
+  it('issues a session when the shopper is already signed in', async () => {
+    const { checkoutAccountPayload } = await import('../src/modules/account/service.js')
+    const payload = checkoutAccountPayload(
+      {
+        id: 'cust-1',
+        name: 'Ahmed',
+        phone: '0551234567',
+        email: 'a@example.com',
+        passwordHash: 'hashed:secret',
+      },
+      'cust-1',
+    )
+    expect(payload?.token).toBeTruthy()
+  })
+})
