@@ -100,7 +100,7 @@ export async function getGlobalProduct(idOrSlug: string) {
 }
 
 export async function globalCheckout(input: GlobalCheckoutInput) {
-  const res = await api.post<{ orders: GlobalCheckoutOrderResult[]; account: CustomerLoginResponse }>(
+  const res = await api.post<{ orders: GlobalCheckoutOrderResult[]; account: CustomerLoginResponse | null }>(
     '/global-store/checkout',
     input,
   )

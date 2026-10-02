@@ -9,6 +9,7 @@ import ClientPurchasesModal from '@/components/pos/ClientPurchasesModal.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import { ShoppingBag } from 'lucide-vue-next'
 import { orderStatusLabel } from '@/services/orders'
+import OrderPaymentBadge from '@/components/orders/OrderPaymentBadge.vue'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -109,9 +110,12 @@ watch(() => auth.selectedShopId, loadOrders)
               {{ $t('pos.orders.clientRegister', { name: order.client.name, balance: order.client.balance }) }}
             </p>
           </div>
-          <span class="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-600">
-            {{ orderStatusLabel(order.status) }}
-          </span>
+          <div class="flex flex-col items-end gap-1">
+            <span class="rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-600">
+              {{ orderStatusLabel(order.status) }}
+            </span>
+            <OrderPaymentBadge :order="order" />
+          </div>
         </div>
 
         <p class="text-sm text-gray-700">
@@ -127,8 +131,8 @@ watch(() => auth.selectedShopId, loadOrders)
           >
             {{ $t('pos.orders.acceptReady') }}
           </button>
-          <button
-            v-if="['READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'].includes(order.status)"
+            <button
+            v-if="['PLACED', 'READY_FOR_PICKUP', 'OUT_FOR_DELIVERY'].includes(order.status)"
             class="btn-primary px-3 py-1.5 text-xs"
             @click="openComplete(order)"
           >

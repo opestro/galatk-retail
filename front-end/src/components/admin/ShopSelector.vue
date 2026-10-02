@@ -5,6 +5,11 @@ import { useAuthStore } from '@/stores/auth'
 import { api } from '@/services/api'
 import type { Shop } from '@/types/api'
 
+defineProps<{
+  /** Dense control for the POS header when an admin is cashiering. */
+  compact?: boolean
+}>()
+
 const { t } = useI18n()
 const auth = useAuthStore()
 const shops = ref<Shop[]>([])
@@ -20,11 +25,19 @@ watch(() => auth.isOwner, loadShops)
 </script>
 
 <template>
-  <div v-if="auth.isOwner" class="mb-5 flex flex-col gap-1.5">
-    <label class="block text-xs font-medium text-gray-500">{{ t('admin.shopSelector.label') }}</label>
+  <div
+    v-if="auth.isOwner"
+    :class="compact ? 'flex min-w-0 items-center gap-2' : 'mb-5 flex flex-col gap-1.5'"
+  >
+    <label
+      :class="compact ? 'hidden whitespace-nowrap text-xs font-medium text-gray-500 sm:block' : 'block text-xs font-medium text-gray-500'"
+    >
+      {{ t('admin.shopSelector.label') }}
+    </label>
     <select
       :value="auth.selectedShopId ?? ''"
-      class="input py-2 text-sm"
+      :aria-label="t('admin.shopSelector.label')"
+      :class="compact ? 'input min-h-11 min-w-[8rem] max-w-[14rem] py-1.5 text-sm' : 'input py-2 text-sm'"
       @change="auth.selectShop(($event.target as HTMLSelectElement).value)"
     >
       <option v-for="shop in shops" :key="shop.id" :value="shop.id">

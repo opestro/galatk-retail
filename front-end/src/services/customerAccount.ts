@@ -1,6 +1,12 @@
 import axios from 'axios'
 import router from '@/router'
-import type { CustomerLoginResponse, CustomerOrder, CustomerProfile } from '@/types/api'
+import type {
+  CustomerCredit,
+  CustomerInStorePurchase,
+  CustomerLoginResponse,
+  CustomerOrder,
+  CustomerProfile,
+} from '@/types/api'
 
 const TOKEN_KEY = 'customer_token'
 const PROFILE_KEY = 'customer_profile'
@@ -63,4 +69,24 @@ export async function listMyOrders() {
 export async function getMyOrder(orderId: string) {
   const { data } = await customerApi.get<{ data: CustomerOrder }>(`/account/orders/${orderId}`)
   return data.data
+}
+
+export async function getMyCredit() {
+  const { data } = await customerApi.get<{ data: CustomerCredit }>('/account/credit')
+  return data.data
+}
+
+export async function listMySales() {
+  const { data } = await customerApi.get<{ data: CustomerInStorePurchase[] }>('/account/sales')
+  return data.data
+}
+
+export async function getMySale(saleId: string) {
+  const { data } = await customerApi.get<{ data: CustomerInStorePurchase }>(`/account/sales/${saleId}`)
+  return data.data
+}
+
+/** True when this purchase still has unpaid credit after FIFO payments. */
+export function hasUnpaidCredit(remaining?: string | null): boolean {
+  return Number(remaining ?? 0) > 0
 }

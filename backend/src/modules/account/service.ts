@@ -7,9 +7,17 @@ import { signCustomerToken } from '../../shared/auth/jwt.js'
 import { customerPresenter } from './presenter.js'
 import { CustomerLoginInput, CustomerRegisterInput } from './types.js'
 import { MIN_CUSTOMER_PASSWORD_LENGTH } from './constants.js'
+import { OrderStatus } from '@prisma/client'
 
 const orderInclude = {
   shop: { select: { id: true, name: true, slug: true } },
+  fulfillmentSale: {
+    select: {
+      amountPaid: true,
+      amountOnCredit: true,
+      creditPortions: { select: { remainingAmount: true, originalAmount: true } },
+    },
+  },
   lines: {
     include: {
       product: {
@@ -25,11 +33,31 @@ const orderInclude = {
   },
 } as const
 
+const saleInclude = {
+  shop: { select: { id: true, name: true, slug: true } },
+  creditPortions: { select: { remainingAmount: true, originalAmount: true } },
+  lines: { include: { product: { select: { id: true, name: true } } } },
+} as const
+
 export function issueCustomerSession(customer: { id: string; name: string; phone: string; email: string | null }) {
   return {
     token: signCustomerToken(customer.id),
     customer: customerPresenter(customer),
   }
+}
+
+/**
+ * Guest checkout issues a session only for new/password-less customers so a
+ * phone number cannot be used to take over an existing account.
+ */
+export function checkoutAccountPayload(
+  customer: { id: string; name: string; phone: string; email: string | null; passwordHash: string | null },
+  authenticatedCustomerId?: string,
+) {
+  if (authenticatedCustomerId || !customer.passwordHash) {
+    return issueCustomerSession(customer)
+  }
+  return null
 }
 
 /**
@@ -154,4 +182,68 @@ export async function getOrder(customerId: string, orderId: string) {
     throw new CustomError('ORDER_NOT_FOUND', 'Order not found', 404)
   }
   return order
+}
+
+/**
+ * Shop pay-later balances plus open online orders that have not been collected yet.
+ * COD / pay-on-pickup orders only become Client.balance after a cashier completes them.
+ */
+export async function getCredit(customerId: string) {
+  const [clients, openOrders] = await Promise.all([
+    prisma.client.findMany({
+      where: { customerId },
+      include: {
+        shop: { select: { id: true, name: true, slug: true } },
+        creditPortions: {
+          where: { remainingAmount: { gt: 0 } },
+          orderBy: { createdAt: 'asc' },
+          include: {
+            sale: {
+              select: {
+                id: true,
+                status: true,
+                onlineOrder: { select: { id: true, orderNumber: true } },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.onlineOrder.findMany({
+      where: {
+        client: { customerId },
+        status: { notIn: [OrderStatus.COMPLETED, OrderStatus.CANCELLED] },
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        total: true,
+        createdAt: true,
+        shop: { select: { id: true, name: true, slug: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    }),
+  ])
+
+  return { clients, openOrders }
+}
+
+/** In-store POS sales for this customer that are not already represented by an online order. */
+export async function listSales(customerId: string) {
+  return prisma.sale.findMany({
+    where: { client: { customerId }, onlineOrderId: null },
+    include: saleInclude,
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+export async function getSale(customerId: string, saleId: string) {
+  const sale = await prisma.sale.findFirst({
+    where: { id: saleId, client: { customerId }, onlineOrderId: null },
+    include: saleInclude,
+  })
+  if (!sale) {
+    throw new CustomError('SALE_NOT_FOUND', 'Purchase not found', 404)
+  }
+  return sale
 }

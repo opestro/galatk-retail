@@ -44,9 +44,53 @@ export interface CustomerOrder {
   subtotal: string
   deliveryFee: string
   total: string
+  amountPaid?: string
+  amountOnCredit?: string
+  remainingCredit?: string
   createdAt: string
   shop: CustomerOrderShop
   lines: OnlineOrderLine[]
+}
+
+export interface CustomerShopBalance {
+  shopId: string
+  shopName: string
+  shopSlug: string
+  balance: string
+}
+
+export interface CustomerCreditPortion {
+  id: string
+  shopId: string
+  shopName: string
+  shopSlug: string
+  originalAmount: string
+  remainingAmount: string
+  createdAt: string
+  saleId: string | null
+  saleStatus: string | null
+  orderId: string | null
+  orderNumber: string | null
+}
+
+export interface CustomerCredit {
+  totalOutstanding: string
+  shops: CustomerShopBalance[]
+  portions: CustomerCreditPortion[]
+}
+
+export interface CustomerInStorePurchase {
+  id: string
+  type: 'SALE'
+  status: string
+  paymentMethod: string
+  total: string
+  amountPaid: string
+  amountOnCredit: string
+  remainingCredit: string
+  createdAt: string
+  shop: CustomerOrderShop
+  lines: PurchaseLine[]
 }
 
 export interface Shop {
@@ -230,6 +274,8 @@ export interface OnlineOrderLine {
   lineTotal: string
 }
 
+export type OrderPaymentStatus = 'UNPAID' | 'CREDIT' | 'PARTIAL' | 'PAID' | 'NONE'
+
 export interface OnlineOrder {
   id: string
   shopId?: string
@@ -247,6 +293,11 @@ export interface OnlineOrder {
   subtotal?: string
   deliveryFee?: string
   total: string
+  amountPaid?: string
+  amountOnCredit?: string
+  remainingCredit?: string
+  collected?: string
+  paymentStatus?: OrderPaymentStatus
   createdAt: string
   client?: Pick<Client, 'id' | 'name' | 'phone' | 'balance' | 'creditLimit'> | null
   lines: OnlineOrderLine[]

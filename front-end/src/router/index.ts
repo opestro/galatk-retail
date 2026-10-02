@@ -69,7 +69,7 @@ const router = createRouter({
       meta: { public: true },
       children: [
         { path: '', name: 'storefront-catalog', component: () => import('@/views/storefront/CatalogView.vue') },
-        { path: 'checkout', name: 'storefront-checkout', component: () => import('@/views/storefront/CheckoutView.vue'), meta: { requiresCustomerAuth: true, customerCreate: true } },
+        { path: 'checkout', name: 'storefront-checkout', component: () => import('@/views/storefront/CheckoutView.vue') },
         { path: 'confirmation/:orderNumber', name: 'storefront-confirmation', component: () => import('@/views/storefront/OrderConfirmationView.vue') },
       ],
     },
@@ -80,7 +80,7 @@ const router = createRouter({
       children: [
         { path: '', name: 'global-store-catalog', component: () => import('@/views/global-store/GlobalCatalogView.vue') },
         { path: 'products/:productId', name: 'global-store-product', component: () => import('@/views/global-store/GlobalProductView.vue') },
-        { path: 'checkout', name: 'global-store-checkout', component: () => import('@/views/global-store/GlobalCheckoutView.vue'), meta: { requiresCustomerAuth: true, customerCreate: true } },
+        { path: 'checkout', name: 'global-store-checkout', component: () => import('@/views/global-store/GlobalCheckoutView.vue') },
         { path: 'confirmation', name: 'global-store-confirmation', component: () => import('@/views/global-store/GlobalOrderConfirmationView.vue') },
         { path: 'login', redirect: (to) => ({ path: '/login', query: to.query }) },
         {
@@ -93,6 +93,12 @@ const router = createRouter({
           path: 'account/orders/:orderId',
           name: 'store-account-order',
           component: () => import('@/views/global-store/AccountOrderDetailView.vue'),
+          meta: { requiresCustomerAuth: true },
+        },
+        {
+          path: 'account/purchases/:saleId',
+          name: 'store-account-purchase',
+          component: () => import('@/views/global-store/AccountSaleDetailView.vue'),
           meta: { requiresCustomerAuth: true },
         },
       ],

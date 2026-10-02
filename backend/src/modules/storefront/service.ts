@@ -19,6 +19,8 @@ import {
 } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library' // money totals on checkout / complete
 import { withFamily } from '../../shared/products/withFamily.js'
+import { settleOrderPaymentAmounts } from '../../shared/orders/paymentStatus.js'
+import { assertOrderLinesEditable, computeOrderMoney } from '../../shared/orders/editLines.js'
 import { canTransitionOrderStatus } from '../../shared/orders/statusTransitions.js'
 import {
   parseDeliveryService,
@@ -49,7 +51,7 @@ export interface CheckoutInput {
 
 export interface CompleteOnlineOrderInput {
   paymentMethod: PaymentMethod
-  amountPaid?: number
+  amountPaid?: string | number
   payLater?: boolean
   creditLimitOverride?: boolean
 }
@@ -62,6 +64,24 @@ const orderProductInclude = {
           images: { orderBy: { sortOrder: 'asc' as const }, take: 1 },
         },
       },
+    },
+  },
+} as const
+
+const staffClientSelect = {
+  id: true,
+  name: true,
+  phone: true,
+  balance: true,
+  creditLimit: true,
+} as const
+
+const staffOrderInclude = {
+  lines: { include: orderProductInclude },
+  client: { select: staffClientSelect },
+  fulfillmentSale: {
+    include: {
+      creditPortions: { select: { remainingAmount: true } },
     },
   },
 } as const
@@ -164,10 +184,12 @@ export async function checkoutForShop(
   })
 
   return prisma.$transaction(async (tx) => {
+    // Online orders may oversell; remaining shop stock floors at 0.
     await decrementShopStock(
       tx,
       shop.id,
       input.lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+      { allowOversell: true },
     )
 
     return tx.onlineOrder.create({
@@ -311,10 +333,7 @@ export async function listOrders(
 
   return prisma.onlineOrder.findMany({
     where,
-    include: {
-      lines: { include: orderProductInclude },
-      client: { select: { id: true, name: true, phone: true, balance: true } },
-    },
+    include: staffOrderInclude,
     orderBy: { createdAt: 'desc' },
     take: 100,
   })
@@ -325,11 +344,7 @@ export async function getOrderById(staff: AuthenticatedStaff, shopId: string, or
 
   const order = await prisma.onlineOrder.findFirst({
     where: { id: orderId, shopId },
-    include: {
-      lines: { include: orderProductInclude },
-      client: { select: { id: true, name: true, phone: true, balance: true, creditLimit: true } },
-      fulfillmentSale: true,
-    },
+    include: staffOrderInclude,
   })
 
   if (!order) {
@@ -367,7 +382,7 @@ export async function updateOrderStatus(
   return prisma.onlineOrder.update({
     where: { id: orderId },
     data: { status },
-    include: { lines: { include: orderProductInclude }, client: true },
+    include: staffOrderInclude,
   })
 }
 
@@ -380,17 +395,21 @@ export async function completeOnlineOrder(
   assertShopAccess(staff, shopId)
   const order = await getOrderById(staff, shopId, orderId)
 
-  const allowedStatuses: OrderStatus[] = [OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY]
+  if (order.fulfillmentSale || order.status === OrderStatus.COMPLETED) {
+    throw new CustomError('ORDER_ALREADY_COMPLETED', 'Order payment already recorded', 400)
+  }
+
+  const allowedStatuses: OrderStatus[] = [
+    OrderStatus.PLACED,
+    OrderStatus.READY_FOR_PICKUP,
+    OrderStatus.OUT_FOR_DELIVERY,
+  ]
   if (!allowedStatuses.includes(order.status)) {
     throw new CustomError(
       'INVALID_TRANSITION',
-      'Order must be ready for pickup or out for delivery before completion',
+      'Order cannot be completed from the current status',
       400,
     )
-  }
-
-  if (order.fulfillmentSale) {
-    throw new CustomError('ORDER_ALREADY_COMPLETED', 'Order payment already recorded', 400)
   }
 
   if (!order.clientId) {
@@ -398,27 +417,14 @@ export async function completeOnlineOrder(
   }
 
   const total = order.total
-  let amountPaid: Decimal
-  let amountOnCredit: Decimal
   let creditApprovedById: string | null = null
 
   if (input.payLater) {
     requireMinRole(staff, StaffRole.MANAGER)
-    amountPaid = new Decimal(0)
-    amountOnCredit = total
     creditApprovedById = staff.id
-  } else {
-    amountPaid = input.amountPaid !== undefined ? new Decimal(input.amountPaid) : total
-    amountOnCredit = total.sub(amountPaid)
   }
 
-  if (!amountPaid.add(amountOnCredit).equals(total)) {
-    throw new CustomError(
-      'VALIDATION_ERROR',
-      'amountPaid plus amountOnCredit must equal order total',
-      400,
-    )
-  }
+  const { amountPaid, amountOnCredit } = settleOrderPaymentAmounts(total, input)
 
   const clientRecord = await prisma.client.findFirst({
     where: { id: order.clientId, isActive: true },
@@ -501,11 +507,7 @@ export async function completeOnlineOrder(
     return tx.onlineOrder.update({
       where: { id: orderId },
       data: { status: OrderStatus.COMPLETED },
-      include: {
-        lines: { include: orderProductInclude },
-        client: true,
-        fulfillmentSale: true,
-      },
+      include: staffOrderInclude,
     })
   })
 }
@@ -540,7 +542,109 @@ export async function cancelOrder(
         cancelledAt: new Date(),
         cancelReason: reason ?? null,
       },
-      include: { lines: { include: orderProductInclude } },
+      include: staffOrderInclude,
     })
   })
+}
+
+async function applyOrderTotals(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+  deliveryFee: { toString(): string } | string | number,
+) {
+  const lines = await tx.onlineOrderLine.findMany({ where: { orderId } })
+  const { subtotal, total } = computeOrderMoney(lines, deliveryFee)
+  await tx.onlineOrder.update({
+    where: { id: orderId },
+    data: { subtotal, total },
+  })
+}
+
+const LINE_TX = { timeout: 20_000, maxWait: 10_000 } as const
+
+/** Add an in-shop product (or increase qty if already on the order). Adjusts reserved stock. */
+export async function addOrderLine(
+  staff: AuthenticatedStaff,
+  shopId: string,
+  orderId: string,
+  input: { productId?: string; quantity?: number },
+) {
+  assertShopAccess(staff, shopId)
+  requireMinRole(staff, StaffRole.MANAGER)
+
+  const quantity = Number.parseInt(String(input.quantity ?? 1), 10)
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    throw new CustomError('VALIDATION_ERROR', 'Quantity must be a positive integer', 400)
+  }
+  if (!input.productId) {
+    throw new CustomError('VALIDATION_ERROR', 'productId is required', 400)
+  }
+
+  const order = await getOrderById(staff, shopId, orderId)
+  assertOrderLinesEditable(order.status, Boolean(order.fulfillmentSale))
+
+  const product = await prisma.product.findUnique({ where: { id: input.productId } })
+  if (!product || !product.isActive) {
+    throw new CustomError('PRODUCT_NOT_FOUND', 'Product not found', 404)
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await decrementShopStock(tx, shopId, [{ productId: product.id, quantity }])
+
+    const existing = await tx.onlineOrderLine.findFirst({
+      where: { orderId, productId: product.id },
+    })
+    if (existing) {
+      const nextQty = existing.quantity + quantity
+      await tx.onlineOrderLine.update({
+        where: { id: existing.id },
+        data: { quantity: nextQty, lineTotal: existing.unitPrice.mul(nextQty) },
+      })
+    } else {
+      await tx.onlineOrderLine.create({
+        data: {
+          orderId,
+          productId: product.id,
+          quantity,
+          unitCost: product.unitCost,
+          unitPrice: product.sellPrice,
+          lineTotal: product.sellPrice.mul(quantity),
+        },
+      })
+    }
+
+    await applyOrderTotals(tx, orderId, order.deliveryFee)
+  }, LINE_TX)
+
+  return getOrderById(staff, shopId, orderId)
+}
+
+/** Remove a line and return its quantity to shop stock. */
+export async function removeOrderLine(
+  staff: AuthenticatedStaff,
+  shopId: string,
+  orderId: string,
+  lineId: string,
+) {
+  assertShopAccess(staff, shopId)
+  requireMinRole(staff, StaffRole.MANAGER)
+
+  const order = await getOrderById(staff, shopId, orderId)
+  assertOrderLinesEditable(order.status, Boolean(order.fulfillmentSale))
+
+  const line = order.lines.find((item) => item.id === lineId)
+  if (!line) {
+    throw new CustomError('LINE_NOT_FOUND', 'Order line not found', 404)
+  }
+  if (order.lines.length <= 1) {
+    throw new CustomError('LAST_LINE', 'Order must keep at least one product', 400)
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await restoreShopStock(tx, shopId, [{ productId: line.productId, quantity: line.quantity }])
+    await tx.onlineOrderLine.delete({ where: { id: line.id } })
+    await applyOrderTotals(tx, orderId, order.deliveryFee)
+  }, LINE_TX)
+
+  return getOrderById(staff, shopId, orderId)
 }

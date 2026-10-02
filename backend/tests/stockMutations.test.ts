@@ -32,6 +32,27 @@ describe('decrementShopStock', () => {
     ).rejects.toThrow(CustomError)
   })
 
+  it('floors remaining quantity at 0 when overselling is allowed', async () => {
+    const tx = createTx()
+    await decrementShopStock(tx as never, 'shop-1', [{ productId: 'prod-1', quantity: 20 }], {
+      allowOversell: true,
+    })
+    expect(tx.shopStock.update).toHaveBeenCalledWith({
+      where: { id: 'stock-1' },
+      data: { quantity: 0 },
+    })
+  })
+
+  it('skips missing stock rows when overselling is allowed', async () => {
+    const tx = createTx({
+      shopStock: { findUnique: vi.fn().mockResolvedValue(null), update: vi.fn(), create: vi.fn() },
+    })
+    await decrementShopStock(tx as never, 'shop-1', [{ productId: 'prod-1', quantity: 1 }], {
+      allowOversell: true,
+    })
+    expect(tx.shopStock.update).not.toHaveBeenCalled()
+  })
+
   it('throws 409 when stock record missing', async () => {
     const tx = createTx({
       shopStock: { findUnique: vi.fn().mockResolvedValue(null), update: vi.fn(), create: vi.fn() },

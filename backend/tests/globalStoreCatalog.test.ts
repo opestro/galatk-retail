@@ -112,14 +112,16 @@ describe('presentCatalogFamily', () => {
     expect(presentCatalogFamily(family() as never, [], shopById)).toBeNull()
   })
 
-  it('hides zero-stock shops when the shop is configured to hide them', () => {
+  it('still lists zero-stock shops so customers can order', () => {
     const hideShop = shop('shop-1', 'Main Shop', OutOfStockDisplay.HIDE)
     const presented = presentCatalogFamily(
       family() as never,
       [{ id: 'st1', shopId: 'shop-1', productId: 'sku-vert-m', quantity: 0 }] as never,
       new Map([[hideShop.id, hideShop]]),
     )
-    expect(presented).toBeNull()
+    expect(presented).not.toBeNull()
+    expect(presented?.variants[0]?.shops[0]?.inStock).toBe(false)
+    expect(presented?.variants[0]?.shops[0]?.quantity).toBe(0)
   })
 
   it('toCatalogSummary strips variant arrays for listing', () => {

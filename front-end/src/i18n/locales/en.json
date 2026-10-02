@@ -44,6 +44,13 @@
     "saleStatus": {
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled"
+    },
+    "paymentStatus": {
+      "PAID": "Paid in full",
+      "PARTIAL": "Paid {paid} · {remaining} on credit",
+      "CREDIT": "Unpaid · {remaining} on credit",
+      "UNPAID": "Not paid yet",
+      "NONE": "—"
     }
   },
   "shop": {
@@ -96,6 +103,10 @@
       "outOfStockCta": "Out of Stock",
       "goToCart": "Go to cart",
       "createAccountCta": "Create an account to place an order",
+      "orderFormTitle": "Place your order",
+      "fulfillmentLabel": "Delivery",
+      "subtotal": "Subtotal",
+      "deliveryFee": "Delivery fee",
       "loading": "Loading product…",
       "viewImage": "View image"
     },
@@ -199,7 +210,19 @@
       "lineQty": "Qty {n}",
       "total": "Total",
       "fulfillmentNote": "Pickup / delivery for {wilaya}. We will contact you at {phone}.",
-      "yourWilayaFallback": "your wilaya"
+      "yourWilayaFallback": "your wilaya",
+      "unpaidCredit": "Unpaid credit",
+      "unpaidCreditHint": "Orders waiting for payment, plus any shop credit still outstanding. Pay at the counter when you visit.",
+      "noUnpaidCredit": "You have no unpaid credit.",
+      "creditLoadError": "Could not load your credit. Please try again.",
+      "remaining": "Still unpaid",
+      "paid": "Paid",
+      "inStorePurchases": "In-store purchases",
+      "inStorePurchase": "In-store purchase",
+      "allPurchases": "All purchases",
+      "purchaseNotFound": "This purchase could not be found.",
+      "historyEmpty": "You have no orders or in-store purchases yet.",
+      "shopBalance": "{shop}: {amount}"
     }
   },
   "staff": {
@@ -225,6 +248,7 @@
     },
     "nav": {
       "dashboard": "Dashboard",
+      "cashier": "Cashier",
       "shops": "Shops",
       "products": "Products",
       "stock": "Stock",
@@ -439,6 +463,7 @@
       "colPhone": "Phone",
       "colWilaya": "Wilaya",
       "colTotal": "Total",
+      "colPayment": "Payment",
       "colStatus": "Status",
       "empty": "No orders found."
     },
@@ -468,7 +493,22 @@
       "qtyEach": "Qty {n} · {price} each",
       "subtotal": "Subtotal",
       "deliveryFee": "Delivery",
-      "total": "Total"
+      "total": "Total",
+      "payment": "Payment",
+      "amountCollected": "Collected",
+      "remainingOnCredit": "Still on credit",
+      "clientBalance": "Client balance",
+      "openClient": "Open client account",
+      "editProducts": "Edit products",
+      "addProduct": "Add product",
+      "selectProduct": "Choose an in-stock product",
+      "selectFamily": "Choose family",
+      "selectVariant": "Choose variant",
+      "qty": "Qty",
+      "removeLine": "Remove",
+      "confirmRemove": "Remove this product from the order and return it to stock?",
+      "lineUpdateError": "Could not update order products.",
+      "lastLine": "Keep at least one product on the order."
     },
     "clients": {
       "created": "Client created",
@@ -558,7 +598,10 @@
     "settings": {
       "saved": "Settings saved",
       "title": "Shop settings",
+      "sectionsAria": "Settings sections",
       "selectedShop": "Selected shop",
+      "selectedShopHint": "Address, service city, fallback delivery fee, and credit reminders for the shop selected in the sidebar.",
+      "noShop": "Select a shop to edit its address, service city, and credit reminders.",
       "fieldShop": "Shop",
       "fieldAddress": "Address",
       "fieldServiceCity": "Service city (delivery)",

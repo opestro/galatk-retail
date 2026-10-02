@@ -44,6 +44,13 @@
     "saleStatus": {
       "COMPLETED": "مكتمل",
       "CANCELLED": "ملغى"
+    },
+    "paymentStatus": {
+      "PAID": "دُفع بالكامل",
+      "PARTIAL": "دُفع {paid} · متبقّي {remaining} آجل",
+      "CREDIT": "لم يُدفع بعد · {remaining} آجل",
+      "UNPAID": "لم يُدفع بعد",
+      "NONE": "—"
     }
   },
   "shop": {
@@ -96,6 +103,10 @@
       "outOfStockCta": "غير متوفر",
       "goToCart": "الذهاب إلى السلة",
       "createAccountCta": "أنشئ حساباً لإتمام الطلب",
+      "orderFormTitle": "أتمم طلبك",
+      "fulfillmentLabel": "التوصيل",
+      "subtotal": "المجموع الفرعي",
+      "deliveryFee": "رسوم التوصيل",
       "loading": "جارٍ تحميل المنتج…",
       "viewImage": "عرض الصورة"
     },
@@ -199,7 +210,19 @@
       "lineQty": "الكمية {n}",
       "total": "الإجمالي",
       "fulfillmentNote": "استلام / توصيل لولاية {wilaya}. سنتواصل معك على {phone}.",
-      "yourWilayaFallback": "ولايتك"
+      "yourWilayaFallback": "ولايتك",
+      "unpaidCredit": "رصيد غير مسدد",
+      "unpaidCreditHint": "الطلبات التي تنتظر الدفع، بالإضافة إلى أي رصيد غير مسدد لدى المتجر. يمكنك الدفع في الصندوق عند زيارتك.",
+      "noUnpaidCredit": "ليس لديك رصيد غير مسدد.",
+      "creditLoadError": "تعذر تحميل رصيدك. يرجى المحاولة مرة أخرى.",
+      "remaining": "غير مسدد",
+      "paid": "مدفوع",
+      "inStorePurchases": "مشتريات داخل المتجر",
+      "inStorePurchase": "شراء داخل المتجر",
+      "allPurchases": "كل المشتريات",
+      "purchaseNotFound": "تعذر العثور على هذا الشراء.",
+      "historyEmpty": "لا توجد طلبات أو مشتريات داخل المتجر بعد.",
+      "shopBalance": "{shop}: {amount}"
     }
   },
   "staff": {
@@ -225,6 +248,7 @@
     },
     "nav": {
       "dashboard": "لوحة التحكم",
+      "cashier": "الكاشير",
       "shops": "المتاجر",
       "products": "المنتجات",
       "stock": "المخزون",
@@ -439,6 +463,7 @@
       "colPhone": "الهاتف",
       "colWilaya": "الولاية",
       "colTotal": "الإجمالي",
+      "colPayment": "الدفع",
       "colStatus": "الحالة",
       "empty": "لا توجد طلبات."
     },
@@ -468,7 +493,22 @@
       "qtyEach": "الكمية {n} · {price} للقطعة",
       "subtotal": "المجموع الفرعي",
       "deliveryFee": "التوصيل",
-      "total": "الإجمالي"
+      "total": "الإجمالي",
+      "payment": "الدفع",
+      "amountCollected": "المحصّل",
+      "remainingOnCredit": "المتبقي آجل",
+      "clientBalance": "رصيد العميل",
+      "openClient": "فتح حساب العميل",
+      "editProducts": "تعديل المنتجات",
+      "addProduct": "إضافة منتج",
+      "selectProduct": "اختر منتجاً متوفراً في المخزون",
+      "selectFamily": "اختر العائلة",
+      "selectVariant": "اختر المتغير",
+      "qty": "الكمية",
+      "removeLine": "حذف",
+      "confirmRemove": "حذف هذا المنتج من الطلب وإعادته للمخزون؟",
+      "lineUpdateError": "تعذر تحديث منتجات الطلب.",
+      "lastLine": "يجب أن يبقى منتج واحد على الأقل في الطلب."
     },
     "clients": {
       "created": "تم إنشاء العميل",
@@ -558,7 +598,10 @@
     "settings": {
       "saved": "تم حفظ الإعدادات",
       "title": "إعدادات المتجر",
+      "sectionsAria": "أقسام الإعدادات",
       "selectedShop": "المتجر المحدد",
+      "selectedShopHint": "العنوان ومدينة الخدمة ورسوم التوصيل الاحتياطية وتذكيرات الآجل للمتجر المحدد في الشريط الجانبي.",
+      "noShop": "اختر متجراً لتعديل عنوانه ومدينة الخدمة وتذكيرات الآجل.",
       "fieldShop": "المتجر",
       "fieldAddress": "العنوان",
       "fieldServiceCity": "مدينة الخدمة (التوصيل)",

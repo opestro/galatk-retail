@@ -48,6 +48,22 @@ export async function cancelShopOrder(shopId: string, orderId: string, reason?: 
   return data.data
 }
 
+export async function addShopOrderLine(
+  shopId: string,
+  orderId: string,
+  body: { productId: string; quantity?: number },
+) {
+  const { data } = await api.post<{ data: OnlineOrder }>(`/shops/${shopId}/orders/${orderId}/lines`, body)
+  return data.data
+}
+
+export async function removeShopOrderLine(shopId: string, orderId: string, lineId: string) {
+  const { data } = await api.delete<{ data: OnlineOrder }>(
+    `/shops/${shopId}/orders/${orderId}/lines/${lineId}`,
+  )
+  return data.data
+}
+
 export function orderStatusLabel(status: string): string {
   const key = `common.orderStatus.${status}`
   const label = translate(key)
@@ -58,6 +74,7 @@ export function orderStatusLabel(status: string): string {
 /** Statuses staff can assign from the current one, plus Complete as a payment action. */
 export function selectableOrderStatuses(status: string): OrderStatusValue[] {
   const next = ORDER_STATUS_TRANSITIONS[status] ?? []
-  const canComplete = status === 'READY_FOR_PICKUP' || status === 'OUT_FOR_DELIVERY'
+  const canComplete =
+    status === 'PLACED' || status === 'READY_FOR_PICKUP' || status === 'OUT_FOR_DELIVERY'
   return canComplete ? [...next, 'COMPLETED'] : next
 }

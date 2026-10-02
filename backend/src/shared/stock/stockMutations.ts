@@ -6,17 +6,42 @@ export interface StockLine {
   quantity: number
 }
 
+export interface DecrementStockOptions {
+  /**
+   * Online checkout may oversell: remaining quantity floors at 0 instead of
+   * rejecting the order. POS and admin stock edits stay strict.
+   */
+  allowOversell?: boolean
+}
+
 export async function decrementShopStock(
   tx: Prisma.TransactionClient,
   shopId: string,
   lines: StockLine[],
+  options: DecrementStockOptions = {},
 ): Promise<void> {
   for (const line of lines) {
     const stock = await tx.shopStock.findUnique({
       where: { shopId_productId: { shopId, productId: line.productId } },
     })
 
-    if (!stock || stock.quantity < line.quantity) {
+    if (!stock) {
+      if (options.allowOversell) continue
+      throw new CustomError(
+        'INSUFFICIENT_STOCK',
+        `Insufficient stock for product ${line.productId}`,
+        409,
+      )
+    }
+
+    if (stock.quantity < line.quantity) {
+      if (options.allowOversell) {
+        await tx.shopStock.update({
+          where: { id: stock.id },
+          data: { quantity: 0 },
+        })
+        continue
+      }
       throw new CustomError(
         'INSUFFICIENT_STOCK',
         `Insufficient stock for product ${line.productId}`,

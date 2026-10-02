@@ -9,6 +9,7 @@ import SkeletonList from '@/components/ui/SkeletonList.vue'
 import { listShopOrders, orderStatusLabel } from '@/services/orders'
 import { ALGERIA_WILAYAS } from '@/data/algeriaWilayas'
 import { formatDzd } from '@/utils/formatMoney'
+import OrderPaymentBadge from '@/components/orders/OrderPaymentBadge.vue'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -89,12 +90,13 @@ watch(() => auth.selectedShopId, loadOrders)
             <th class="px-4 py-3">{{ t('admin.orders.colPhone') }}</th>
             <th class="px-4 py-3">{{ t('admin.orders.colWilaya') }}</th>
             <th class="px-4 py-3">{{ t('admin.orders.colTotal') }}</th>
+            <th class="px-4 py-3">{{ t('admin.orders.colPayment') }}</th>
             <th class="px-4 py-3">{{ t('admin.orders.colStatus') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
           <tr v-if="orders.length === 0">
-            <td colspan="6" class="px-4 py-10 text-center text-gray-500">{{ t('admin.orders.empty') }}</td>
+            <td colspan="7" class="px-4 py-10 text-center text-gray-500">{{ t('admin.orders.empty') }}</td>
           </tr>
           <tr
             v-for="order in orders"
@@ -111,6 +113,9 @@ watch(() => auth.selectedShopId, loadOrders)
             <td class="px-4 py-3 text-gray-700">{{ order.customerPhone }}</td>
             <td class="px-4 py-3 text-gray-700">{{ order.customerWilaya || order.deliveryCity || t('common.emDash') }}</td>
             <td class="px-4 py-3 font-medium text-gray-900">{{ formatDzd(order.total) }}</td>
+            <td class="px-4 py-3">
+              <OrderPaymentBadge :order="order" />
+            </td>
             <td class="px-4 py-3 text-gray-600">{{ orderStatusLabel(order.status) }}</td>
           </tr>
         </tbody>

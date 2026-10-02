@@ -38,14 +38,17 @@ export const useGlobalStoreCartStore = defineStore('globalStoreCart', () => {
    * Cart lines are keyed by (variant productId, shopId). Identical variants
    * from the same shop merge quantities; different variants stay separate.
    * Display price is copied for the UI; checkout ignores it and uses the API.
+   * Quantity is not capped by shop stock — storefront orders may oversell.
    */
   function addItem(input: AddCartItemInput) {
-    if (!input.shopId || input.maxQuantity < 1 || input.quantity < 1) return
+    if (!input.shopId || input.quantity < 1) return
+
+    const maxQuantity = Math.max(input.maxQuantity, 99)
 
     const existing = lines.value.find((l) => l.productId === input.productId && l.shopId === input.shopId)
     if (existing) {
-      existing.quantity = Math.min(existing.quantity + input.quantity, input.maxQuantity)
-      existing.maxQuantity = input.maxQuantity
+      existing.quantity = Math.min(existing.quantity + input.quantity, maxQuantity)
+      existing.maxQuantity = maxQuantity
       existing.sellPrice = input.sellPrice
       existing.name = input.name
       existing.variantLabel = input.variantLabel ?? existing.variantLabel
@@ -60,8 +63,8 @@ export const useGlobalStoreCartStore = defineStore('globalStoreCart', () => {
       name: input.name,
       variantLabel: input.variantLabel ?? null,
       sellPrice: input.sellPrice,
-      quantity: Math.min(input.quantity, input.maxQuantity),
-      maxQuantity: input.maxQuantity,
+      quantity: Math.min(input.quantity, maxQuantity),
+      maxQuantity,
     })
   }
 
