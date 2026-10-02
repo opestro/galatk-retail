@@ -95,6 +95,12 @@ const router = createRouter({
           component: () => import('@/views/global-store/AccountOrderDetailView.vue'),
           meta: { requiresCustomerAuth: true },
         },
+        {
+          path: 'account/purchases/:saleId',
+          name: 'store-account-purchase',
+          component: () => import('@/views/global-store/AccountSaleDetailView.vue'),
+          meta: { requiresCustomerAuth: true },
+        },
       ],
     },
     {

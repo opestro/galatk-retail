@@ -199,7 +199,19 @@
       "lineQty": "Qty {n}",
       "total": "Total",
       "fulfillmentNote": "Pickup / delivery for {wilaya}. We will contact you at {phone}.",
-      "yourWilayaFallback": "your wilaya"
+      "yourWilayaFallback": "your wilaya",
+      "unpaidCredit": "Unpaid credit",
+      "unpaidCreditHint": "Orders waiting for payment, plus any shop credit still outstanding. Pay at the counter when you visit.",
+      "noUnpaidCredit": "You have no unpaid credit.",
+      "creditLoadError": "Could not load your credit. Please try again.",
+      "remaining": "Still unpaid",
+      "paid": "Paid",
+      "inStorePurchases": "In-store purchases",
+      "inStorePurchase": "In-store purchase",
+      "allPurchases": "All purchases",
+      "purchaseNotFound": "This purchase could not be found.",
+      "historyEmpty": "You have no orders or in-store purchases yet.",
+      "shopBalance": "{shop}: {amount}"
     }
   },
   "staff": {
@@ -558,7 +570,10 @@
     "settings": {
       "saved": "Settings saved",
       "title": "Shop settings",
+      "sectionsAria": "Settings sections",
       "selectedShop": "Selected shop",
+      "selectedShopHint": "Address, service city, fallback delivery fee, and credit reminders for the shop selected in the sidebar.",
+      "noShop": "Select a shop to edit its address, service city, and credit reminders.",
       "fieldShop": "Shop",
       "fieldAddress": "Address",
       "fieldServiceCity": "Service city (delivery)",

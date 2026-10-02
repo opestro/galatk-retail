@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import * as AccountService from './service.js'
-import { customerOrderPresenter } from './presenter.js'
+import { customerCreditPresenter, customerOrderPresenter, customerSalePresenter } from './presenter.js'
 import { CustomError } from '../../shared/types/error_type.js'
 
 export async function login(req: Request, res: Response, next: NextFunction) {
@@ -61,6 +61,43 @@ export async function getOrder(req: Request, res: Response, next: NextFunction) 
     const orderId = String(req.params.orderId ?? '')
     const order = await AccountService.getOrder(req.customer.id, orderId)
     res.status(200).json({ data: customerOrderPresenter(order) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function getCredit(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!req.customer) {
+      throw new CustomError('UNAUTHORIZED', 'Authentication required', 401)
+    }
+    const { clients, openOrders } = await AccountService.getCredit(req.customer.id)
+    res.status(200).json({ data: customerCreditPresenter(clients, openOrders) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function listSales(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!req.customer) {
+      throw new CustomError('UNAUTHORIZED', 'Authentication required', 401)
+    }
+    const sales = await AccountService.listSales(req.customer.id)
+    res.status(200).json({ data: sales.map(customerSalePresenter) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function getSale(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!req.customer) {
+      throw new CustomError('UNAUTHORIZED', 'Authentication required', 401)
+    }
+    const saleId = String(req.params.saleId ?? '')
+    const sale = await AccountService.getSale(req.customer.id, saleId)
+    res.status(200).json({ data: customerSalePresenter(sale) })
   } catch (error) {
     next(error)
   }

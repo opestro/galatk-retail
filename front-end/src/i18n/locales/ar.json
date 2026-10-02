@@ -199,7 +199,19 @@
       "lineQty": "الكمية {n}",
       "total": "الإجمالي",
       "fulfillmentNote": "استلام / توصيل لولاية {wilaya}. سنتواصل معك على {phone}.",
-      "yourWilayaFallback": "ولايتك"
+      "yourWilayaFallback": "ولايتك",
+      "unpaidCredit": "رصيد غير مسدد",
+      "unpaidCreditHint": "الطلبات التي تنتظر الدفع، بالإضافة إلى أي رصيد غير مسدد لدى المتجر. يمكنك الدفع في الصندوق عند زيارتك.",
+      "noUnpaidCredit": "ليس لديك رصيد غير مسدد.",
+      "creditLoadError": "تعذر تحميل رصيدك. يرجى المحاولة مرة أخرى.",
+      "remaining": "غير مسدد",
+      "paid": "مدفوع",
+      "inStorePurchases": "مشتريات داخل المتجر",
+      "inStorePurchase": "شراء داخل المتجر",
+      "allPurchases": "كل المشتريات",
+      "purchaseNotFound": "تعذر العثور على هذا الشراء.",
+      "historyEmpty": "لا توجد طلبات أو مشتريات داخل المتجر بعد.",
+      "shopBalance": "{shop}: {amount}"
     }
   },
   "staff": {
@@ -558,7 +570,10 @@
     "settings": {
       "saved": "تم حفظ الإعدادات",
       "title": "إعدادات المتجر",
+      "sectionsAria": "أقسام الإعدادات",
       "selectedShop": "المتجر المحدد",
+      "selectedShopHint": "العنوان ومدينة الخدمة ورسوم التوصيل الاحتياطية وتذكيرات الآجل للمتجر المحدد في الشريط الجانبي.",
+      "noShop": "اختر متجراً لتعديل عنوانه ومدينة الخدمة وتذكيرات الآجل.",
       "fieldShop": "المتجر",
       "fieldAddress": "العنوان",
       "fieldServiceCity": "مدينة الخدمة (التوصيل)",

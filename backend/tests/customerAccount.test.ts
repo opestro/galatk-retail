@@ -13,6 +13,13 @@ const mockPrisma = {
     findMany: vi.fn(),
     findFirst: vi.fn(),
   },
+  client: {
+    findMany: vi.fn(),
+  },
+  sale: {
+    findMany: vi.fn(),
+    findFirst: vi.fn(),
+  },
 }
 
 vi.mock('../src/resources/database/initDatabase.js', () => ({
@@ -184,6 +191,173 @@ describe('customerOrderPresenter', () => {
 
     expect(presented.shop.name).toBe('Centre')
     expect(presented).not.toHaveProperty('client')
+    expect(presented).not.toHaveProperty('creditApprovedById')
+    expect(presented.remainingCredit).toBe('1000')
     expect(presented.lines[0]?.productName).toBe('Baggy')
+  })
+
+  it('exposes remaining unpaid credit from the fulfillment sale', async () => {
+    const { customerOrderPresenter } = await import('../src/modules/account/presenter.js')
+    const presented = customerOrderPresenter({
+      id: 'ord-1',
+      shopId: 'shop-1',
+      orderNumber: 'ORD-00001',
+      status: 'COMPLETED',
+      fulfillmentType: 'PICKUP',
+      deliveryService: null,
+      paymentMethod: 'PAY_ON_PICKUP',
+      customerName: 'Ahmed',
+      customerPhone: '0551234567',
+      customerWilaya: 'Blida',
+      subtotal: '2000',
+      deliveryFee: '0',
+      total: '2000',
+      createdAt: new Date('2026-09-25T10:00:00.000Z'),
+      shop: { id: 'shop-1', name: 'Centre', slug: 'centre' },
+      fulfillmentSale: {
+        amountPaid: '500',
+        amountOnCredit: '1500',
+        creditPortions: [{ remainingAmount: '800' }, { remainingAmount: '200' }],
+      },
+      lines: [],
+    } as never)
+
+    expect(presented.amountPaid).toBe('500')
+    expect(presented.amountOnCredit).toBe('1500')
+    expect(presented.remainingCredit).toBe('1000')
+  })
+
+  it('treats cancelled orders as fully settled', async () => {
+    const { customerOrderPresenter } = await import('../src/modules/account/presenter.js')
+    const presented = customerOrderPresenter({
+      id: 'ord-2',
+      shopId: 'shop-1',
+      orderNumber: 'ORD-00002',
+      status: 'CANCELLED',
+      fulfillmentType: 'PICKUP',
+      deliveryService: null,
+      paymentMethod: 'PAY_ON_PICKUP',
+      customerName: 'Ahmed',
+      customerPhone: '0551234567',
+      customerWilaya: 'Blida',
+      subtotal: '1000',
+      deliveryFee: '0',
+      total: '1000',
+      createdAt: new Date('2026-09-25T10:00:00.000Z'),
+      shop: { id: 'shop-1', name: 'Centre', slug: 'centre' },
+      lines: [],
+    } as never)
+
+    expect(presented.remainingCredit).toBe('0')
+  })
+})
+
+describe('customerCreditPresenter', () => {
+  it('sums shop balances and lists unpaid portions', async () => {
+    const { customerCreditPresenter } = await import('../src/modules/account/presenter.js')
+    const presented = customerCreditPresenter([
+      {
+        id: 'client-1',
+        shopId: 'shop-1',
+        balance: '1500',
+        shop: { id: 'shop-1', name: 'Centre', slug: 'centre' },
+        creditPortions: [
+          {
+            id: 'p-1',
+            originalAmount: '2000',
+            remainingAmount: '1500',
+            createdAt: new Date('2026-09-20T10:00:00.000Z'),
+            sale: {
+              id: 'sale-1',
+              status: 'COMPLETED',
+              onlineOrder: { id: 'ord-1', orderNumber: 'ORD-00001' },
+            },
+          },
+        ],
+      },
+      {
+        id: 'client-2',
+        shopId: 'shop-2',
+        balance: '0',
+        shop: { id: 'shop-2', name: 'Hydra', slug: 'hydra' },
+        creditPortions: [],
+      },
+    ])
+
+    expect(presented.totalOutstanding).toBe('1500')
+    expect(presented.shops).toHaveLength(1)
+    expect(presented.portions[0]?.orderNumber).toBe('ORD-00001')
+    expect(presented.portions[0]?.remainingAmount).toBe('1500')
+  })
+
+  it('includes open online orders that have not been paid yet', async () => {
+    const { customerCreditPresenter } = await import('../src/modules/account/presenter.js')
+    const presented = customerCreditPresenter(
+      [
+        {
+          id: 'client-1',
+          shopId: 'shop-1',
+          balance: '0',
+          shop: { id: 'shop-1', name: 'Centre', slug: 'centre' },
+          creditPortions: [],
+        },
+      ],
+      [
+        {
+          id: 'ord-7',
+          orderNumber: 'ORD-00007',
+          total: '2400',
+          createdAt: new Date('2026-10-02T16:55:56.000Z'),
+          shop: { id: 'shop-1', name: 'Centre', slug: 'centre' },
+        },
+      ],
+    )
+
+    expect(presented.totalOutstanding).toBe('2400')
+    expect(presented.shops[0]?.balance).toBe('2400')
+    expect(presented.portions[0]?.orderNumber).toBe('ORD-00007')
+    expect(presented.portions[0]?.remainingAmount).toBe('2400')
+  })
+})
+
+describe('customer account credit and in-store sales', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('loads credit only for the signed-in customer', async () => {
+    mockPrisma.client.findMany.mockResolvedValue([])
+    mockPrisma.onlineOrder.findMany.mockResolvedValue([])
+    const { getCredit } = await import('../src/modules/account/service.js')
+    await getCredit('cust-1')
+    expect(mockPrisma.client.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { customerId: 'cust-1' },
+      }),
+    )
+    expect(mockPrisma.onlineOrder.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          client: { customerId: 'cust-1' },
+        }),
+      }),
+    )
+  })
+
+  it('lists in-store sales that are not already online orders', async () => {
+    mockPrisma.sale.findMany.mockResolvedValue([])
+    const { listSales } = await import('../src/modules/account/service.js')
+    await listSales('cust-1')
+    expect(mockPrisma.sale.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { client: { customerId: 'cust-1' }, onlineOrderId: null },
+      }),
+    )
+  })
+
+  it('does not return another customer’s in-store sale', async () => {
+    mockPrisma.sale.findFirst.mockResolvedValue(null)
+    const { getSale } = await import('../src/modules/account/service.js')
+    await expect(getSale('cust-1', 'sale-other')).rejects.toMatchObject({ type: 'SALE_NOT_FOUND' })
   })
 })
