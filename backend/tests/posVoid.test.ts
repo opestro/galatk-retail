@@ -41,6 +41,15 @@ describe('assertCanVoidSale', () => {
     ).not.toThrow()
   })
 
+  it('allows owner to void a sale they rang up as cashier', () => {
+    expect(() =>
+      assertCanVoidSale(StaffRole.OWNER, 'owner-1', {
+        ...baseSale,
+        cashierId: 'owner-1',
+      }),
+    ).not.toThrow()
+  })
+
   it('rejects already voided sale', () => {
     expect(() =>
       assertCanVoidSale(StaffRole.OWNER, 'owner-1', {

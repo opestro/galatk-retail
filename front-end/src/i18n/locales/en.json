@@ -44,6 +44,13 @@
     "saleStatus": {
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled"
+    },
+    "paymentStatus": {
+      "PAID": "Paid in full",
+      "PARTIAL": "Paid {paid} · {remaining} on credit",
+      "CREDIT": "Unpaid · {remaining} on credit",
+      "UNPAID": "Not paid yet",
+      "NONE": "—"
     }
   },
   "shop": {
@@ -237,6 +244,7 @@
     },
     "nav": {
       "dashboard": "Dashboard",
+      "cashier": "Cashier",
       "shops": "Shops",
       "products": "Products",
       "stock": "Stock",
@@ -451,6 +459,7 @@
       "colPhone": "Phone",
       "colWilaya": "Wilaya",
       "colTotal": "Total",
+      "colPayment": "Payment",
       "colStatus": "Status",
       "empty": "No orders found."
     },
@@ -480,7 +489,12 @@
       "qtyEach": "Qty {n} · {price} each",
       "subtotal": "Subtotal",
       "deliveryFee": "Delivery",
-      "total": "Total"
+      "total": "Total",
+      "payment": "Payment",
+      "amountCollected": "Collected",
+      "remainingOnCredit": "Still on credit",
+      "clientBalance": "Client balance",
+      "openClient": "Open client account"
     },
     "clients": {
       "created": "Client created",

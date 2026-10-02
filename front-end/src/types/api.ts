@@ -274,6 +274,8 @@ export interface OnlineOrderLine {
   lineTotal: string
 }
 
+export type OrderPaymentStatus = 'UNPAID' | 'CREDIT' | 'PARTIAL' | 'PAID' | 'NONE'
+
 export interface OnlineOrder {
   id: string
   shopId?: string
@@ -291,6 +293,11 @@ export interface OnlineOrder {
   subtotal?: string
   deliveryFee?: string
   total: string
+  amountPaid?: string
+  amountOnCredit?: string
+  remainingCredit?: string
+  collected?: string
+  paymentStatus?: OrderPaymentStatus
   createdAt: string
   client?: Pick<Client, 'id' | 'name' | 'phone' | 'balance' | 'creditLimit'> | null
   lines: OnlineOrderLine[]

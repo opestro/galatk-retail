@@ -86,5 +86,42 @@ describe('orderPresenter', () => {
     expect(presented.total).toBe('5400')
     expect(presented.deliveryFee).toBe('400')
     expect(presented.deliveryService).toBe('HOME')
+    expect(presented.paymentStatus).toBe('UNPAID')
+    expect(presented.remainingCredit).toBe('5400.00')
+    expect(presented.collected).toBe('0.00')
+  })
+
+  it('exposes partial payment and remaining credit from the fulfillment sale', () => {
+    const presented = orderPresenter({
+      id: 'ord-2',
+      shopId: 'shop-1',
+      orderNumber: 'CMD-1002',
+      status: 'COMPLETED',
+      fulfillmentType: 'PICKUP',
+      deliveryService: null,
+      customerName: 'Amine B.',
+      customerPhone: '0550000000',
+      customerWilaya: 'Alger',
+      customerEmail: null,
+      deliveryAddress: null,
+      deliveryCity: null,
+      paymentMethod: 'CASH_ON_DELIVERY',
+      subtotal: '5000',
+      deliveryFee: '0',
+      total: '5000',
+      createdAt: new Date('2026-09-16T10:00:00.000Z'),
+      client: { id: 'c1', name: 'Amine B.', phone: '0550000000', balance: '3000', creditLimit: '10000' },
+      fulfillmentSale: {
+        amountPaid: '2000',
+        amountOnCredit: '3000',
+        creditPortions: [{ remainingAmount: '3000' }],
+      },
+      lines: [line()],
+    } as never)
+
+    expect(presented.paymentStatus).toBe('PARTIAL')
+    expect(presented.collected).toBe('2000.00')
+    expect(presented.remainingCredit).toBe('3000.00')
+    expect(presented.client?.balance).toBe('3000')
   })
 })

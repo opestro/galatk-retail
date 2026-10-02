@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
-import { LayoutDashboard, Package, Store, ArrowDownToLine, ClipboardList, Users, Settings, LogOut, UserCircle, Bell, Receipt, Menu, X, Factory } from 'lucide-vue-next'
+import { LayoutDashboard, Package, Store, ArrowDownToLine, ClipboardList, Users, Settings, LogOut, UserCircle, Bell, Receipt, Menu, X, Factory, ShoppingCart } from 'lucide-vue-next'
 import ShopSelector from '@/components/admin/ShopSelector.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import { api } from '@/services/api'
@@ -18,6 +18,8 @@ const switchError = ref('')
 const navItems = computed(() => {
   const items = [
     { to: '/admin', label: t('admin.nav.dashboard'), icon: LayoutDashboard, roles: ['OWNER', 'MANAGER'] },
+    // Same JWT session: owners/managers cashier as themselves (sale.cashierId = staff.id).
+    { to: '/pos', label: t('admin.nav.cashier'), icon: ShoppingCart, roles: ['OWNER', 'MANAGER'] },
     { to: '/admin/shops', label: t('admin.nav.shops'), icon: Store, roles: ['OWNER', 'MANAGER'] },
     { to: '/admin/products', label: t('admin.nav.products'), icon: Package, roles: ['OWNER', 'MANAGER'] },
     { to: '/admin/stock', label: t('admin.nav.stock'), icon: ClipboardList, roles: ['OWNER', 'MANAGER'] },

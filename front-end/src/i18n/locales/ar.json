@@ -44,6 +44,13 @@
     "saleStatus": {
       "COMPLETED": "مكتمل",
       "CANCELLED": "ملغى"
+    },
+    "paymentStatus": {
+      "PAID": "دُفع بالكامل",
+      "PARTIAL": "دُفع {paid} · متبقّي {remaining} آجل",
+      "CREDIT": "لم يُدفع بعد · {remaining} آجل",
+      "UNPAID": "لم يُدفع بعد",
+      "NONE": "—"
     }
   },
   "shop": {
@@ -237,6 +244,7 @@
     },
     "nav": {
       "dashboard": "لوحة التحكم",
+      "cashier": "الكاشير",
       "shops": "المتاجر",
       "products": "المنتجات",
       "stock": "المخزون",
@@ -451,6 +459,7 @@
       "colPhone": "الهاتف",
       "colWilaya": "الولاية",
       "colTotal": "الإجمالي",
+      "colPayment": "الدفع",
       "colStatus": "الحالة",
       "empty": "لا توجد طلبات."
     },
@@ -480,7 +489,12 @@
       "qtyEach": "الكمية {n} · {price} للقطعة",
       "subtotal": "المجموع الفرعي",
       "deliveryFee": "التوصيل",
-      "total": "الإجمالي"
+      "total": "الإجمالي",
+      "payment": "الدفع",
+      "amountCollected": "المحصّل",
+      "remainingOnCredit": "المتبقي آجل",
+      "clientBalance": "رصيد العميل",
+      "openClient": "فتح حساب العميل"
     },
     "clients": {
       "created": "تم إنشاء العميل",

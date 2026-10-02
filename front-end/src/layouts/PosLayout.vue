@@ -17,6 +17,7 @@ import {
 } from 'lucide-vue-next'
 import ClientPaymentModal from '@/components/pos/ClientPaymentModal.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
+import ShopSelector from '@/components/admin/ShopSelector.vue'
 import type { Client } from '@/types/api'
 
 interface RegisterApi {
@@ -144,6 +145,7 @@ provide('posRegisterApi', registerApi)
           </kbd>
         </button>
 
+        <ShopSelector compact />
         <LanguageSwitcher />
 
         <!-- User menu -->

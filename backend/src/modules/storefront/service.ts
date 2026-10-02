@@ -19,7 +19,7 @@ import {
 } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library' // money totals on checkout / complete
 import { withFamily } from '../../shared/products/withFamily.js'
-import { canTransitionOrderStatus } from '../../shared/orders/statusTransitions.js'
+import { settleOrderPaymentAmounts } from '../../shared/orders/paymentStatus.js'
 import {
   parseDeliveryService,
   resolveDeliveryFee,
@@ -49,7 +49,7 @@ export interface CheckoutInput {
 
 export interface CompleteOnlineOrderInput {
   paymentMethod: PaymentMethod
-  amountPaid?: number
+  amountPaid?: string | number
   payLater?: boolean
   creditLimitOverride?: boolean
 }
@@ -62,6 +62,24 @@ const orderProductInclude = {
           images: { orderBy: { sortOrder: 'asc' as const }, take: 1 },
         },
       },
+    },
+  },
+} as const
+
+const staffClientSelect = {
+  id: true,
+  name: true,
+  phone: true,
+  balance: true,
+  creditLimit: true,
+} as const
+
+const staffOrderInclude = {
+  lines: { include: orderProductInclude },
+  client: { select: staffClientSelect },
+  fulfillmentSale: {
+    include: {
+      creditPortions: { select: { remainingAmount: true } },
     },
   },
 } as const
@@ -311,10 +329,7 @@ export async function listOrders(
 
   return prisma.onlineOrder.findMany({
     where,
-    include: {
-      lines: { include: orderProductInclude },
-      client: { select: { id: true, name: true, phone: true, balance: true } },
-    },
+    include: staffOrderInclude,
     orderBy: { createdAt: 'desc' },
     take: 100,
   })
@@ -325,11 +340,7 @@ export async function getOrderById(staff: AuthenticatedStaff, shopId: string, or
 
   const order = await prisma.onlineOrder.findFirst({
     where: { id: orderId, shopId },
-    include: {
-      lines: { include: orderProductInclude },
-      client: { select: { id: true, name: true, phone: true, balance: true, creditLimit: true } },
-      fulfillmentSale: true,
-    },
+    include: staffOrderInclude,
   })
 
   if (!order) {
@@ -367,7 +378,7 @@ export async function updateOrderStatus(
   return prisma.onlineOrder.update({
     where: { id: orderId },
     data: { status },
-    include: { lines: { include: orderProductInclude }, client: true },
+    include: staffOrderInclude,
   })
 }
 
@@ -380,17 +391,21 @@ export async function completeOnlineOrder(
   assertShopAccess(staff, shopId)
   const order = await getOrderById(staff, shopId, orderId)
 
-  const allowedStatuses: OrderStatus[] = [OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY]
+  if (order.fulfillmentSale || order.status === OrderStatus.COMPLETED) {
+    throw new CustomError('ORDER_ALREADY_COMPLETED', 'Order payment already recorded', 400)
+  }
+
+  const allowedStatuses: OrderStatus[] = [
+    OrderStatus.PLACED,
+    OrderStatus.READY_FOR_PICKUP,
+    OrderStatus.OUT_FOR_DELIVERY,
+  ]
   if (!allowedStatuses.includes(order.status)) {
     throw new CustomError(
       'INVALID_TRANSITION',
-      'Order must be ready for pickup or out for delivery before completion',
+      'Order cannot be completed from the current status',
       400,
     )
-  }
-
-  if (order.fulfillmentSale) {
-    throw new CustomError('ORDER_ALREADY_COMPLETED', 'Order payment already recorded', 400)
   }
 
   if (!order.clientId) {
@@ -398,27 +413,14 @@ export async function completeOnlineOrder(
   }
 
   const total = order.total
-  let amountPaid: Decimal
-  let amountOnCredit: Decimal
   let creditApprovedById: string | null = null
 
   if (input.payLater) {
     requireMinRole(staff, StaffRole.MANAGER)
-    amountPaid = new Decimal(0)
-    amountOnCredit = total
     creditApprovedById = staff.id
-  } else {
-    amountPaid = input.amountPaid !== undefined ? new Decimal(input.amountPaid) : total
-    amountOnCredit = total.sub(amountPaid)
   }
 
-  if (!amountPaid.add(amountOnCredit).equals(total)) {
-    throw new CustomError(
-      'VALIDATION_ERROR',
-      'amountPaid plus amountOnCredit must equal order total',
-      400,
-    )
-  }
+  const { amountPaid, amountOnCredit } = settleOrderPaymentAmounts(total, input)
 
   const clientRecord = await prisma.client.findFirst({
     where: { id: order.clientId, isActive: true },
@@ -501,11 +503,7 @@ export async function completeOnlineOrder(
     return tx.onlineOrder.update({
       where: { id: orderId },
       data: { status: OrderStatus.COMPLETED },
-      include: {
-        lines: { include: orderProductInclude },
-        client: true,
-        fulfillmentSale: true,
-      },
+      include: staffOrderInclude,
     })
   })
 }
@@ -540,7 +538,7 @@ export async function cancelOrder(
         cancelledAt: new Date(),
         cancelReason: reason ?? null,
       },
-      include: { lines: { include: orderProductInclude } },
+      include: staffOrderInclude,
     })
   })
 }

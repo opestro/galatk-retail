@@ -18,6 +18,7 @@ import { apiErrorMessage, mediaUrl } from '@/services/products'
 import { api } from '@/services/api'
 import { formatDzd } from '@/utils/formatMoney'
 import { saveOrderReceiptPdf } from '@/utils/orderReceiptPdf'
+import OrderPaymentBadge from '@/components/orders/OrderPaymentBadge.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -169,6 +170,7 @@ watch(() => [auth.selectedShopId, orderId.value], load)
             {{ orderStatusLabel(order.status) }}
           </span>
         </div>
+        <OrderPaymentBadge :order="order" />
 
         <div v-if="!terminal" class="flex flex-col gap-2 sm:flex-row sm:items-end">
           <label class="flex flex-1 flex-col gap-1.5 text-sm text-gray-700">
@@ -203,6 +205,16 @@ watch(() => [auth.selectedShopId, orderId.value], load)
         </p>
         <p v-if="order.deliveryAddress" class="text-sm text-gray-800">
           <span class="text-gray-500">{{ t('admin.orderDetail.fieldAddress') }}</span> {{ order.deliveryAddress }}
+        </p>
+        <p v-if="order.client" class="text-sm text-gray-800">
+          <span class="text-gray-500">{{ t('admin.orderDetail.clientBalance') }}</span>
+          {{ formatDzd(order.client.balance ?? '0') }}
+          <RouterLink
+            :to="`/admin/clients/${order.client.id}`"
+            class="ms-2 text-xs font-medium text-gray-700 underline"
+          >
+            {{ t('admin.orderDetail.openClient') }}
+          </RouterLink>
         </p>
       </section>
 
@@ -266,6 +278,19 @@ watch(() => [auth.selectedShopId, orderId.value], load)
             <span>{{ t('admin.orderDetail.total') }}</span>
             <span>{{ formatDzd(order.total) }}</span>
           </div>
+          <template v-if="order.paymentStatus && order.paymentStatus !== 'NONE'">
+            <div class="flex justify-between">
+              <span>{{ t('admin.orderDetail.amountCollected') }}</span>
+              <span>{{ formatDzd(order.collected ?? '0') }}</span>
+            </div>
+            <div
+              v-if="order.paymentStatus === 'PARTIAL' || order.paymentStatus === 'CREDIT'"
+              class="flex justify-between text-amber-800"
+            >
+              <span>{{ t('admin.orderDetail.remainingOnCredit') }}</span>
+              <span>{{ formatDzd(order.remainingCredit ?? order.total) }}</span>
+            </div>
+          </template>
         </div>
       </section>
     </div>

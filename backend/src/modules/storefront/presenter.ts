@@ -4,6 +4,10 @@ import {
   attributesFromUnknown,
   displayVariantLabel,
 } from '../../shared/products/variantAttributes.js'
+import {
+  summarizeOrderPayment,
+  type OrderPaymentSaleInput,
+} from '../../shared/orders/paymentStatus.js'
 
 type OrderLineWithProduct = OnlineOrderLine & {
   product: Product & {
@@ -14,6 +18,7 @@ type OrderLineWithProduct = OnlineOrderLine & {
 type OrderWithLines = OnlineOrder & {
   lines: OrderLineWithProduct[]
   client?: { id: string; name: string; phone: string; balance?: unknown; creditLimit?: unknown } | null
+  fulfillmentSale?: OrderPaymentSaleInput | null
 }
 
 function money(value: { toString(): string } | string | number | null | undefined): string {
@@ -49,6 +54,7 @@ export function orderLinePresenter(line: OrderLineWithProduct) {
 }
 
 export function orderPresenter(order: OrderWithLines) {
+  const payment = summarizeOrderPayment(order)
   return {
     id: order.id,
     shopId: order.shopId,
@@ -66,6 +72,11 @@ export function orderPresenter(order: OrderWithLines) {
     subtotal: money(order.subtotal),
     deliveryFee: money(order.deliveryFee),
     total: money(order.total),
+    amountPaid: payment.amountPaid,
+    amountOnCredit: payment.amountOnCredit,
+    remainingCredit: payment.remainingCredit,
+    collected: payment.collected,
+    paymentStatus: payment.paymentStatus,
     createdAt: order.createdAt,
     client: order.client
       ? {

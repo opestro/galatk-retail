@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '@/services/api'
+import { apiErrorMessage } from '@/services/products'
 import { useAuthStore } from '@/stores/auth'
 import PayLaterConfirm from '@/components/pos/PayLaterConfirm.vue'
 import PosSuccessDialog from '@/components/pos/PosSuccessDialog.vue'
@@ -28,7 +29,8 @@ const showSuccess = ref(false)
 const total = computed(() => Number(props.order.total))
 const amountOnCredit = computed(() => {
   if (checkoutMode.value === 'payLater') return total.value
-  return Math.max(0, total.value - amountPaid.value)
+  const paid = Math.min(total.value, Math.max(0, Number(amountPaid.value) || 0))
+  return Math.round((total.value - paid) * 100) / 100
 })
 
 const client = computed(() => props.order.client ?? null)
@@ -56,17 +58,19 @@ async function submitComplete(creditLimitOverride = false) {
     }
     if (checkoutMode.value === 'payLater') {
       body.payLater = true
-      body.amountPaid = 0
+      body.amountPaid = '0.00'
+    } else if (checkoutMode.value === 'partial') {
+      body.amountPaid = Number(amountPaid.value).toFixed(2)
     } else {
-      body.amountPaid = amountPaid.value
+      body.amountPaid = Number(props.order.total).toFixed(2)
     }
     if (creditLimitOverride) {
       body.creditLimitOverride = true
     }
     await api.post(`/shops/${shopId}/orders/${props.order.id}/complete`, body)
     showSuccess.value = true
-  } catch {
-    error.value = t('pos.orderComplete.errorFailed')
+  } catch (err) {
+    error.value = apiErrorMessage(err, t('pos.orderComplete.errorFailed'))
   } finally {
     loading.value = false
     showManagerConfirm.value = false
