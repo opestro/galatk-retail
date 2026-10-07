@@ -55,23 +55,46 @@
   },
   "shop": {
     "brand": {
-      "name": "Galatk Store"
+      "name": "Galatk Store",
+      "wordmark": "Galatk"
     },
     "nav": {
       "signIn": "Sign in",
       "myOrders": "My orders",
-      "cart": "Cart"
+      "cart": "Bag",
+      "home": "Home",
+      "shopAll": "Shop all",
+      "newIn": "New in",
+      "wishlist": "Wishlist",
+      "account": "Account",
+      "search": "Search",
+      "menu": "Open menu",
+      "closeMenu": "Close menu",
+      "bagWithCount": "Bag, {n} items",
+      "wishlistWithCount": "Wishlist, {n} items",
+      "categories": "Categories",
+      "skipToContent": "Skip to content",
+      "language": "Language",
+      "primary": "Main"
     },
     "hero": {
-      "defaultTitle": "Shop from All Our Stores",
-      "defaultSubtitle": "Browse products from multiple locations. Choose your preferred shop for each item and enjoy flexible pickup or delivery options.",
+      "defaultTitle": "Considered pieces, for every day.",
+      "defaultSubtitle": "Clothing and accessories from all of our stores, in one place. Order online for delivery anywhere in Algeria, or pick up in store.",
       "ariaBanner": "Store banner",
       "ariaSlides": "Banner slides",
-      "ariaShowSlide": "Show banner {n}"
+      "ariaShowSlide": "Show banner {n}",
+      "eyebrow": "The collection",
+      "primaryCta": "Shop the collection",
+      "secondaryCta": "New arrivals",
+      "pause": "Pause slideshow",
+      "play": "Play slideshow"
     },
     "footer": {
-      "copyright": "© 2026 Galatk Retail. All rights reserved.",
-      "support": "Support"
+      "copyright": "© 2026 Galatk. All rights reserved.",
+      "support": "Support",
+      "tagline": "Clothing and accessories from our stores across Algeria, ready to order online.",
+      "shopHeading": "Shop",
+      "accountHeading": "Account"
     },
     "catalog": {
       "searchPlaceholder": "Search products...",
@@ -82,7 +105,32 @@
       "viewProduct": "View Product",
       "add": "Add",
       "outOfStock": "Out of stock",
-      "cartWithCount": "Cart ({n})"
+      "cartWithCount": "Cart ({n})",
+      "title": "All products",
+      "newTitle": "New arrivals",
+      "resultsFor": "Results for “{q}”",
+      "count": "{n} product | {n} products",
+      "sort": "Sort by",
+      "sorts": {
+        "featured": "Featured",
+        "new": "Newest",
+        "price-asc": "Price: low to high",
+        "price-desc": "Price: high to low",
+        "name": "Name"
+      },
+      "allCategories": "All",
+      "categoryFilter": "Category",
+      "shopFilter": "Shop",
+      "clearFilters": "Clear filters",
+      "loadMore": "Load more",
+      "showing": "Showing {shown} of {total}",
+      "emptyFiltered": "No products match these filters.",
+      "retry": "Try again",
+      "newBadge": "New",
+      "addToWishlist": "Add {name} to wishlist",
+      "removeFromWishlist": "Remove {name} from wishlist",
+      "searchLabel": "Search within products",
+      "intro": "Every piece from every Galatk store, in one place."
     },
     "product": {
       "notFoundTitle": "Product not found",
@@ -97,18 +145,35 @@
       "comboUnavailable": "This combination is not available.",
       "quantity": "Quantity",
       "adding": "Adding...",
-      "added": "Added to Cart",
+      "added": "Added to bag",
       "unavailable": "Unavailable",
-      "addToCart": "Add to Cart",
+      "addToCart": "Add to bag",
       "outOfStockCta": "Out of Stock",
-      "goToCart": "Go to cart",
+      "goToCart": "View bag",
       "createAccountCta": "Create an account to place an order",
       "orderFormTitle": "Place your order",
       "fulfillmentLabel": "Delivery",
       "subtotal": "Subtotal",
       "deliveryFee": "Delivery fee",
       "loading": "Loading product…",
-      "viewImage": "View image"
+      "viewImage": "View image",
+      "description": "Description",
+      "orderDirectly": "Order directly",
+      "orderDirectlyHint": "Skip the bag and order this item now with delivery.",
+      "deliveryInfo": "Delivery across Algeria — the fee depends on your wilaya.",
+      "pickupInfo": "Free pickup from {shop}.",
+      "pickupInfoGeneric": "Free pickup in store.",
+      "accountInfo": "Track every order from your account.",
+      "inStock": "In stock",
+      "toOrder": "Available to order",
+      "relatedEyebrow": "Complete the look",
+      "relatedTitle": "You might also like",
+      "saveToWishlist": "Save to wishlist",
+      "savedToWishlist": "Saved to wishlist",
+      "imageOf": "Image {n} of {total}",
+      "previousImage": "Previous image",
+      "nextImage": "Next image",
+      "selectOption": "Select"
     },
     "price": {
       "from": "From {price}"
@@ -149,7 +214,18 @@
       "insufficientStock": "Not enough stock for this item. Please update the quantity.",
       "accountExists": "This phone already has an account. Sign in to continue.",
       "genericError": "Could not place the order. Please try again.",
-      "errorAddress": "Please enter a delivery address for home delivery."
+      "errorAddress": "Please enter a delivery address for home delivery.",
+      "stepContact": "Contact details",
+      "stepDelivery": "Delivery method",
+      "pickupHint": "Collect from the shop at no cost.",
+      "stopdeskHint": "Collect from a courier stop desk in your wilaya.",
+      "homeHint": "Delivered to your address.",
+      "editBag": "Edit bag",
+      "showSummary": "Order summary",
+      "delivery": "Delivery",
+      "selectWilayaForFee": "Choose your wilaya to see delivery fees.",
+      "addressLabel": "Delivery address",
+      "items": "{n} item | {n} items"
     },
     "confirmation": {
       "placedTitle": "Order placed!",
@@ -185,7 +261,11 @@
       "password": "Password",
       "confirmPassword": "Confirm password",
       "creatingAccount": "Creating account…",
-      "signingIn": "Signing in…"
+      "signingIn": "Signing in…",
+      "eyebrow": "Your account",
+      "perkOrders": "Follow online orders and in-store purchases",
+      "perkFaster": "Faster checkout with saved details",
+      "perkCredit": "See any balance due in one place"
     },
     "guest": {
       "fullName": "Full name",
@@ -222,7 +302,97 @@
       "allPurchases": "All purchases",
       "purchaseNotFound": "This purchase could not be found.",
       "historyEmpty": "You have no orders or in-store purchases yet.",
-      "shopBalance": "{shop}: {amount}"
+      "shopBalance": "{shop}: {amount}",
+      "hello": "Hello, {name}",
+      "history": "Order history",
+      "eyebrow": "Your account",
+      "signInAgain": "Sign in again"
+    },
+    "announce": {
+      "message": "Delivery across Algeria — free pickup in store"
+    },
+    "search": {
+      "placeholder": "Search the collection",
+      "label": "Search products",
+      "close": "Close search",
+      "recent": "Recent searches",
+      "clearRecent": "Clear",
+      "browse": "Browse categories",
+      "results": "Products",
+      "viewAll": "View all results",
+      "noResults": "Nothing matches “{q}”.",
+      "noResultsHint": "Try another word, or browse the categories below.",
+      "submit": "Search"
+    },
+    "home": {
+      "categoriesEyebrow": "Shop by category",
+      "itemsCount": "{n} item | {n} items",
+      "newEyebrow": "New arrivals",
+      "newTitle": "This week’s edit",
+      "viewAll": "View all",
+      "campaignEyebrow": "In store & online",
+      "campaignTitle": "Order online, collect in store.",
+      "campaignBody": "Choose one of our shops at checkout and collect your order free of charge — or have it delivered to your door.",
+      "campaignCta": "Start shopping",
+      "collectionEyebrow": "The collection",
+      "collectionTitle": "Explore the collection",
+      "serviceDelivery": "Delivery across Algeria",
+      "serviceDeliveryBody": "Stop-desk or home delivery, priced by wilaya.",
+      "servicePickup": "Free in-store pickup",
+      "servicePickupBody": "Reserve online and collect from the shop you choose.",
+      "serviceAccount": "Every order, tracked",
+      "serviceAccountBody": "Online orders and in-store purchases in one account.",
+      "joinEyebrow": "Membership",
+      "joinTitle": "Join Galatk",
+      "joinBody": "Create an account to follow your orders and check out faster next time.",
+      "joinCta": "Create an account"
+    },
+    "breadcrumb": {
+      "label": "Breadcrumb",
+      "home": "Home",
+      "shop": "Shop",
+      "bag": "Bag",
+      "wishlist": "Wishlist",
+      "account": "Account"
+    },
+    "added": {
+      "title": "Added to your bag",
+      "viewBag": "View bag",
+      "checkout": "Checkout",
+      "close": "Dismiss",
+      "qty": "Qty {n}"
+    },
+    "cart": {
+      "title": "Your bag",
+      "itemsCount": "{n} item | {n} items",
+      "remove": "Remove",
+      "decrease": "Decrease quantity",
+      "increase": "Increase quantity",
+      "qtyLabel": "Quantity",
+      "summary": "Order summary",
+      "subtotal": "Subtotal",
+      "delivery": "Delivery",
+      "deliveryAtCheckout": "Calculated at checkout",
+      "total": "Total",
+      "checkout": "Proceed to checkout",
+      "continue": "Continue shopping",
+      "trustPickup": "Free pickup in any of our shops",
+      "trustDelivery": "Delivery to every wilaya",
+      "trustTrack": "Follow your order from your account",
+      "emptyTitle": "Your bag is empty",
+      "emptyBody": "Discover the collection and add the pieces you love.",
+      "fromShop": "From {shop}",
+      "each": "{price} each"
+    },
+    "wishlist": {
+      "title": "Wishlist",
+      "emptyTitle": "Your wishlist is empty",
+      "emptyBody": "Tap the heart on any piece to keep it here.",
+      "chooseOptions": "Choose options",
+      "remove": "Remove",
+      "unavailable": "No longer available",
+      "deviceNote": "Saved on this device.",
+      "shopSimilar": "Shop similar"
     }
   },
   "staff": {

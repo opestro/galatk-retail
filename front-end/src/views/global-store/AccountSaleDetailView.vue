@@ -25,53 +25,54 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
-    <RouterLink to="/store/account" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
-      <ArrowLeft class="h-4 w-4" />
+  <div class="sf-container max-w-4xl pb-24 pt-8 md:pt-12">
+    <RouterLink to="/store/account" class="inline-flex items-center gap-2 text-sm text-mute transition-colors hover:text-ink">
+      <ArrowLeft class="h-4 w-4 rtl:-scale-x-100" />
       {{ $t('shop.account.allPurchases') }}
     </RouterLink>
 
-    <div v-if="loading" class="skeleton h-48 rounded-xl" />
-    <p v-else-if="error || !sale" class="text-sm text-red-600">{{ error || $t('shop.account.purchaseNotFound') }}</p>
+    <div v-if="loading" class="sf-skeleton mt-8 h-64" />
+    <p v-else-if="error || !sale" class="mt-8 border-s-2 border-alert bg-paper px-4 py-3 text-sm text-alert" role="alert">
+      {{ error || $t('shop.account.purchaseNotFound') }}
+    </p>
 
-    <div v-else class="flex flex-col gap-4">
-      <div class="flex flex-wrap items-start justify-between gap-3">
+    <div v-else class="mt-8 flex flex-col gap-8">
+      <div class="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-8">
         <div>
-          <h1 class="text-2xl font-semibold text-gray-900">{{ $t('shop.account.inStorePurchase') }}</h1>
-          <p class="mt-1 text-sm text-gray-600">{{ sale.shop.name }} · {{ new Date(sale.createdAt).toLocaleString() }}</p>
+          <p class="sf-eyebrow">{{ sale.shop.name }}</p>
+          <h1 class="sf-display mt-3 text-5xl md:text-6xl rtl:text-4xl rtl:md:text-5xl">{{ $t('shop.account.inStorePurchase') }}</h1>
+          <p class="mt-3 text-sm text-mute">{{ new Date(sale.createdAt).toLocaleString() }}</p>
         </div>
-        <span class="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
-          {{ $t(`common.saleStatus.${sale.status}`) }}
-        </span>
+        <span class="border border-line bg-paper px-3 py-1.5 text-sm text-ink">{{ $t(`common.saleStatus.${sale.status}`) }}</span>
       </div>
 
       <p
         v-if="hasUnpaidCredit(sale.remainingCredit)"
-        class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900"
+        class="border-s-2 border-clay bg-blush/60 px-4 py-3 text-sm font-medium text-clay"
       >
         {{ $t('shop.account.remaining') }} {{ formatDzd(sale.remainingCredit) }}
       </p>
 
-      <section class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <ul class="divide-y divide-gray-100">
-          <li v-for="line in sale.lines" :key="line.productId" class="flex items-center justify-between gap-4 px-4 py-3">
+      <section class="sf-panel">
+        <ul class="divide-y divide-line">
+          <li v-for="line in sale.lines" :key="line.productId" class="flex items-center justify-between gap-4 px-5 py-4 md:px-7">
             <div class="min-w-0">
-              <p class="truncate text-sm font-medium text-gray-900">{{ line.productName }}</p>
-              <p class="text-xs text-gray-500">{{ $t('shop.account.lineQty', { n: line.quantity }) }}</p>
+              <p class="truncate text-[15px] font-medium text-ink">{{ line.productName }}</p>
+              <p class="text-xs text-mute">{{ $t('shop.account.lineQty', { n: line.quantity }) }}</p>
             </div>
-            <p class="text-sm font-medium text-gray-900">{{ formatDzd(line.lineTotal) }}</p>
+            <p class="text-sm text-ink tabular-nums">{{ formatDzd(line.lineTotal) }}</p>
           </li>
         </ul>
-        <div class="flex flex-col gap-1 border-t border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900">
-          <div class="flex items-center justify-between font-semibold">
-            <span>{{ $t('shop.account.total') }}</span>
-            <span>{{ formatDzd(sale.total) }}</span>
+        <dl class="flex flex-col gap-2 border-t border-line px-5 py-5 md:px-7">
+          <div class="flex items-center justify-between">
+            <dt class="text-base font-medium text-ink">{{ $t('shop.account.total') }}</dt>
+            <dd class="text-lg font-medium text-ink tabular-nums">{{ formatDzd(sale.total) }}</dd>
           </div>
-          <div class="flex items-center justify-between text-gray-600">
-            <span>{{ $t('shop.account.paid') }}</span>
-            <span>{{ formatDzd(sale.amountPaid) }}</span>
+          <div class="flex items-center justify-between text-sm text-mute">
+            <dt>{{ $t('shop.account.paid') }}</dt>
+            <dd class="tabular-nums">{{ formatDzd(sale.amountPaid) }}</dd>
           </div>
-        </div>
+        </dl>
       </section>
     </div>
   </div>

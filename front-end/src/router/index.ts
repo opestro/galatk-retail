@@ -8,6 +8,13 @@ import GlobalStoreLayout from '@/layouts/GlobalStoreLayout.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    if (to.hash) return { el: to.hash }
+    // Filter/sort changes on the same page keep the scroll position.
+    if (to.path === from.path) return false
+    return { top: 0 }
+  },
   routes: [
     {
       path: '/login',
@@ -78,7 +85,17 @@ const router = createRouter({
       component: GlobalStoreLayout,
       meta: { public: true },
       children: [
-        { path: '', name: 'global-store-catalog', component: () => import('@/views/global-store/GlobalCatalogView.vue') },
+        {
+          path: '',
+          name: 'global-store-catalog',
+          component: () => import('@/views/global-store/GlobalHomeView.vue'),
+          // Old `/store?shop=…` links now land on the filterable listing.
+          beforeEnter: (to) =>
+            typeof to.query.shop === 'string' ? { name: 'global-store-shop', query: to.query } : true,
+        },
+        { path: 'shop', name: 'global-store-shop', component: () => import('@/views/global-store/GlobalCatalogView.vue') },
+        { path: 'cart', name: 'global-store-cart', component: () => import('@/views/global-store/GlobalCartView.vue') },
+        { path: 'wishlist', name: 'global-store-wishlist', component: () => import('@/views/global-store/GlobalWishlistView.vue') },
         { path: 'products/:productId', name: 'global-store-product', component: () => import('@/views/global-store/GlobalProductView.vue') },
         { path: 'checkout', name: 'global-store-checkout', component: () => import('@/views/global-store/GlobalCheckoutView.vue') },
         { path: 'confirmation', name: 'global-store-confirmation', component: () => import('@/views/global-store/GlobalOrderConfirmationView.vue') },

@@ -7,6 +7,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import GuestCustomerFields from '@/components/storefront/GuestCustomerFields.vue'
+import DeliveryMethodPicker, { type DeliveryMethodOption } from '@/components/storefront/DeliveryMethodPicker.vue'
 import { useCustomerAuthStore } from '@/stores/customerAuth'
 import { globalCheckout } from '@/services/globalStore'
 import { getPublicDeliveryRates } from '@/services/siteSettings'
@@ -65,6 +66,11 @@ function feeLabel(service: DeliveryService) {
   return fee === 0 ? t('shop.checkout.free') : formatDzd(fee)
 }
 
+const methodOptions = computed<DeliveryMethodOption<DeliveryService>[]>(() => [
+  { value: 'STOPDESK', label: t('shop.checkout.stopdesk'), hint: t('shop.checkout.stopdeskHint'), fee: feeLabel('STOPDESK') },
+  { value: 'HOME', label: t('shop.checkout.home'), hint: t('shop.checkout.homeHint'), fee: feeLabel('HOME') },
+])
+
 const subtotal = computed(() => Number(props.sellPrice) * props.quantity)
 const deliveryFee = computed(() => feeFor(method.value))
 const grandTotal = computed(() => subtotal.value + deliveryFee.value)
@@ -117,51 +123,51 @@ async function submit() {
 </script>
 
 <template>
-  <form class="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4" @submit.prevent="submit">
-    <h2 class="text-sm font-semibold text-gray-900">{{ $t('shop.product.orderFormTitle') }}</h2>
+  <form class="flex flex-col gap-6" novalidate @submit.prevent="submit">
+    <p class="text-sm text-mute">{{ $t('shop.product.orderDirectlyHint') }}</p>
 
     <GuestCustomerFields v-model="form" :errors="fieldErrors" />
 
-    <div class="flex flex-col gap-2">
-      <p class="text-sm font-medium text-gray-900">{{ $t('shop.product.fulfillmentLabel') }}</p>
-      <label class="flex items-center gap-2 text-sm text-gray-700">
-        <input v-model="method" type="radio" value="STOPDESK" />
-        {{ $t('shop.checkout.stopdesk') }}
-        <span class="text-gray-500">({{ feeLabel('STOPDESK') }})</span>
-      </label>
-      <label class="flex items-center gap-2 text-sm text-gray-700">
-        <input v-model="method" type="radio" value="HOME" />
-        {{ $t('shop.checkout.home') }}
-        <span class="text-gray-500">({{ feeLabel('HOME') }})</span>
-      </label>
+    <div class="flex flex-col gap-3">
+      <p class="sf-label">{{ $t('shop.product.fulfillmentLabel') }}</p>
+      <DeliveryMethodPicker
+        v-model="method"
+        name="direct-order-method"
+        :legend="$t('shop.product.fulfillmentLabel')"
+        :options="methodOptions"
+      />
+      <p v-if="!form.customerWilaya" class="text-xs text-mute">{{ $t('shop.checkout.selectWilayaForFee') }}</p>
     </div>
 
-    <input
-      v-if="method === 'HOME'"
-      v-model="deliveryAddress"
-      :placeholder="$t('shop.checkout.placeholderAddress')"
-      required
-      class="input"
-    />
+    <label v-if="method === 'HOME'" class="flex flex-col gap-1.5">
+      <span class="sf-label">{{ $t('shop.checkout.addressLabel') }}</span>
+      <input
+        v-model="deliveryAddress"
+        autocomplete="street-address"
+        :placeholder="$t('shop.checkout.placeholderAddress')"
+        required
+        class="sf-input"
+      />
+    </label>
 
-    <div class="flex flex-col gap-2 border-t border-gray-100 pt-3 text-sm">
-      <div class="flex items-center justify-between text-gray-700">
-        <span>{{ $t('shop.product.subtotal') }}</span>
-        <span>{{ formatDzd(subtotal) }}</span>
+    <dl class="flex flex-col gap-2.5 border-t border-line pt-5 text-sm">
+      <div class="flex items-center justify-between text-ink-soft">
+        <dt>{{ $t('shop.product.subtotal') }}</dt>
+        <dd class="tabular-nums">{{ formatDzd(subtotal) }}</dd>
       </div>
-      <div class="flex items-center justify-between text-gray-700">
-        <span>{{ $t('shop.product.deliveryFee') }}</span>
-        <span>{{ form.customerWilaya ? formatDzd(deliveryFee) : $t('common.emDash') }}</span>
+      <div class="flex items-center justify-between text-ink-soft">
+        <dt>{{ $t('shop.product.deliveryFee') }}</dt>
+        <dd class="tabular-nums">{{ form.customerWilaya ? formatDzd(deliveryFee) : $t('common.emDash') }}</dd>
       </div>
-      <div class="flex items-center justify-between text-base font-semibold text-gray-900">
-        <span>{{ $t('shop.checkout.total') }}</span>
-        <span>{{ formatDzd(grandTotal) }}</span>
+      <div class="flex items-center justify-between pt-1 text-base font-medium text-ink">
+        <dt>{{ $t('shop.checkout.total') }}</dt>
+        <dd class="tabular-nums">{{ formatDzd(grandTotal) }}</dd>
       </div>
-    </div>
+    </dl>
 
-    <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+    <p v-if="error" class="border-s-2 border-alert bg-paper px-4 py-3 text-sm text-alert" role="alert">{{ error }}</p>
 
-    <button type="submit" class="btn-primary w-full" :disabled="disabled || submitting">
+    <button type="submit" class="sf-btn w-full" :disabled="disabled || submitting">
       {{
         submitting
           ? $t('shop.checkout.confirming')

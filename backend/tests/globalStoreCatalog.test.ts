@@ -96,6 +96,12 @@ describe('presentCatalogFamily', () => {
     expect(presented?.variants).toHaveLength(2)
   })
 
+  it('exposes the dominant variant category and family creation time', () => {
+    const presented = presentCatalogFamily(family() as never, stock as never, shopById)
+    expect(presented?.category).toBe('Baggy')
+    expect(typeof presented?.createdAt).toBe('string')
+  })
+
   it('omits unpublished or inactive families', () => {
     expect(presentCatalogFamily(family({ availableOnline: false }) as never, stock as never, shopById)).toBeNull()
     expect(presentCatalogFamily(family({ isActive: false }) as never, stock as never, shopById)).toBeNull()

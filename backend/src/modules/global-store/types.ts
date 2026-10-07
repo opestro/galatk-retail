@@ -53,6 +53,10 @@ export interface PublicCatalogProductSummary {
   slug: string
   name: string
   description: string | null
+  /** Most common retail category among the family's online variants. */
+  category: string | null
+  /** ISO timestamp of the family's creation, used for "new" sorting/badges. */
+  createdAt: string
   images: PublicCatalogImage[]
   fromPrice: string
   hasPriceRange: boolean
