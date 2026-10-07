@@ -69,6 +69,7 @@ const minimal = computed(() => props.variant === 'minimal')
       @click="closeDropdown"
     />
 
+    <Transition :name="placement === 'top' ? 'sf-menu-up' : 'sf-menu'">
     <div
       v-if="isOpen"
       class="absolute end-0 z-50 w-48 overflow-hidden py-1"
@@ -95,5 +96,6 @@ const minimal = computed(() => props.variant === 'minimal')
         <Check v-if="i18nStore.currentLocale === lang.code" class="h-4 w-4" :class="minimal ? 'text-ink' : 'text-gray-900'" />
       </button>
     </div>
+    </Transition>
   </div>
 </template>

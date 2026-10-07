@@ -81,6 +81,14 @@ watch(
 )
 const visibleProducts = computed(() => filteredProducts.value.slice(0, visibleCount.value))
 
+/** Changes whenever the result set is replaced, so the grid crossfades instead of snapping. */
+const resultsKey = computed(() => [searchQuery.value, categoryFilter.value, shopFilter.value, sort.value].join('|'))
+
+/** Stagger position within the current page, so "load more" rows rise in too; capped to stay quick. */
+function staggerIndex(i: number) {
+  return Math.min(i % PAGE_SIZE, 8)
+}
+
 const hasFilters = computed(() => Boolean(searchQuery.value || categoryFilter.value || shopFilter.value !== 'all'))
 
 const pageTitle = computed(() => {
@@ -120,7 +128,9 @@ function clearFilters() {
       <StoreBreadcrumb :items="breadcrumb" />
       <div class="mt-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4 md:mt-12">
         <div>
-          <h1 class="sf-display text-5xl md:text-7xl rtl:text-4xl rtl:md:text-6xl">{{ pageTitle }}</h1>
+          <Transition name="sf-fade" mode="out-in">
+            <h1 :key="pageTitle" class="sf-display text-5xl md:text-7xl rtl:text-4xl rtl:md:text-6xl">{{ pageTitle }}</h1>
+          </Transition>
           <p v-if="!hasFilters && sort !== 'new'" class="mt-5 max-w-lg text-[15px] leading-[1.75] text-mute">
             {{ $t('shop.catalog.intro') }}
           </p>
@@ -209,6 +219,7 @@ function clearFilters() {
 
     <!-- Results -->
     <div class="sf-container pb-28 pt-10 md:pt-16">
+      <Transition name="sf-fade" mode="out-in">
       <StoreProductGridSkeleton v-if="loading" />
 
       <StoreEmptyState
@@ -232,11 +243,13 @@ function clearFilters() {
         </button>
       </StoreEmptyState>
 
-      <template v-else>
+      <div v-else :key="resultsKey">
         <div class="sf-grid md:grid-cols-3 xl:grid-cols-4">
           <StoreProductCard
             v-for="(product, i) in visibleProducts"
             :key="product.id"
+            class="sf-stagger"
+            :style="{ '--i': staggerIndex(i) }"
             :product="product"
             :to="productTo(product)"
             :eager="i < 4"
@@ -262,7 +275,8 @@ function clearFilters() {
             {{ $t('shop.catalog.loadMore') }}
           </button>
         </div>
-      </template>
+      </div>
+      </Transition>
     </div>
   </div>
 </template>

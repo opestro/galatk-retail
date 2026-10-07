@@ -77,7 +77,8 @@ watch(
   </a>
 
   <!-- Announcement bar -->
-  <div class="bg-ink text-ivory">
+  <!-- Own stacking layer above the sticky header so the language menu opens over it. -->
+  <div class="relative z-[60] bg-ink text-ivory">
     <div class="sf-container grid min-h-9 grid-cols-1 items-center py-2 md:grid-cols-[1fr_auto_1fr] md:py-0">
       <span class="hidden md:block" aria-hidden="true" />
       <p class="text-center font-label text-[10px] uppercase leading-snug tracking-[0.22em] text-ivory/90 rtl:text-[12px] rtl:tracking-normal">

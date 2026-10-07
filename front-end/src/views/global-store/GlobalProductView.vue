@@ -211,6 +211,13 @@ function relatedTo(id: string, slug: string) {
   return { name: 'global-store-product' as const, params: { productId: slug || id } }
 }
 
+const priceLabel = computed(() => {
+  if (!product.value) return ''
+  return selectedVariant.value
+    ? formatDzd(selectedVariant.value.sellPrice)
+    : formatFromPrice(product.value.fromPrice, product.value.hasPriceRange)
+})
+
 const addButtonLabel = computed(() => {
   if (addState.value === 'adding') return t('shop.product.adding')
   if (addState.value === 'added') return t('shop.product.added')
@@ -259,13 +266,10 @@ const addButtonLabel = computed(() => {
             <div class="flex flex-col lg:sticky lg:top-32 lg:pt-6">
               <p v-if="categoryLabel" class="sf-eyebrow">{{ categoryLabel }}</p>
               <h1 class="sf-display mt-4 text-[2.6rem] md:text-[3.5rem] rtl:text-[2.1rem] rtl:md:text-[2.75rem]">{{ product.name }}</h1>
-              <p class="sf-figure mt-5 text-[17px] tracking-[0.04em] text-ink">
-                {{
-                  selectedVariant
-                    ? formatDzd(selectedVariant.sellPrice)
-                    : formatFromPrice(product.fromPrice, product.hasPriceRange)
-                }}
-              </p>
+              <!-- Price crossfades when a different variant is chosen. -->
+              <Transition name="sf-fade" mode="out-in">
+                <p :key="priceLabel" class="sf-figure mt-5 text-[17px] tracking-[0.04em] text-ink">{{ priceLabel }}</p>
+              </Transition>
               <p v-if="descriptionInline" class="mt-7 max-w-md whitespace-pre-line text-[14.5px] leading-[1.8] text-ink-soft">
                 {{ description }}
               </p>
@@ -302,11 +306,13 @@ const addButtonLabel = computed(() => {
                   </div>
                 </fieldset>
 
+                <Transition name="sf-fade" mode="out-in">
                 <p v-if="!selectedVariant" class="text-sm text-alert" role="status">{{ $t('shop.product.comboUnavailable') }}</p>
-                <p v-else-if="stockLabel" class="flex items-center gap-2 text-[13px] text-ink-soft">
+                <p v-else-if="stockLabel" :key="`${stockLabel}-${selectedShop?.shopId}`" class="flex items-center gap-2 text-[13px] text-ink-soft">
                   <span class="h-1.5 w-1.5 rounded-full" :class="selectedShop?.inStock ? 'bg-ok' : 'bg-taupe'" />
                   {{ stockLabel }}<template v-if="selectedShop"> · {{ selectedShop.shopName }}</template>
                 </p>
+                </Transition>
               </div>
 
               <div class="mt-10 flex gap-2">

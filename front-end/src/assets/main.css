@@ -394,6 +394,81 @@ html[dir="rtl"] .storefront .sf-link {
   display: none;
 }
 
+/*
+ * Interaction motion. Opacity fades always run (they are not vestibular);
+ * movement is added only when the viewer has not asked for reduced motion.
+ * Exits are quicker than entrances so the UI never feels like it lags.
+ */
+
+/* Dropdown menus: fade + short drop from the trigger (`sf-menu-up` rises for menus that open upwards). */
+.sf-menu-enter-active,
+.sf-menu-up-enter-active {
+  transition: opacity 0.22s var(--ease-store), transform 0.22s var(--ease-store);
+}
+
+.sf-menu-leave-active,
+.sf-menu-up-leave-active {
+  transition: opacity 0.14s ease-in, transform 0.14s ease-in;
+}
+
+.sf-menu-enter-from,
+.sf-menu-leave-to,
+.sf-menu-up-enter-from,
+.sf-menu-up-leave-to {
+  opacity: 0;
+}
+
+/* Content swaps in place (filtered results, prices, headings): crossfade. */
+.sf-fade-enter-active {
+  transition: opacity 0.35s var(--ease-store), transform 0.35s var(--ease-store);
+}
+
+.sf-fade-leave-active {
+  transition: opacity 0.15s ease-in;
+}
+
+.sf-fade-enter-from,
+.sf-fade-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sf-menu-enter-from,
+  .sf-menu-leave-to {
+    transform: translateY(-6px);
+  }
+
+  .sf-menu-up-enter-from,
+  .sf-menu-up-leave-to {
+    transform: translateY(6px);
+  }
+
+  .sf-fade-enter-from {
+    transform: translateY(6px);
+  }
+
+  /* Grid items rise in sequence; `--i` is the item's position, capped by the caller. */
+  .sf-stagger {
+    animation: sf-fade-up 0.6s var(--ease-store) both;
+    animation-delay: calc(var(--i, 0) * 45ms);
+  }
+
+  /* Accordions open and close smoothly where the browser supports animating to `auto`. */
+  .storefront {
+    interpolate-size: allow-keywords;
+  }
+
+  .storefront details::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition: block-size 0.35s var(--ease-store), content-visibility 0.35s allow-discrete;
+  }
+
+  .storefront details[open]::details-content {
+    block-size: auto;
+  }
+}
+
 /* Route transition for storefront pages. */
 .sf-page-enter-active {
   transition: opacity 0.3s var(--ease-store);

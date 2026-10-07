@@ -118,12 +118,17 @@ async function submit() {
     <div class="flex items-center justify-center px-5 py-16 sm:px-8 md:py-24">
       <div class="w-full max-w-md">
         <p class="sf-eyebrow">{{ $t('shop.auth.eyebrow') }}</p>
-        <h1 class="sf-display mt-4 text-5xl md:text-6xl rtl:text-4xl rtl:md:text-5xl">
-          {{ mode === 'register' ? $t('shop.auth.registerTitle') : $t('shop.auth.signInTitle') }}
-        </h1>
-        <p class="mt-4 text-[15px] leading-relaxed text-mute">
-          {{ mode === 'register' ? $t('shop.auth.registerSubtitle') : $t('shop.auth.loginSubtitle') }}
-        </p>
+        <!-- Heading crossfades between sign-in and create-account. -->
+        <Transition name="sf-fade" mode="out-in">
+          <div :key="mode">
+            <h1 class="sf-display mt-4 text-5xl md:text-6xl rtl:text-4xl rtl:md:text-5xl">
+              {{ mode === 'register' ? $t('shop.auth.registerTitle') : $t('shop.auth.signInTitle') }}
+            </h1>
+            <p class="mt-4 text-[15px] leading-relaxed text-mute">
+              {{ mode === 'register' ? $t('shop.auth.registerSubtitle') : $t('shop.auth.loginSubtitle') }}
+            </p>
+          </div>
+        </Transition>
 
         <div class="mt-10 grid grid-cols-2 border-b border-line" role="tablist">
           <button
