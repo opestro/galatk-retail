@@ -5,8 +5,11 @@ import { useI18nStore } from '@/stores/i18nStore'
 
 const props = withDefaults(
   defineProps<{
-    /** `minimal` is the borderless text style used by the customer storefront. */
-    variant?: 'default' | 'minimal'
+    /**
+     * `minimal` is the borderless text style used by the customer storefront;
+     * `segmented` is the POS one-tap toggle (no menu).
+     */
+    variant?: 'default' | 'minimal' | 'segmented'
     /** Which way the menu opens (storefront footer opens upwards). */
     placement?: 'bottom' | 'top'
   }>(),
@@ -31,10 +34,34 @@ function selectLanguage(langCode: string) {
 
 const currentLanguage = computed(() => i18nStore.currentLocaleInfo)
 const minimal = computed(() => props.variant === 'minimal')
+
+/** Compact toggle labels: script-native, so each reads in its own language. */
+const SHORT_LABELS: Record<string, string> = { en: 'EN', ar: 'عربي' }
 </script>
 
 <template>
-  <div class="relative" @keydown.esc="closeDropdown">
+  <div
+    v-if="variant === 'segmented'"
+    class="pos-segmented h-10 shrink-0"
+    role="group"
+    :aria-label="$t('language.switch')"
+  >
+    <button
+      v-for="lang in i18nStore.supportedLocales"
+      :key="lang.code"
+      type="button"
+      class="pos-segment min-h-8 min-w-9 px-2.5"
+      :lang="lang.code"
+      :aria-pressed="i18nStore.currentLocale === lang.code"
+      :aria-label="lang.nativeName"
+      :title="lang.nativeName"
+      @click="i18nStore.setLocale(lang.code)"
+    >
+      {{ SHORT_LABELS[lang.code] ?? lang.code.toUpperCase() }}
+    </button>
+  </div>
+
+  <div v-else class="relative" @keydown.esc="closeDropdown">
     <button
       v-if="minimal"
       type="button"

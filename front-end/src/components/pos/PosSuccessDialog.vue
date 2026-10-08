@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CheckCircle2, Printer } from 'lucide-vue-next'
+import { Check, Printer } from 'lucide-vue-next'
+import PosModal from '@/components/pos/PosModal.vue'
 
 defineProps<{
   title: string
@@ -23,23 +24,23 @@ function onPrint() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
-    <div class="card flex w-full max-w-sm flex-col items-center gap-4 text-center">
-      <div class="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
-        <CheckCircle2 class="h-8 w-8 text-green-700" />
-      </div>
+  <PosModal :title="title" size="sm" headless raised @close="emit('close')">
+    <div class="flex flex-col items-center gap-4 text-center">
+      <span class="pos-bump flex h-14 w-14 items-center justify-center rounded-full bg-pos-ok-bg">
+        <Check class="h-7 w-7 text-pos-ok" stroke-width="2.25" />
+      </span>
       <div>
-        <h3 class="text-lg font-semibold text-gray-900">{{ title }}</h3>
-        <p class="mt-1 text-sm text-gray-600">{{ message }}</p>
+        <h3 class="text-[17px] font-semibold text-pos-ink" aria-hidden="true">{{ title }}</h3>
+        <p class="mt-1.5 text-[14px] leading-relaxed text-pos-muted pos-num">{{ message }}</p>
       </div>
-      <p v-if="printError" class="w-full text-sm text-red-600">{{ printError }}</p>
-      <div class="flex w-full gap-2">
-        <button type="button" class="btn-secondary flex flex-1 items-center justify-center gap-2" @click="onPrint">
-          <Printer class="h-4 w-4" />
-          {{ $t('pos.success.printReceipt') }}
-        </button>
-        <button type="button" class="btn-primary flex-1" @click="emit('close')">{{ $t('pos.success.done') }}</button>
-      </div>
+      <p v-if="printError" class="pos-notice w-full bg-pos-err-bg text-pos-err">{{ printError }}</p>
     </div>
-  </div>
+    <template #footer>
+      <button type="button" class="pos-btn-ghost flex-1" @click="onPrint">
+        <Printer class="h-4 w-4" />
+        {{ $t('pos.success.printReceipt') }}
+      </button>
+      <button type="button" class="pos-btn-primary flex-1" data-autofocus @click="emit('close')">{{ $t('pos.success.done') }}</button>
+    </template>
+  </PosModal>
 </template>

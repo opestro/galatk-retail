@@ -813,7 +813,8 @@
       "register": "Register",
       "orders": "Orders",
       "credits": "Credits",
-      "history": "History"
+      "history": "History",
+      "label": "Point of sale"
     },
     "quickActions": {
       "search": "Search",
@@ -825,7 +826,8 @@
       "searchProducts": "Search products",
       "recordPayment": "Record payment",
       "completeSale": "Complete sale",
-      "clearCart": "Clear cart"
+      "clearCart": "Clear cart",
+      "browse": "Browse & add products"
     },
     "userMenu": {
       "adminPanel": "Admin panel",
@@ -847,8 +849,8 @@
       "removeLine": "Remove",
       "emptyCart": "Tap products to add them.",
       "paymentType": "Payment type",
-      "paidNow": "Paid now (DZD)",
-      "creditAmount": "Credit: {amount} DZD",
+      "paidNow": "Paid now",
+      "creditAmount": "{amount} will be added to the client's credit.",
       "confirmWalkInHintDesktop": "Confirm as walk-in or pick a client below.",
       "completeSale": "Complete sale",
       "cartDrawerTitle": "Cart · {n} items",
@@ -857,7 +859,36 @@
       "errorCheckoutFailed": "Checkout failed — check stock, client, or credit limit",
       "errorCreditLimit": "Credit limit exceeded — manager approval required",
       "successTitle": "Sale completed",
-      "successMessage": "Total {total} DZD — {paid} DZD collected."
+      "successMessage": "Total {total} — {paid} collected.",
+      "lowStock": "Only {n} left",
+      "stock": "{n} in stock",
+      "inCart": "{n} in cart",
+      "currentSale": "Current sale",
+      "items": "{n} item | {n} items",
+      "clearCart": "Clear",
+      "removeItem": "Remove {name}",
+      "each": "{price} each",
+      "decrease": "Decrease {name}",
+      "increase": "Increase {name}",
+      "emptyCartTitle": "Your cart is empty.",
+      "emptyCartBody": "Scan a barcode or select an item to begin.",
+      "subtotal": "Subtotal",
+      "onCredit": "On credit",
+      "total": "Total",
+      "paymentMethod": "Payment method",
+      "clearSearch": "Clear search",
+      "breadcrumb": "Breadcrumb",
+      "catalog": "Catalog",
+      "allProducts": "All products",
+      "familyCount": "{n} family | {n} families",
+      "filterBySize": "Filter by size",
+      "allSizes": "All",
+      "qtyHint": "quantity",
+      "addQty": "add ×{n}",
+      "fromPrice": "From {price}",
+      "noResultsTitle": "Nothing matches “{q}”",
+      "noProductsTitle": "No products in stock",
+      "viewCart": "View cart"
     },
     "checkout": {
       "full": "Full",
@@ -876,7 +907,12 @@
       "acceptReady": "Accept & mark ready",
       "completeCollect": "Complete & collect payment",
       "viewPurchases": "View purchases",
-      "empty": "No orders in this view."
+      "empty": "No orders in this view.",
+      "items": "{n} item | {n} items",
+      "owes": "Owes {amount}",
+      "markReady": "Mark ready",
+      "complete": "Complete",
+      "emptyBody": "New online orders for this shop will appear here."
     },
     "credits": {
       "title": "Client credit & debt",
@@ -886,26 +922,39 @@
       "oldestDebt": "Oldest debt: {n} days",
       "viewPurchases": "View purchases",
       "collectPayment": "Collect payment",
-      "empty": "No clients with outstanding balance."
+      "empty": "No clients with outstanding balance.",
+      "totalOwedLabel": "Total owed",
+      "debtorsLabel": "Clients with a balance",
+      "days": "{n} day | {n} days",
+      "collect": "Collect",
+      "emptyBody": "Every client is settled up.",
+      "emptySearch": "Try another name or phone number."
     },
     "history": {
       "title": "Sales history",
       "saleMeta": "{total} DZD · {paymentMethod}",
       "print": "Print",
-      "void": "Void"
+      "void": "Void",
+      "subtitle": "{n} sale · {total} completed | {n} sales · {total} completed",
+      "filterAll": "All",
+      "byCashier": "by {name}",
+      "onCredit": "{amount} on credit",
+      "printReceipt": "Print receipt",
+      "empty": "No sales yet.",
+      "emptyBody": "Completed register sales will appear here."
     },
     "orderComplete": {
       "successTitle": "Order completed",
-      "successMessage": "{orderNumber} · {total} DZD collected.",
+      "successMessage": "{orderNumber} · {total} collected.",
       "title": "Complete order",
       "total": "Total: {total} DZD",
-      "clientBalance": "Client: {name} · Balance {balance} DZD",
+      "clientBalance": "{name} · balance {balance}",
       "paymentRecovery": "Payment recovery",
       "modeFull": "Full payment collected",
       "modePartial": "Partial payment",
       "modePayLater": "Pay later (full credit)",
-      "amountCollected": "Amount collected (DZD)",
-      "onCredit": "On credit: {amount} DZD",
+      "amountCollected": "Amount collected",
+      "onCredit": "On credit: {amount}",
       "saving": "Saving…",
       "submit": "Complete order",
       "errorFailed": "Could not complete order — check payment or credit limit",
@@ -917,11 +966,13 @@
     },
     "void": {
       "title": "Void sale",
-      "confirmBody": "Void {total} DZD sale by {cashier}?",
+      "confirmBody": "Void the {total} sale by {cashier}?",
       "reasonPlaceholder": "Reason (optional)",
       "voiding": "Voiding…",
       "submit": "Void sale",
-      "errorDenied": "Void denied — check same-day and ownership rules"
+      "errorDenied": "Void denied — check same-day and ownership rules",
+      "warning": "Stock is returned and the sale is marked cancelled. This can't be undone.",
+      "reasonLabel": "Reason"
     },
     "clientPicker": {
       "labelDebtOnly": "Client with outstanding credit",
@@ -929,17 +980,18 @@
       "searchPlaceholder": "Search by name or phone…",
       "clear": "Clear",
       "searching": "Searching…",
-      "balance": "Balance: {balance} DZD",
-      "limit": "· Limit: {limit} DZD",
+      "balance": "Balance {balance}",
+      "limit": "· Limit {limit}",
       "resultBalance": "{balance} DZD"
     },
     "payLater": {
       "titleLimitExceeded": "Credit limit exceeded",
       "titleConfirm": "Confirm pay later",
-      "willOwe": "{name} will owe {amount} DZD",
-      "paidNowSuffix": "({paid} DZD paid now)",
-      "balanceLimit": "Current balance: {balance} DZD · Limit: {limit} DZD",
-      "managerOverride": "Manager override — allow sale over credit limit"
+      "willOwe": "{name} will owe {amount}",
+      "paidNowSuffix": "({paid} paid now)",
+      "balanceLimit": "Current balance: {balance} · Limit: {limit}",
+      "managerOverride": "Manager override — allow sale over credit limit",
+      "onCreditLabel": "Goes on credit"
     },
     "purchases": {
       "inStore": "In-store purchase",
@@ -954,7 +1006,7 @@
       "title": "Collect credit payment",
       "subtitle": "Search clients who owe money and record a payment (FIFO allocation).",
       "outstanding": "Outstanding: {balance} DZD",
-      "amountLabel": "Amount (DZD)",
+      "amountLabel": "Amount",
       "payFullBalance": "Pay full balance",
       "paymentMethod": "Payment method",
       "processing": "Processing…",
@@ -962,7 +1014,9 @@
       "errorExceedsBalance": "Amount cannot exceed client balance",
       "errorFailed": "Payment failed — check amount and try again",
       "successTitle": "Payment recorded",
-      "successMessage": "{amount} DZD received from {clientName}. New balance: {newBalance} DZD."
+      "successMessage": "{amount} received from {clientName}. New balance: {newBalance}.",
+      "outstandingLabel": "Outstanding balance",
+      "remainingAfter": "{amount} left after this payment"
     },
     "receipt": {
       "printError": "Could not print the receipt.",
@@ -992,6 +1046,27 @@
       "colTotal": "Total",
       "subtotal": "Subtotal",
       "deliveryFee": "Delivery"
+    },
+    "brand": "Galatk POS",
+    "header": {
+      "searchPlaceholder": "Search products…",
+      "shortcuts": "Keyboard shortcuts",
+      "account": "Account"
+    },
+    "table": {
+      "date": "Date",
+      "reference": "Reference",
+      "client": "Client",
+      "method": "Method",
+      "amount": "Amount",
+      "status": "Status",
+      "actions": "Actions",
+      "moreActions": "More actions",
+      "walkIn": "Walk-in",
+      "payment": "Payment",
+      "phone": "Phone",
+      "oldestDebt": "Oldest debt",
+      "balance": "Balance"
     }
   }
 }

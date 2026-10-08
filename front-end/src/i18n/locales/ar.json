@@ -813,7 +813,8 @@
       "register": "الصندوق",
       "orders": "الطلبات",
       "credits": "الآجل",
-      "history": "السجل"
+      "history": "السجل",
+      "label": "نقطة البيع"
     },
     "quickActions": {
       "search": "بحث",
@@ -825,7 +826,8 @@
       "searchProducts": "البحث عن المنتجات",
       "recordPayment": "تسجيل دفعة",
       "completeSale": "إتمام البيع",
-      "clearCart": "إفراغ السلة"
+      "clearCart": "إفراغ السلة",
+      "browse": "تصفح المنتجات وأضفها"
     },
     "userMenu": {
       "adminPanel": "لوحة الإدارة",
@@ -847,8 +849,8 @@
       "removeLine": "إزالة",
       "emptyCart": "اضغط على المنتجات لإضافتها.",
       "paymentType": "نوع الدفع",
-      "paidNow": "المدفوع الآن (دج)",
-      "creditAmount": "الآجل: {amount} دج",
+      "paidNow": "المدفوع الآن",
+      "creditAmount": "سيُضاف {amount} إلى آجل العميل.",
       "confirmWalkInHintDesktop": "أكد كزبون عابر أو اختر عميلاً أدناه.",
       "completeSale": "إتمام البيع",
       "cartDrawerTitle": "السلة · {n} أصناف",
@@ -857,7 +859,36 @@
       "errorCheckoutFailed": "فشل إتمام البيع — تحقق من المخزون أو العميل أو حد الآجل",
       "errorCreditLimit": "تم تجاوز حد الآجل — يلزم موافقة المدير",
       "successTitle": "اكتملت عملية البيع",
-      "successMessage": "الإجمالي {total} دج — تم تحصيل {paid} دج."
+      "successMessage": "الإجمالي {total} — تم تحصيل {paid}.",
+      "lowStock": "متبقٍ {n} فقط",
+      "stock": "{n} في المخزون",
+      "inCart": "{n} في السلة",
+      "currentSale": "البيع الحالي",
+      "items": "{n} قطعة | {n} قطع",
+      "clearCart": "إفراغ",
+      "removeItem": "إزالة {name}",
+      "each": "{price} للقطعة",
+      "decrease": "إنقاص {name}",
+      "increase": "زيادة {name}",
+      "emptyCartTitle": "سلتك فارغة.",
+      "emptyCartBody": "امسح رمزاً شريطياً أو اختر منتجاً للبدء.",
+      "subtotal": "المجموع الفرعي",
+      "onCredit": "على الآجل",
+      "total": "الإجمالي",
+      "paymentMethod": "طريقة الدفع",
+      "clearSearch": "مسح البحث",
+      "breadcrumb": "مسار التنقل",
+      "catalog": "الكتالوج",
+      "allProducts": "كل المنتجات",
+      "familyCount": "{n} عائلة | {n} عائلات",
+      "filterBySize": "تصفية حسب المقاس",
+      "allSizes": "الكل",
+      "qtyHint": "الكمية",
+      "addQty": "إضافة ×{n}",
+      "fromPrice": "ابتداءً من {price}",
+      "noResultsTitle": "لا نتائج لـ «{q}»",
+      "noProductsTitle": "لا توجد منتجات في المخزون",
+      "viewCart": "عرض السلة"
     },
     "checkout": {
       "full": "كامل",
@@ -876,7 +907,12 @@
       "acceptReady": "قبول وتعيين كجاهز",
       "completeCollect": "إكمال وتحصيل الدفع",
       "viewPurchases": "عرض المشتريات",
-      "empty": "لا توجد طلبات في هذا العرض."
+      "empty": "لا توجد طلبات في هذا العرض.",
+      "items": "{n} صنف | {n} أصناف",
+      "owes": "عليه {amount}",
+      "markReady": "تعيين كجاهز",
+      "complete": "إكمال",
+      "emptyBody": "ستظهر هنا الطلبات الجديدة عبر الإنترنت لهذا المتجر."
     },
     "credits": {
       "title": "آجل وديون العملاء",
@@ -886,26 +922,39 @@
       "oldestDebt": "أقدم دين: {n} أيام",
       "viewPurchases": "عرض المشتريات",
       "collectPayment": "تحصيل دفعة",
-      "empty": "لا يوجد عملاء برصيد مستحق."
+      "empty": "لا يوجد عملاء برصيد مستحق.",
+      "totalOwedLabel": "إجمالي المستحق",
+      "debtorsLabel": "عملاء لديهم رصيد",
+      "days": "{n} يوم | {n} أيام",
+      "collect": "تحصيل",
+      "emptyBody": "جميع العملاء سددوا ما عليهم.",
+      "emptySearch": "جرّب اسماً أو رقم هاتف آخر."
     },
     "history": {
       "title": "سجل المبيعات",
       "saleMeta": "{total} دج · {paymentMethod}",
       "print": "طباعة",
-      "void": "إلغاء"
+      "void": "إلغاء",
+      "subtitle": "{n} عملية بيع · {total} مكتملة | {n} عمليات بيع · {total} مكتملة",
+      "filterAll": "الكل",
+      "byCashier": "بواسطة {name}",
+      "onCredit": "{amount} على الآجل",
+      "printReceipt": "طباعة الإيصال",
+      "empty": "لا توجد مبيعات بعد.",
+      "emptyBody": "ستظهر هنا المبيعات المكتملة من الصندوق."
     },
     "orderComplete": {
       "successTitle": "اكتمل الطلب",
-      "successMessage": "{orderNumber} · تم تحصيل {total} دج.",
+      "successMessage": "{orderNumber} · تم تحصيل {total}.",
       "title": "إكمال الطلب",
       "total": "الإجمالي: {total} دج",
-      "clientBalance": "العميل: {name} · الرصيد {balance} دج",
+      "clientBalance": "{name} · الرصيد {balance}",
       "paymentRecovery": "استرداد الدفع",
       "modeFull": "تم تحصيل المبلغ كاملاً",
       "modePartial": "دفعة جزئية",
       "modePayLater": "الدفع لاحقاً (آجل كامل)",
-      "amountCollected": "المبلغ المحصّل (دج)",
-      "onCredit": "على الآجل: {amount} دج",
+      "amountCollected": "المبلغ المحصّل",
+      "onCredit": "على الآجل: {amount}",
       "saving": "جارٍ الحفظ…",
       "submit": "إكمال الطلب",
       "errorFailed": "تعذر إكمال الطلب — تحقق من الدفع أو حد الآجل",
@@ -917,11 +966,13 @@
     },
     "void": {
       "title": "إلغاء البيع",
-      "confirmBody": "إلغاء بيع بمبلغ {total} دج بواسطة {cashier}؟",
+      "confirmBody": "إلغاء بيع بمبلغ {total} بواسطة {cashier}؟",
       "reasonPlaceholder": "السبب (اختياري)",
       "voiding": "جارٍ الإلغاء…",
       "submit": "إلغاء البيع",
-      "errorDenied": "رُفض الإلغاء — تحقق من قواعد نفس اليوم والملكية"
+      "errorDenied": "رُفض الإلغاء — تحقق من قواعد نفس اليوم والملكية",
+      "warning": "يُعاد المخزون ويُسجَّل البيع كملغى. لا يمكن التراجع عن ذلك.",
+      "reasonLabel": "السبب"
     },
     "clientPicker": {
       "labelDebtOnly": "عميل لديه آجل مستحق",
@@ -929,17 +980,18 @@
       "searchPlaceholder": "ابحث بالاسم أو الهاتف…",
       "clear": "مسح",
       "searching": "جارٍ البحث…",
-      "balance": "الرصيد: {balance} دج",
-      "limit": "· الحد: {limit} دج",
+      "balance": "الرصيد {balance}",
+      "limit": "· الحد {limit}",
       "resultBalance": "{balance} دج"
     },
     "payLater": {
       "titleLimitExceeded": "تم تجاوز حد الآجل",
       "titleConfirm": "تأكيد الدفع لاحقاً",
-      "willOwe": "سيصبح على {name} مبلغ {amount} دج",
-      "paidNowSuffix": "({paid} دج مدفوعة الآن)",
-      "balanceLimit": "الرصيد الحالي: {balance} دج · الحد: {limit} دج",
-      "managerOverride": "تجاوز المدير — السماح بالبيع فوق حد الآجل"
+      "willOwe": "سيصبح على {name} مبلغ {amount}",
+      "paidNowSuffix": "({paid} مدفوعة الآن)",
+      "balanceLimit": "الرصيد الحالي: {balance} · الحد: {limit}",
+      "managerOverride": "تجاوز المدير — السماح بالبيع فوق حد الآجل",
+      "onCreditLabel": "يُسجَّل على الآجل"
     },
     "purchases": {
       "inStore": "شراء داخل المتجر",
@@ -954,7 +1006,7 @@
       "title": "تحصيل دفعة آجل",
       "subtitle": "ابحث عن العملاء المدينين وسجّل دفعة (توزيع حسب الأقدم أولاً).",
       "outstanding": "المستحق: {balance} دج",
-      "amountLabel": "المبلغ (دج)",
+      "amountLabel": "المبلغ",
       "payFullBalance": "دفع الرصيد كاملاً",
       "paymentMethod": "طريقة الدفع",
       "processing": "جارٍ المعالجة…",
@@ -962,7 +1014,9 @@
       "errorExceedsBalance": "لا يمكن أن يتجاوز المبلغ رصيد العميل",
       "errorFailed": "فشل الدفع — تحقق من المبلغ وحاول مرة أخرى",
       "successTitle": "تم تسجيل الدفعة",
-      "successMessage": "تم استلام {amount} دج من {clientName}. الرصيد الجديد: {newBalance} دج."
+      "successMessage": "تم استلام {amount} من {clientName}. الرصيد الجديد: {newBalance}.",
+      "outstandingLabel": "الرصيد المستحق",
+      "remainingAfter": "يتبقى {amount} بعد هذه الدفعة"
     },
     "receipt": {
       "printError": "تعذر طباعة الإيصال.",
@@ -992,6 +1046,27 @@
       "colTotal": "الإجمالي",
       "subtotal": "المجموع الفرعي",
       "deliveryFee": "التوصيل"
+    },
+    "brand": "Galatk نقطة البيع",
+    "header": {
+      "searchPlaceholder": "ابحث عن المنتجات…",
+      "shortcuts": "اختصارات لوحة المفاتيح",
+      "account": "الحساب"
+    },
+    "table": {
+      "date": "التاريخ",
+      "reference": "المرجع",
+      "client": "العميل",
+      "method": "الطريقة",
+      "amount": "المبلغ",
+      "status": "الحالة",
+      "actions": "الإجراءات",
+      "moreActions": "إجراءات أخرى",
+      "walkIn": "زبون عابر",
+      "payment": "الدفع",
+      "phone": "الهاتف",
+      "oldestDebt": "أقدم دين",
+      "balance": "الرصيد"
     }
   }
 }

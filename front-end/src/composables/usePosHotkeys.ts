@@ -45,6 +45,8 @@ function resolveAction(event: KeyboardEvent): 'search' | 'payment' | 'sale' | 'c
 
 export function usePosHotkeys(handlers: PosHotkeyHandlers) {
   function onKeyDown(event: KeyboardEvent) {
+    // A dialog or field already handled this key (e.g. Esc closing a modal).
+    if (event.defaultPrevented) return
     const action = resolveAction(event)
     if (!action) return
 

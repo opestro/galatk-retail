@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import './base.css';
+@import './pos.css';
 
 @theme {
   --spacing-page: 1.5rem;
@@ -38,7 +39,7 @@
   --ease-store: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-/* Constitution: no box-shadows — borders and spacing only */
+/* Constitution: no box-shadows — borders and spacing only. The POS (pos.css) opts back in explicitly. */
 *, *::before, *::after {
   box-shadow: none !important;
 }

@@ -7,6 +7,11 @@ export interface CartLine {
   name: string
   sellPrice: string
   quantity: number
+  /** Display-only details captured when the line is added. */
+  variantLabel?: string | null
+  imageUrl?: string | null
+  /** Units on hand when added; caps the stepper. */
+  stock?: number
 }
 
 export type CheckoutMode = 'full' | 'partial' | 'payLater'
@@ -50,6 +55,9 @@ export const usePosCartStore = defineStore('posCart', () => {
         name: product.name,
         sellPrice: product.sellPrice,
         quantity: Math.min(qty, product.quantity),
+        variantLabel: product.variantLabel ?? null,
+        imageUrl: product.imageUrl ?? null,
+        stock: product.quantity,
       })
     }
   }
@@ -61,8 +69,12 @@ export const usePosCartStore = defineStore('posCart', () => {
   function updateQuantity(productId: string, quantity: number) {
     const line = lines.value.find((l) => l.productId === productId)
     if (line) {
-      line.quantity = Math.max(1, quantity)
+      line.quantity = Math.min(line.stock ?? Infinity, Math.max(1, quantity))
     }
+  }
+
+  function quantityOf(productId: string): number {
+    return lines.value.find((l) => l.productId === productId)?.quantity ?? 0
   }
 
   function removeLine(productId: string) {
@@ -116,6 +128,7 @@ export const usePosCartStore = defineStore('posCart', () => {
     addProduct,
     addProductQty,
     updateQuantity,
+    quantityOf,
     removeLine,
     selectClient,
     setCheckoutMode,

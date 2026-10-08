@@ -7,6 +7,7 @@ import { assertCreditWithinLimit } from '../../shared/credit/limitCheck.js'
 import { ClientLedgerEntryType, PaymentMethod, SaleStatus, StaffRole } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
 import { withFamily } from '../../shared/products/withFamily.js'
+import { attributesFromUnknown } from '../../shared/products/variantAttributes.js'
 
 export interface SaleLineInput {
   productId: string
@@ -27,7 +28,11 @@ export async function listPosProducts(staff: AuthenticatedStaff, shopId: string)
 
   const stock = await prisma.shopStock.findMany({
     where: { shopId, quantity: { gt: 0 }, product: { isActive: true } },
-    include: { product: true },
+    include: {
+      product: {
+        include: { family: { include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } } } },
+      },
+    },
   })
 
   return stock.map((s) => {
@@ -39,6 +44,8 @@ export async function listPosProducts(staff: AuthenticatedStaff, shopId: string)
       quantity: s.quantity,
       category: family.category,
       variantLabel: family.variantLabel,
+      attributes: attributesFromUnknown(s.product.attributes),
+      imageUrl: s.product.family?.images[0]?.url ?? null,
     }
   })
 }

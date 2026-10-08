@@ -4,6 +4,9 @@ import { useI18n } from 'vue-i18n'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import type { Sale } from '@/types/api'
+import { AlertCircle } from 'lucide-vue-next'
+import PosModal from '@/components/pos/PosModal.vue'
+import { formatMoney } from '@/utils/formatMoney'
 
 const props = defineProps<{ sale: Sale }>()
 const emit = defineEmits<{ close: []; voided: [] }>()
@@ -31,26 +34,32 @@ async function confirmVoid() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
-    <div class="flex w-full max-w-md flex-col gap-4 rounded-lg border border-gray-200 bg-white p-6">
+  <PosModal :title="$t('pos.void.title')" size="sm" @close="emit('close')">
+    <div class="flex flex-col gap-4">
+      <p class="text-[14px] text-pos-ink-2 pos-num">
+        {{ $t('pos.void.confirmBody', { total: formatMoney(sale.total), cashier: sale.cashier.name }) }}
+      </p>
+      <p class="pos-notice bg-pos-err-bg text-pos-err">
+        <AlertCircle class="mt-px h-4 w-4 shrink-0" />
+        {{ $t('pos.void.warning') }}
+      </p>
       <div class="flex flex-col gap-2">
-        <h3 class="text-lg font-medium text-gray-900">{{ $t('pos.void.title') }}</h3>
-        <p class="text-sm text-gray-600">
-          {{ $t('pos.void.confirmBody', { total: sale.total, cashier: sale.cashier.name }) }}
-        </p>
+        <label for="pos-void-reason" class="pos-label">{{ $t('pos.void.reasonLabel') }}</label>
+        <textarea
+          id="pos-void-reason"
+          v-model="reason"
+          data-autofocus
+          :placeholder="$t('pos.void.reasonPlaceholder')"
+          class="pos-input h-auto min-h-24 resize-none py-3"
+        />
       </div>
-      <textarea
-        v-model="reason"
-        :placeholder="$t('pos.void.reasonPlaceholder')"
-        class="input min-h-20"
-      />
-      <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
-      <div class="flex justify-end gap-3">
-        <button class="btn-secondary" @click="emit('close')">{{ $t('common.cancel') }}</button>
-        <button :disabled="loading" class="btn-danger" @click="confirmVoid">
-          {{ loading ? $t('pos.void.voiding') : $t('pos.void.submit') }}
-        </button>
-      </div>
+      <p v-if="error" class="pos-notice bg-pos-err-bg text-pos-err" role="alert">{{ error }}</p>
     </div>
-  </div>
+    <template #footer>
+      <button type="button" class="pos-btn-ghost" @click="emit('close')">{{ $t('common.cancel') }}</button>
+      <button type="button" :disabled="loading" class="pos-btn-danger" @click="confirmVoid">
+        {{ loading ? $t('pos.void.voiding') : $t('pos.void.submit') }}
+      </button>
+    </template>
+  </PosModal>
 </template>
