@@ -5,8 +5,11 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import type { OnlineOrder, PosProduct, Shop } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
-import SkeletonForm from '@/components/ui/SkeletonForm.vue'
 import OrderCompleteModal from '@/components/pos/OrderCompleteModal.vue'
+import PosStatusBadge from '@/components/pos/PosStatusBadge.vue'
+import PosRowMenu from '@/components/pos/PosRowMenu.vue'
+import AdminConfirm from '@/components/admin/AdminConfirm.vue'
+import { useToast } from '@/composables/useToast'
 import {
   addShopOrderLine,
   cancelShopOrder,
@@ -18,15 +21,17 @@ import {
 } from '@/services/orders'
 import { apiErrorMessage, mediaUrl } from '@/services/products'
 import { api } from '@/services/api'
-import { formatDzd } from '@/utils/formatMoney'
+import { formatCount, formatDateTime, formatMoney } from '@/utils/formatMoney'
 import { groupByCategory, variantDisplay } from '@/utils/productFamily'
 import { saveOrderReceiptPdf } from '@/utils/orderReceiptPdf'
-import OrderPaymentBadge from '@/components/orders/OrderPaymentBadge.vue'
-import { Plus, Trash2 } from 'lucide-vue-next'
+import { AlertCircle, ExternalLink, FileDown, Mail, MapPin, Phone, Plus, Shirt, Store, Trash2, Truck, UserRound } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const route = useRoute()
 const auth = useAuthStore()
+const toast = useToast()
+const confirmCancel = ref(false)
+const removeLineId = ref<string | null>(null)
 const order = ref<OnlineOrder | null>(null)
 const shop = ref<Shop | null>(null)
 const loading = ref(true)
@@ -72,12 +77,12 @@ const addVariants = computed(
 )
 
 function variantOptionLabel(product: PosProduct) {
-  return `${variantDisplay(product)} — ${formatDzd(product.sellPrice)} (${product.quantity})`
+  return `${variantDisplay(product)} — ${formatMoney(product.sellPrice)} (${product.quantity})`
 }
 
 function onAddFamilyChange(event: Event) {
   addFamily.value = (event.target as HTMLSelectElement).value
-  addProductId.value = addVariants.value.length === 1 ? addVariants.value[0].productId : ''
+  addProductId.value = addVariants.value.length === 1 ? addVariants.value[0]!.productId : ''
 }
 
 function onAddVariantChange(event: Event) {
@@ -151,8 +156,8 @@ async function saveStatus() {
       draftStatus.value = order.value.status
       return
     }
-    if (!window.confirm(t('admin.orderDetail.confirmCancel'))) {
-      draftStatus.value = order.value.status
+    if (!confirmCancel.value) {
+      confirmCancel.value = true
       return
     }
   }
@@ -165,12 +170,19 @@ async function saveStatus() {
       order.value = await updateShopOrderStatus(shopId, order.value.id, next)
     }
     draftStatus.value = order.value.status
+    toast.success(t('admin.orderDetail.statusSaved', { status: orderStatusLabel(order.value.status) }))
   } catch (err) {
     actionError.value = apiErrorMessage(err, t('admin.orderDetail.statusUpdateError'))
     draftStatus.value = order.value.status
   } finally {
     savingStatus.value = false
+    confirmCancel.value = false
   }
+}
+
+function dismissCancel() {
+  confirmCancel.value = false
+  if (order.value) draftStatus.value = order.value.status
 }
 
 function downloadReceipt() {
@@ -193,6 +205,7 @@ async function addProduct() {
       quantity: addQty.value,
     })
     resetAddForm()
+    toast.success(t('admin.orderDetail.lineAdded'))
     const { data } = await api.get<{ data: PosProduct[] }>(`/shops/${shopId}/pos/products`)
     catalog.value = data.data
   } catch (err) {
@@ -202,24 +215,31 @@ async function addProduct() {
   }
 }
 
-async function removeLine(lineId: string) {
-  const shopId = auth.selectedShopId
-  if (!shopId || !order.value || savingLines.value) return
+function removeLine(lineId: string) {
+  if (!order.value || savingLines.value) return
   if ((order.value.lines?.length ?? 0) <= 1) {
     actionError.value = t('admin.orderDetail.lastLine')
     return
   }
-  if (!window.confirm(t('admin.orderDetail.confirmRemove'))) return
+  removeLineId.value = lineId
+}
+
+async function confirmRemoveLine() {
+  const shopId = auth.selectedShopId
+  const lineId = removeLineId.value
+  if (!shopId || !order.value || !lineId || savingLines.value) return
   savingLines.value = true
   actionError.value = ''
   try {
     order.value = await removeShopOrderLine(shopId, order.value.id, lineId)
+    toast.success(t('admin.orderDetail.lineRemoved'))
     const { data } = await api.get<{ data: PosProduct[] }>(`/shops/${shopId}/pos/products`)
     catalog.value = data.data
   } catch (err) {
     actionError.value = apiErrorMessage(err, t('admin.orderDetail.lineUpdateError'))
   } finally {
     savingLines.value = false
+    removeLineId.value = null
   }
 }
 
@@ -229,229 +249,266 @@ watch(() => [auth.selectedShopId, orderId.value], load)
 
 <template>
   <div class="page-shell">
-    <PageHeader :title="t('admin.orderDetail.title')">
-      <template #actions>
-        <button type="button" class="btn-secondary text-sm" :disabled="!order" @click="downloadReceipt">
-          {{ t('admin.orderDetail.savePdf') }}
-        </button>
-        <RouterLink to="/admin/orders" class="btn-secondary text-sm">{{ t('admin.orderDetail.back') }}</RouterLink>
-      </template>
-    </PageHeader>
-
-    <SkeletonForm v-if="loading" :fields="6" />
-    <p v-else-if="error" class="text-sm text-red-600">{{ error }}</p>
-
-    <div v-else-if="order" class="flex flex-col gap-5">
-      <section class="card flex flex-col gap-4">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 class="text-lg font-semibold text-gray-900">{{ order.orderNumber }}</h2>
-            <p class="text-xs text-gray-500">{{ new Date(order.createdAt).toLocaleString() }}</p>
-            <p class="mt-1 text-xs text-gray-500">
-              {{ order.fulfillmentType === 'PICKUP' ? t('admin.orderDetail.pickup') : t('admin.orderDetail.delivery') }}
-              <span v-if="order.deliveryService">
-                · {{ t(`common.deliveryService.${order.deliveryService}`) }}
-              </span>
-              <span v-if="order.paymentMethod"> · {{ paymentMethodLabel(order.paymentMethod) }}</span>
-            </p>
-          </div>
-          <span class="rounded-md border border-gray-200 px-2 py-1 text-sm text-gray-700">
-            {{ orderStatusLabel(order.status) }}
-          </span>
+    <div v-if="loading" class="flex flex-col gap-6" role="status">
+      <span class="sr-only">{{ t('common.loading') }}</span>
+      <div class="pos-skeleton h-8 w-56" />
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div class="pos-skeleton h-96 rounded-2xl" />
+        <div class="flex flex-col gap-6">
+          <div class="pos-skeleton h-48 rounded-2xl" />
+          <div class="pos-skeleton h-40 rounded-2xl" />
         </div>
-        <OrderPaymentBadge :order="order" />
+      </div>
+    </div>
 
-        <div v-if="!terminal" class="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <label class="flex flex-1 flex-col gap-1.5 text-sm text-gray-700">
-            {{ t('admin.orderDetail.changeStatus') }}
-            <select v-model="draftStatus" class="input">
-              <option v-for="status in statusChoices" :key="status" :value="status">
-                {{ orderStatusLabel(status) }}{{ status === 'COMPLETED' ? ` ${t('admin.orderDetail.collectPaymentSuffix')}` : '' }}
-              </option>
-            </select>
-          </label>
-          <button
-            type="button"
-            class="btn-primary"
-            :disabled="!canSaveStatus"
-            @click="saveStatus"
-          >
-            {{ savingStatus ? t('common.saving') : t('admin.orderDetail.saveStatus') }}
+    <template v-else-if="error">
+      <PageHeader back="/admin/orders" :back-label="t('admin.orderDetail.back')" />
+      <p class="pos-notice bg-pos-err-bg text-pos-err" role="alert">
+        <AlertCircle class="mt-px h-4 w-4 shrink-0" />
+        {{ error }}
+      </p>
+    </template>
+
+    <template v-else-if="order">
+      <PageHeader :title="order.orderNumber" back="/admin/orders" :back-label="t('admin.orderDetail.back')">
+        <template #subtitle>
+          <span class="pos-num">{{ formatDateTime(order.createdAt).date }} · {{ formatDateTime(order.createdAt).time }}</span>
+        </template>
+        <template #actions>
+          <PosStatusBadge :status="order.status" :label="orderStatusLabel(order.status)" />
+          <button type="button" class="pos-btn-soft" @click="downloadReceipt">
+            <FileDown class="h-4 w-4" />
+            {{ t('admin.orderDetail.savePdf') }}
           </button>
-        </div>
-        <p v-if="actionError" class="text-sm text-red-600">{{ actionError }}</p>
-      </section>
+        </template>
+      </PageHeader>
 
-      <section class="card flex flex-col gap-2">
-        <h3 class="text-sm font-semibold text-gray-900">{{ t('admin.orderDetail.customer') }}</h3>
-        <p class="text-sm text-gray-800"><span class="text-gray-500">{{ t('admin.orderDetail.fieldName') }}</span> {{ order.customerName }}</p>
-        <p class="text-sm text-gray-800"><span class="text-gray-500">{{ t('admin.orderDetail.fieldPhone') }}</span> {{ order.customerPhone }}</p>
-        <p v-if="order.customerEmail" class="text-sm text-gray-800">
-          <span class="text-gray-500">{{ t('admin.orderDetail.fieldEmail') }}</span> {{ order.customerEmail }}
-        </p>
-        <p class="text-sm text-gray-800">
-          <span class="text-gray-500">{{ t('admin.orderDetail.fieldWilaya') }}</span> {{ order.customerWilaya || order.deliveryCity || t('common.emDash') }}
-        </p>
-        <p v-if="order.deliveryAddress" class="text-sm text-gray-800">
-          <span class="text-gray-500">{{ t('admin.orderDetail.fieldAddress') }}</span> {{ order.deliveryAddress }}
-        </p>
-        <p v-if="order.client" class="text-sm text-gray-800">
-          <span class="text-gray-500">{{ t('admin.orderDetail.clientBalance') }}</span>
-          {{ formatDzd(order.client.balance ?? '0') }}
-          <RouterLink
-            :to="`/admin/clients/${order.client.id}`"
-            class="ms-2 text-xs font-medium text-gray-700 underline"
-          >
-            {{ t('admin.orderDetail.openClient') }}
-          </RouterLink>
-        </p>
-      </section>
+      <p v-if="actionError" class="pos-notice bg-pos-err-bg text-pos-err" role="alert">
+        <AlertCircle class="mt-px h-4 w-4 shrink-0" />
+        {{ actionError }}
+      </p>
 
-      <section class="overflow-hidden rounded-lg border border-gray-200">
-        <h3 class="border-b border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-900">
-          {{ t('admin.orderDetail.products') }}
-        </h3>
-        <ul class="divide-y divide-gray-100">
-          <li
-            v-for="line in order.lines"
-            :key="line.id"
-            class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between"
-          >
-            <div class="flex min-w-0 gap-3">
-              <div class="h-16 w-16 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-50">
-                <img
-                  v-if="line.imageUrl"
-                  :src="mediaUrl(line.imageUrl)"
-                  :alt="line.productName"
-                  class="h-full w-full object-cover"
-                />
-              </div>
-              <div class="min-w-0">
-                <p class="font-medium text-gray-900">
-                  <RouterLink
-                    v-if="line.familyId"
-                    :to="`/admin/products/${line.familyId}`"
-                    class="hover:underline"
-                  >
-                    {{ line.productName }}
-                  </RouterLink>
-                  <span v-else>{{ line.productName }}</span>
-                </p>
-                <p v-if="line.variantLabel" class="text-sm text-gray-600">{{ line.variantLabel }}</p>
-                <p v-if="line.sku" class="text-xs text-gray-500">{{ t('admin.orderDetail.sku', { sku: line.sku }) }}</p>
-                <p v-if="attributeEntries(line.attributes).length" class="mt-1 flex flex-wrap gap-1">
+      <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <!-- Products & totals -->
+        <section class="pos-surface overflow-hidden">
+          <header class="flex items-center justify-between px-6 pt-5 pb-3">
+            <h2 class="section-title">{{ t('admin.orderDetail.products') }}</h2>
+            <span class="pos-badge-neutral pos-num">{{ t('admin.orderDetail.itemCount', { n: formatCount(order.lines?.length ?? 0) }, order.lines?.length ?? 0) }}</span>
+          </header>
+          <ul>
+            <li v-for="line in order.lines" :key="line.id" class="flex gap-4 border-t border-pos-line/70 px-6 py-4">
+              <span class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-pos-sunken">
+                <img v-if="line.imageUrl" :src="mediaUrl(line.imageUrl)" :alt="line.productName" class="h-full w-full object-cover" />
+                <Shirt v-else class="h-5 w-5 text-pos-faint" aria-hidden="true" />
+              </span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <RouterLink v-if="line.familyId" :to="`/admin/products/${line.familyId}`" class="font-medium text-pos-ink hover:underline">
+                      {{ line.productName }}
+                    </RouterLink>
+                    <p v-else class="font-medium text-pos-ink">{{ line.productName }}</p>
+                    <p v-if="line.variantLabel" class="text-[13px] text-pos-muted">{{ line.variantLabel }}</p>
+                  </div>
+                  <div class="flex shrink-0 items-start gap-1">
+                    <p class="pt-0.5 font-semibold text-pos-ink pos-num">{{ formatMoney(line.lineTotal) }}</p>
+                    <PosRowMenu v-if="canEditLines" :label="t('pos.table.moreActions')">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        class="pos-menu-item pos-menu-item-danger"
+                        :disabled="savingLines || (order.lines?.length ?? 0) <= 1"
+                        @click="removeLine(line.id)"
+                      >
+                        <Trash2 class="h-4 w-4" />
+                        {{ t('admin.orderDetail.removeLine') }}
+                      </button>
+                    </PosRowMenu>
+                  </div>
+                </div>
+                <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <span class="text-[12.5px] text-pos-muted pos-num">{{ t('admin.orderDetail.qtyEach', { n: formatCount(line.quantity), price: formatMoney(line.unitPrice) }) }}</span>
+                  <span v-if="line.sku" class="pos-badge-neutral h-5 px-2 text-[11px]">{{ t('admin.orderDetail.sku', { sku: line.sku }) }}</span>
                   <span
                     v-for="[key, value] in attributeEntries(line.attributes)"
                     :key="key"
-                    class="rounded border border-gray-200 px-1.5 py-0.5 text-xs text-gray-600"
+                    class="pos-badge-neutral h-5 px-2 text-[11px]"
                   >
                     {{ key }}: {{ value }}
                   </span>
-                </p>
-                <p class="mt-1 text-xs text-gray-500">{{ t('admin.orderDetail.qtyEach', { n: line.quantity, price: formatDzd(line.unitPrice) }) }}</p>
+                </div>
               </div>
-            </div>
-            <div class="flex shrink-0 flex-col items-end gap-2">
-              <p class="text-sm font-medium text-gray-900">{{ formatDzd(line.lineTotal) }}</p>
-              <button
-                v-if="canEditLines"
-                type="button"
-                class="btn-secondary px-2 py-1 text-xs text-red-700"
-                :disabled="savingLines || (order.lines?.length ?? 0) <= 1"
-                @click="removeLine(line.id)"
-              >
-                <Trash2 class="me-1 inline h-3.5 w-3.5" />
-                {{ t('admin.orderDetail.removeLine') }}
+            </li>
+          </ul>
+
+          <!-- Add product -->
+          <div v-if="canEditLines" class="flex flex-col gap-3 border-t border-pos-line bg-pos-sunken/60 px-6 py-5">
+            <h3 class="pos-label">{{ t('admin.orderDetail.editProducts') }}</h3>
+            <p v-if="!addableProducts.length" class="text-[13px] text-pos-muted">{{ t('admin.orderDetail.selectProduct') }}</p>
+            <div v-else class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_6rem_auto] sm:items-end">
+              <label class="pos-field">
+                <span class="pos-label">{{ t('admin.orderDetail.selectFamily') }}</span>
+                <select class="pos-input" :value="addFamily" :disabled="savingLines" @change="onAddFamilyChange">
+                  <option value="">{{ t('admin.orderDetail.selectFamily') }}</option>
+                  <option v-for="group in addFamilies" :key="group.category" :value="group.category">{{ group.category }}</option>
+                </select>
+              </label>
+              <label class="pos-field">
+                <span class="pos-label">{{ t('admin.orderDetail.selectVariant') }}</span>
+                <select class="pos-input" :value="addProductId" :disabled="savingLines || !addFamily" @change="onAddVariantChange">
+                  <option value="">{{ t('admin.orderDetail.selectVariant') }}</option>
+                  <option v-for="product in addVariants" :key="product.productId" :value="product.productId">
+                    {{ variantOptionLabel(product) }}
+                  </option>
+                </select>
+              </label>
+              <label class="pos-field">
+                <span class="pos-label">{{ t('admin.orderDetail.qty') }}</span>
+                <input v-model.number="addQty" type="number" inputmode="numeric" min="1" class="pos-input pos-num" :disabled="savingLines" />
+              </label>
+              <button type="button" class="pos-btn-primary" :disabled="savingLines || !addProductId || addQty < 1" @click="addProduct">
+                <Plus class="h-4 w-4" />
+                {{ t('admin.orderDetail.addProduct') }}
               </button>
             </div>
-          </li>
-        </ul>
-        <div v-if="canEditLines" class="flex flex-col gap-3 border-t border-gray-200 px-4 py-3">
-          <p class="text-sm font-medium text-gray-800">{{ t('admin.orderDetail.editProducts') }}</p>
-          <p v-if="!addableProducts.length" class="text-sm text-gray-500">{{ t('admin.orderDetail.selectProduct') }}</p>
-          <div v-else class="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <label class="flex min-w-0 flex-1 flex-col gap-1 text-sm text-gray-700">
-              {{ t('admin.orderDetail.selectFamily') }}
-              <select
-                class="input"
-                :value="addFamily"
-                :disabled="savingLines"
-                @change="onAddFamilyChange"
-              >
-                <option value="">{{ t('admin.orderDetail.selectFamily') }}</option>
-                <option v-for="group in addFamilies" :key="group.category" :value="group.category">
-                  {{ group.category }}
-                </option>
-              </select>
-            </label>
-            <label class="flex min-w-0 flex-1 flex-col gap-1 text-sm text-gray-700">
-              {{ t('admin.orderDetail.selectVariant') }}
-              <select
-                class="input"
-                :value="addProductId"
-                :disabled="savingLines || !addFamily"
-                @change="onAddVariantChange"
-              >
-                <option value="">{{ t('admin.orderDetail.selectVariant') }}</option>
-                <option
-                  v-for="product in addVariants"
-                  :key="product.productId"
-                  :value="product.productId"
-                >
-                  {{ variantOptionLabel(product) }}
-                </option>
-              </select>
-            </label>
-            <label class="flex w-24 flex-col gap-1 text-sm text-gray-700">
-              {{ t('admin.orderDetail.qty') }}
-              <input v-model.number="addQty" type="number" min="1" class="input" :disabled="savingLines" />
-            </label>
-            <button
-              type="button"
-              class="btn-primary"
-              :disabled="savingLines || !addProductId || addQty < 1"
-              @click="addProduct"
-            >
-              <Plus class="me-1 inline h-4 w-4" />
-              {{ t('admin.orderDetail.addProduct') }}
-            </button>
           </div>
-        </div>
-        <div class="flex flex-col gap-1 border-t border-gray-200 px-4 py-3 text-sm text-gray-700">
-          <div v-if="order.subtotal" class="flex justify-between">
-            <span>{{ t('admin.orderDetail.subtotal') }}</span>
-            <span>{{ formatDzd(order.subtotal) }}</span>
-          </div>
-          <div v-if="order.deliveryFee && Number(order.deliveryFee) > 0" class="flex justify-between">
-            <span>{{ t('admin.orderDetail.deliveryFee') }}</span>
-            <span>{{ formatDzd(order.deliveryFee) }}</span>
-          </div>
-          <div class="flex justify-between font-semibold text-gray-900">
-            <span>{{ t('admin.orderDetail.total') }}</span>
-            <span>{{ formatDzd(order.total) }}</span>
-          </div>
-          <template v-if="order.paymentStatus && order.paymentStatus !== 'NONE'">
-            <div class="flex justify-between">
-              <span>{{ t('admin.orderDetail.amountCollected') }}</span>
-              <span>{{ formatDzd(order.collected ?? '0') }}</span>
+
+          <!-- Totals -->
+          <dl class="flex flex-col gap-2 border-t border-pos-line px-6 py-5 text-[13.5px]">
+            <div v-if="order.subtotal" class="flex justify-between text-pos-muted">
+              <dt>{{ t('admin.orderDetail.subtotal') }}</dt>
+              <dd class="pos-num">{{ formatMoney(order.subtotal) }}</dd>
             </div>
-            <div
-              v-if="order.paymentStatus === 'PARTIAL' || order.paymentStatus === 'CREDIT'"
-              class="flex justify-between text-amber-800"
-            >
-              <span>{{ t('admin.orderDetail.remainingOnCredit') }}</span>
-              <span>{{ formatDzd(order.remainingCredit ?? order.total) }}</span>
+            <div v-if="order.deliveryFee && Number(order.deliveryFee) > 0" class="flex justify-between text-pos-muted">
+              <dt>{{ t('admin.orderDetail.deliveryFee') }}</dt>
+              <dd class="pos-num">{{ formatMoney(order.deliveryFee) }}</dd>
             </div>
-          </template>
+            <div class="mt-1 flex items-baseline justify-between text-pos-ink">
+              <dt class="font-medium">{{ t('admin.orderDetail.total') }}</dt>
+              <dd class="text-[22px] font-semibold tracking-[-0.02em] pos-num">{{ formatMoney(order.total) }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- Side column -->
+        <div class="flex flex-col gap-6">
+          <section class="pos-surface flex flex-col gap-4 p-5">
+            <h2 class="section-title">{{ t('admin.orderDetail.statusSection') }}</h2>
+            <template v-if="!terminal">
+              <label class="pos-field">
+                <span class="pos-label">{{ t('admin.orderDetail.changeStatus') }}</span>
+                <select v-model="draftStatus" class="pos-input">
+                  <option v-for="status in statusChoices" :key="status" :value="status">
+                    {{ orderStatusLabel(status) }}{{ status === 'COMPLETED' ? ` ${t('admin.orderDetail.collectPaymentSuffix')}` : '' }}
+                  </option>
+                </select>
+              </label>
+              <button type="button" class="pos-btn-primary w-full" :disabled="!canSaveStatus" @click="saveStatus">
+                {{ savingStatus ? t('common.saving') : t('admin.orderDetail.saveStatus') }}
+              </button>
+            </template>
+            <p v-else class="text-[13px] text-pos-muted">{{ t('admin.orderDetail.statusFinal') }}</p>
+
+            <div class="flex flex-col gap-2 border-t border-pos-line pt-4 text-[13px]">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-pos-muted">{{ t('admin.orders.colPayment') }}</span>
+                <PosStatusBadge
+                  v-if="order.paymentStatus && order.paymentStatus !== 'NONE'"
+                  :status="order.paymentStatus"
+                  :label="t(`common.paymentStatus.${order.paymentStatus}`, { paid: formatMoney(order.collected ?? '0'), remaining: formatMoney(order.remainingCredit ?? order.total) })"
+                />
+                <span v-else class="text-pos-ink-2">{{ order.paymentMethod ? paymentMethodLabel(order.paymentMethod) : t('common.emDash') }}</span>
+              </div>
+              <template v-if="order.paymentStatus && order.paymentStatus !== 'NONE'">
+                <div class="flex justify-between">
+                  <span class="text-pos-muted">{{ t('admin.orderDetail.amountCollected') }}</span>
+                  <span class="font-medium text-pos-ink pos-num">{{ formatMoney(order.collected ?? '0') }}</span>
+                </div>
+                <div v-if="order.paymentStatus === 'PARTIAL' || order.paymentStatus === 'CREDIT'" class="flex justify-between text-pos-warn">
+                  <span>{{ t('admin.orderDetail.remainingOnCredit') }}</span>
+                  <span class="font-medium pos-num">{{ formatMoney(order.remainingCredit ?? order.total) }}</span>
+                </div>
+              </template>
+            </div>
+          </section>
+
+          <section class="pos-surface flex flex-col gap-4 p-5">
+            <h2 class="section-title">{{ t('admin.orderDetail.customer') }}</h2>
+            <div class="flex items-center gap-3">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pos-canvas text-pos-muted">
+                <UserRound class="h-[18px] w-[18px]" />
+              </span>
+              <div class="min-w-0">
+                <p class="truncate font-medium text-pos-ink">{{ order.customerName }}</p>
+                <p class="text-[12.5px] text-pos-muted">
+                  <Store v-if="order.fulfillmentType === 'PICKUP'" class="inline h-3.5 w-3.5 align-[-2px]" />
+                  <Truck v-else class="inline h-3.5 w-3.5 align-[-2px]" />
+                  {{ order.fulfillmentType === 'PICKUP' ? t('admin.orderDetail.pickup') : t('admin.orderDetail.delivery') }}
+                  <template v-if="order.deliveryService"> · {{ t(`common.deliveryService.${order.deliveryService}`) }}</template>
+                </p>
+              </div>
+            </div>
+            <ul class="flex flex-col gap-2.5 text-[13.5px] text-pos-ink-2">
+              <li class="flex items-center gap-2.5">
+                <Phone class="h-4 w-4 shrink-0 text-pos-faint" />
+                <a :href="`tel:${order.customerPhone}`" class="hover:underline"><bdi>{{ order.customerPhone }}</bdi></a>
+              </li>
+              <li v-if="order.customerEmail" class="flex items-center gap-2.5">
+                <Mail class="h-4 w-4 shrink-0 text-pos-faint" />
+                <span class="truncate">{{ order.customerEmail }}</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <MapPin class="mt-0.5 h-4 w-4 shrink-0 text-pos-faint" />
+                <span>
+                  {{ order.customerWilaya || order.deliveryCity || t('common.emDash') }}
+                  <span v-if="order.deliveryAddress" class="block text-pos-muted">{{ order.deliveryAddress }}</span>
+                </span>
+              </li>
+            </ul>
+            <div v-if="order.client" class="flex items-center justify-between gap-3 rounded-xl bg-pos-sunken px-3.5 py-3">
+              <div>
+                <p class="text-[12px] text-pos-muted">{{ t('admin.orderDetail.clientBalance') }}</p>
+                <p class="font-semibold pos-num" :class="Number(order.client.balance) > 0 ? 'text-pos-warn' : 'text-pos-ink'">
+                  {{ formatMoney(order.client.balance ?? '0') }}
+                </p>
+              </div>
+              <RouterLink :to="`/admin/clients/${order.client.id}`" class="pos-btn-soft pos-btn-sm">
+                {{ t('admin.orderDetail.openClient') }}
+                <ExternalLink class="h-3.5 w-3.5 rtl:-scale-x-100" />
+              </RouterLink>
+            </div>
+          </section>
         </div>
-      </section>
-    </div>
+      </div>
+    </template>
 
     <OrderCompleteModal
       v-if="completing && order"
       :order="order"
       @close="completing = false"
       @completed="completing = false; load()"
+    />
+
+    <AdminConfirm
+      v-if="confirmCancel"
+      :title="t('admin.orderDetail.cancelTitle')"
+      :body="t('admin.orderDetail.confirmCancel')"
+      :confirm-label="t('admin.orderDetail.cancelOrder')"
+      danger
+      :busy="savingStatus"
+      @close="dismissCancel"
+      @confirm="saveStatus"
+    />
+
+    <AdminConfirm
+      v-if="removeLineId"
+      :title="t('admin.orderDetail.removeTitle')"
+      :body="t('admin.orderDetail.confirmRemove')"
+      :confirm-label="t('admin.orderDetail.removeLine')"
+      danger
+      :busy="savingLines"
+      @close="removeLineId = null"
+      @confirm="confirmRemoveLine"
     />
   </div>
 </template>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { X } from 'lucide-vue-next'
+import { AlertCircle } from 'lucide-vue-next'
+import PosModal from '@/components/pos/PosModal.vue'
 import VariantForm, { type VariantDraft } from './VariantForm.vue'
 
 const { t } = useI18n()
@@ -32,32 +33,28 @@ const draft = computed({
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-16" @click.self="emit('cancel')">
-    <div class="w-full max-w-lg rounded-lg border border-gray-200 bg-white">
-      <header class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-        <h2 class="text-lg font-semibold text-gray-900">{{ title }}</h2>
-        <button type="button" class="rounded-md p-2 text-gray-500 hover:bg-gray-50" :aria-label="t('admin.a11y.close')" @click="emit('cancel')">
-          <X class="h-5 w-5" />
-        </button>
-      </header>
-      <div class="flex flex-col gap-4 p-5">
-        <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
-        <VariantForm
-          v-model="draft"
-          stacked
-          :extra-colors="extraColors"
-          :extra-sizes="extraSizes"
-          :show-quantity="showQuantity"
-          :quantity-label="quantityLabel"
-        />
-        <p v-if="quantityHint" class="text-xs text-gray-500">{{ quantityHint }}</p>
-        <div class="flex justify-end gap-2">
-          <button type="button" class="btn-secondary" :disabled="submitting" @click="emit('cancel')">{{ t('common.cancel') }}</button>
-          <button type="button" class="btn-primary" :disabled="submitting" @click="emit('submit')">
-            {{ submitting ? t('common.saving') : (submitLabel ?? t('common.save')) }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <PosModal :title="title" @close="emit('cancel')">
+    <form id="variant-form" class="flex flex-col gap-4" @submit.prevent="emit('submit')">
+      <p v-if="error" class="pos-notice bg-pos-err-bg text-pos-err" role="alert">
+        <AlertCircle class="mt-px h-4 w-4 shrink-0" />
+        {{ error }}
+      </p>
+      <VariantForm
+        v-model="draft"
+        stacked
+        :extra-colors="extraColors"
+        :extra-sizes="extraSizes"
+        :show-quantity="showQuantity"
+        :quantity-label="quantityLabel"
+      />
+      <p v-if="quantityHint" class="pos-field-hint">{{ quantityHint }}</p>
+    </form>
+    <template #footer>
+      <button type="button" class="pos-btn-ghost" :disabled="submitting" @click="emit('cancel')">{{ t('common.cancel') }}</button>
+      <button type="submit" form="variant-form" class="pos-btn-primary" :disabled="submitting">
+        <span v-if="submitting" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
+        {{ submitting ? t('common.saving') : (submitLabel ?? t('common.save')) }}
+      </button>
+    </template>
+  </PosModal>
 </template>

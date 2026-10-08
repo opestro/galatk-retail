@@ -31,13 +31,22 @@ function items(): HTMLElement[] {
   return menu.value ? Array.from(menu.value.querySelectorAll<HTMLElement>('[role="menuitem"]')) : []
 }
 
+/** Esc closes the menu even when focus never entered it (e.g. every item disabled). */
+function onWindowKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || !open.value) return
+  event.preventDefault()
+  close()
+  trigger.value?.focus()
+}
+
 async function show() {
   place()
   open.value = true
   window.addEventListener('scroll', close, true)
   window.addEventListener('resize', close)
+  window.addEventListener('keydown', onWindowKeydown)
   await nextTick()
-  items()[0]?.focus()
+  items().find((item) => !item.hasAttribute('disabled'))?.focus()
 }
 
 function close() {
@@ -45,6 +54,7 @@ function close() {
   open.value = false
   window.removeEventListener('scroll', close, true)
   window.removeEventListener('resize', close)
+  window.removeEventListener('keydown', onWindowKeydown)
 }
 
 function toggle() {

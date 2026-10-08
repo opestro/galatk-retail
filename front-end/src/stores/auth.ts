@@ -5,6 +5,14 @@ import type { LoginResponse, StaffProfile } from '@/types/api'
 
 const STAFF_KEY = 'auth_staff'
 const TOKEN_KEY = 'auth_token'
+/** The active shop survives reloads; the API returns `shopIds` in no fixed order. */
+const SHOP_KEY = 'auth_selected_shop'
+
+function loadSelectedShop(staff: StaffProfile | null): string | null {
+  const saved = localStorage.getItem(SHOP_KEY)
+  if (saved && staff?.shopIds.includes(saved)) return saved
+  return staff?.shopIds[0] ?? null
+}
 
 function loadStaff(): StaffProfile | null {
   const raw = localStorage.getItem(STAFF_KEY)
@@ -19,7 +27,7 @@ function loadStaff(): StaffProfile | null {
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem(TOKEN_KEY))
   const staff = ref<StaffProfile | null>(loadStaff())
-  const selectedShopId = ref<string | null>(staff.value?.shopIds[0] ?? null)
+  const selectedShopId = ref<string | null>(loadSelectedShop(staff.value))
 
   const isAuthenticated = computed(() => !!token.value && !!staff.value)
 
@@ -28,8 +36,8 @@ export const useAuthStore = defineStore('auth', () => {
     staff.value = data.staff
     localStorage.setItem(TOKEN_KEY, data.token)
     localStorage.setItem(STAFF_KEY, JSON.stringify(data.staff))
-    if (!selectedShopId.value && data.staff.shopIds.length) {
-      selectedShopId.value = data.staff.shopIds[0] ?? null
+    if (!selectedShopId.value || !data.staff.shopIds.includes(selectedShopId.value)) {
+      selectedShopId.value = loadSelectedShop(data.staff)
     }
   }
 
@@ -37,6 +45,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     staff.value = null
     selectedShopId.value = null
+    localStorage.removeItem(SHOP_KEY)
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(STAFF_KEY)
   }
@@ -51,8 +60,8 @@ export const useAuthStore = defineStore('auth', () => {
     const { data } = await api.get<{ staff: StaffProfile }>('/auth/me')
     staff.value = data.staff
     localStorage.setItem(STAFF_KEY, JSON.stringify(data.staff))
-    if (!selectedShopId.value && data.staff.shopIds.length) {
-      selectedShopId.value = data.staff.shopIds[0] ?? null
+    if (!selectedShopId.value || !data.staff.shopIds.includes(selectedShopId.value)) {
+      selectedShopId.value = loadSelectedShop(data.staff)
     }
   }
 
@@ -62,6 +71,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   function selectShop(shopId: string) {
     selectedShopId.value = shopId
+    localStorage.setItem(SHOP_KEY, shopId)
   }
 
   const isOwner = computed(() => staff.value?.role === 'OWNER')

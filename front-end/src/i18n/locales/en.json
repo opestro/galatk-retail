@@ -51,7 +51,9 @@
       "CREDIT": "Unpaid · {remaining} on credit",
       "UNPAID": "Not paid yet",
       "NONE": "—"
-    }
+    },
+    "yes": "Yes",
+    "no": "No"
   },
   "shop": {
     "brand": {
@@ -435,7 +437,9 @@
     "a11y": {
       "openMenu": "Open menu",
       "closeMenu": "Close menu",
-      "close": "Close"
+      "close": "Close",
+      "mainNav": "Admin navigation",
+      "sidebar": "Sidebar"
     },
     "factory": {
       "redirectMissing": "Factory did not return a redirect URL",
@@ -494,7 +498,9 @@
       "confirmRemove": "Remove this image?",
       "removeError": "Could not remove image",
       "primaryUpdated": "Primary image updated",
-      "primaryError": "Could not update primary image"
+      "primaryError": "Could not update primary image",
+      "removeTitle": "Remove photo",
+      "removed": "Photo removed"
     },
     "variant": {
       "color": "Color",
@@ -514,7 +520,7 @@
       "factoryBadge": "Factory",
       "unavailable": "Unavailable",
       "sectionTitle": "Variants",
-      "add": "+ Add variant",
+      "add": "Add variant",
       "addPlain": "Add variant",
       "addTitle": "Add variant",
       "editTitle": "Edit variant",
@@ -534,7 +540,10 @@
       "updateError": "Could not update variant",
       "deleted": "Variant deleted",
       "deleteError": "Could not delete variant",
-      "confirmDelete": "Delete this variant? This cannot be undone."
+      "confirmDelete": "Delete this variant? This cannot be undone.",
+      "deleteTitle": "Delete variant",
+      "stockEditHint": "Edit stock inline — changes save when you leave the field.",
+      "stockFor": "Stock for {name}"
     },
     "product": {
       "name": "Product name",
@@ -562,7 +571,11 @@
       "saveError": "Could not save product",
       "save": "Save product",
       "statusUnavailable": "Unavailable",
-      "statusAvailable": "Available"
+      "statusAvailable": "Available",
+      "summary": "{n} variant · {stock} in stock | {n} variants · {stock} in stock",
+      "unsaved": "Unsaved",
+      "unsavedChanges": "You have unsaved changes",
+      "discard": "Discard"
     },
     "productCreate": {
       "variantInvalid": "Each variant needs a color and/or size, valid cost, price, and quantity ≥ 0",
@@ -570,16 +583,27 @@
       "failed": "Could not create product",
       "title": "Add product",
       "creating": "Creating…",
-      "create": "Create product"
+      "create": "Create product",
+      "subtitle": "Add the basics, photos and at least one variant.",
+      "variantsHint": "Each colour and size combination is its own variant."
     },
     "products": {
       "title": "Products",
-      "add": "+ Add product",
+      "add": "Add product",
       "searchPlaceholder": "Search products, variants, SKU…",
       "empty": "No products match your search.",
       "variantCount": "{n} variant | {n} variants",
       "unavailable": "Unavailable",
-      "back": "Products"
+      "back": "Products",
+      "subtitle": "{n} product · {available} available | {n} products · {available} available",
+      "colProduct": "Product",
+      "colVariants": "Variants",
+      "colPrice": "Price",
+      "colStock": "In stock",
+      "emptySearch": "Try a different name or SKU.",
+      "filterAll": "All",
+      "filterLabel": "Filter",
+      "inactive": "Inactive"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -596,7 +620,13 @@
       "outstandingCredit": "Outstanding credit",
       "totalCharges": "Total charges",
       "lowStockAlerts": "Low stock alerts",
-      "quantityLeft": "{n} left"
+      "quantityLeft": "{n} left",
+      "todaySection": "Today",
+      "cashFlow": "Cash flow",
+      "marginHint": "{n}% margin",
+      "outOfStockHint": "{n} out of stock",
+      "receiveStock": "Receive stock",
+      "stockHealthy": "Stock levels look healthy."
     },
     "shops": {
       "title": "Shops",
@@ -605,13 +635,30 @@
       "slugPlaceholder": "Slug (optional)",
       "addressPlaceholder": "Address",
       "serviceCityPlaceholder": "Service city",
-      "deliveryFeePlaceholder": "Delivery fee"
+      "deliveryFeePlaceholder": "Delivery fee",
+      "subtitle": "{n} shop | {n} shops",
+      "addTitle": "New shop",
+      "nameLabel": "Shop name",
+      "slugLabel": "URL slug",
+      "addressLabel": "Address",
+      "cityLabel": "Service city",
+      "deliveryFeeLabel": "Default delivery fee",
+      "deliveryFrom": "Delivery from {fee}",
+      "active": "Current",
+      "created": "Shop created",
+      "createFailed": "Could not create the shop",
+      "empty": "No shops yet."
     },
     "stock": {
       "title": "Stock overview",
       "colProduct": "Product",
       "colPrice": "Price",
-      "colQuantity": "Quantity"
+      "colQuantity": "Quantity",
+      "subtitle": "{n} products · {units} units on hand",
+      "searchPlaceholder": "Search products…",
+      "low": "Low",
+      "out": "Out of stock",
+      "empty": "Nothing matches this view."
     },
     "inbound": {
       "success": "Transfer recorded successfully",
@@ -620,8 +667,15 @@
       "refPlaceholder": "Galatk transfer ref (optional)",
       "notePlaceholder": "Note (optional)",
       "selectProduct": "Select product",
-      "addLine": "+ Add line",
-      "submit": "Record transfer"
+      "addLine": "Add line",
+      "submit": "Record transfer",
+      "subtitle": "Record stock received from the Galatk workshop.",
+      "refLabel": "Transfer reference",
+      "noteLabel": "Note",
+      "linesTitle": "Products received",
+      "units": "{n} unit | {n} units",
+      "removeLine": "Remove line",
+      "hint": "Quantities are added to this shop's stock."
     },
     "orders": {
       "title": "Orders",
@@ -635,7 +689,9 @@
       "colTotal": "Total",
       "colPayment": "Payment",
       "colStatus": "Status",
-      "empty": "No orders found."
+      "empty": "No orders found.",
+      "subtitle": "{n} order | {n} orders",
+      "emptyFiltered": "Try clearing the search or filters."
     },
     "orderDetail": {
       "notFound": "Order not found.",
@@ -678,7 +734,16 @@
       "removeLine": "Remove",
       "confirmRemove": "Remove this product from the order and return it to stock?",
       "lineUpdateError": "Could not update order products.",
-      "lastLine": "Keep at least one product on the order."
+      "lastLine": "Keep at least one product on the order.",
+      "cancelOrder": "Cancel order",
+      "cancelTitle": "Cancel this order?",
+      "removeTitle": "Remove product?",
+      "itemCount": "{n} item | {n} items",
+      "lineAdded": "Product added to the order",
+      "lineRemoved": "Product removed from the order",
+      "statusSection": "Status & payment",
+      "statusFinal": "This order is closed; its status can no longer change.",
+      "statusSaved": "Status updated to {status}"
     },
     "clients": {
       "created": "Client created",
@@ -692,7 +757,20 @@
       "addressOptional": "Address (optional)",
       "notesOptional": "Notes (optional)",
       "creditLimitLabel": "Credit limit (DZD, blank = unlimited)",
-      "limit": "Limit: {n}"
+      "limit": "Limit: {n}",
+      "subtitle": "{n} client | {n} clients",
+      "addTitle": "New client",
+      "nameLabel": "Full name",
+      "phoneLabel": "Phone",
+      "emailLabel": "Email",
+      "addressLabel": "Address",
+      "notesLabel": "Notes",
+      "optional": "Optional",
+      "colLimit": "Credit limit",
+      "limitUsed": "Credit limit used",
+      "inactive": "Inactive",
+      "empty": "No clients yet.",
+      "emptySearch": "No client matches that name or phone."
     },
     "clientProfile": {
       "updated": "Client updated",
@@ -718,7 +796,28 @@
       "note": "Note",
       "applyAdjustment": "Apply adjustment",
       "ledger": "Ledger",
-      "voidPayment": "Void payment"
+      "voidPayment": "Void payment",
+      "back": "Clients",
+      "colType": "Type",
+      "colBy": "Recorded by",
+      "entries": "Ledger entries",
+      "ledgerEmpty": "No activity on this account yet.",
+      "owes": "Owed to the shop",
+      "settled": "Account is settled",
+      "updateFailed": "Could not update the client",
+      "adjustmentFailed": "Could not apply the adjustment",
+      "adjustmentHint": "Positive adds to what the client owes, negative reduces it.",
+      "voidFailed": "Could not void the payment",
+      "voidPaymentBody": "The payment is reversed and the amount goes back onto the client's balance.",
+      "ledgerType": {
+        "SALE_CREDIT": "Credit sale",
+        "PAYMENT": "Payment",
+        "PAYMENT_VOID": "Payment voided",
+        "SALE_VOID_REVERSAL": "Sale voided",
+        "ADJUSTMENT": "Adjustment"
+      },
+      "loadFailed": "Could not load this client.",
+      "retry": "Retry"
     },
     "credit": {
       "contactNotePrompt": "Contact note (optional)",
@@ -731,7 +830,15 @@
       "reminderList": "Reminder list",
       "daysOverdue": "{n} days overdue",
       "lastContact": "Last contact: {date}",
-      "markContacted": "Mark contacted"
+      "markContacted": "Mark contacted",
+      "subtitle": "Follow up on clients with overdue balances",
+      "colLastContact": "Last contact",
+      "never": "Never",
+      "noneDue": "No reminders due — everyone is up to date.",
+      "logContact": "Log contact",
+      "noteLabel": "Note",
+      "contactBody": "Record that you contacted {name} about {amount}.",
+      "contactFailed": "Could not log the contact"
     },
     "charges": {
       "category": {
@@ -751,7 +858,15 @@
       "void": "Void",
       "voidTitle": "Void charge",
       "voidConfirm": "Void this charge?",
-      "voidReason": "Reason (optional)"
+      "voidReason": "Reason (optional)",
+      "subtitle": "Shop expenses deducted from profit",
+      "total": "Total charges",
+      "colCategory": "Category",
+      "statusActive": "Active",
+      "statusVoided": "Voided",
+      "empty": "No charges in this period.",
+      "emptyBody": "Record team food, transport or petty cash as it happens.",
+      "voidFailed": "Could not void the charge"
     },
     "staff": {
       "title": "Staff",
@@ -763,6 +878,22 @@
         "CASHIER": "Cashier",
         "MANAGER": "Manager",
         "OWNER": "Owner"
+      },
+      "subtitle": "{n} team member | {n} team members",
+      "addTitle": "Invite team member",
+      "nameLabel": "Full name",
+      "colMember": "Member",
+      "colRole": "Role",
+      "colShops": "Shops",
+      "you": "you",
+      "created": "Team member added",
+      "createFailed": "Could not add the team member",
+      "needShop": "Assign at least one shop.",
+      "empty": "No team members yet.",
+      "roleHint": {
+        "CASHIER": "Runs the register and online order handoff.",
+        "MANAGER": "Manages products, stock, clients and charges.",
+        "OWNER": "Full access to every shop and the network view."
       }
     },
     "settings": {
@@ -793,7 +924,9 @@
         "saved": "Delivery prices saved",
         "loadError": "Could not load delivery prices",
         "saveError": "Could not save delivery prices"
-      }
+      },
+      "subtitle": "Storefront, delivery and shop details",
+      "saveFailed": "Could not save the settings"
     },
     "network": {
       "title": "Network overview",
@@ -805,7 +938,28 @@
       "clientPayments": "Client payments",
       "totalCashIn": "Total cash in",
       "outstandingCredit": "Outstanding credit",
-      "totalCharges": "Total charges"
+      "totalCharges": "Total charges",
+      "subtitle": "Every shop side by side",
+      "byShop": "By shop",
+      "colShop": "Shop"
+    },
+    "navGroup": {
+      "overview": "Overview",
+      "sales": "Sales",
+      "catalog": "Catalog",
+      "operations": "Operations"
+    },
+    "range": {
+      "label": "Period",
+      "all": "All time",
+      "today": "Today",
+      "7d": "7 days",
+      "30d": "30 days",
+      "from": "From",
+      "to": "To"
+    },
+    "confirm": {
+      "irreversible": "This can't be undone."
     }
   },
   "pos": {

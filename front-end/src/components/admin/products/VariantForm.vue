@@ -43,25 +43,26 @@ function patch(partial: Partial<VariantDraft>) {
 </script>
 
 <template>
-  <div class="grid gap-3" :class="stackedLayout ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-6'">
-    <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      {{ t('admin.variant.color') }}
+  <div class="grid gap-4" :class="stackedLayout ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-6'">
+    <label class="pos-field">
+      <span class="pos-label">{{ t('admin.variant.color') }}</span>
       <input
         :list="colorListId"
-        class="input"
+        class="pos-input"
         :value="modelValue.color"
         :placeholder="t('admin.variant.colorPlaceholder')"
+        data-autofocus
         @input="patch({ color: ($event.target as HTMLInputElement).value })"
       />
       <datalist :id="colorListId">
         <option v-for="color in colors" :key="color" :value="color" />
       </datalist>
     </label>
-    <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      {{ t('admin.variant.size') }}
+    <label class="pos-field">
+      <span class="pos-label">{{ t('admin.variant.size') }}</span>
       <input
         :list="sizeListId"
-        class="input"
+        class="pos-input"
         :value="modelValue.size"
         :placeholder="t('admin.variant.sizePlaceholder')"
         @input="patch({ size: ($event.target as HTMLInputElement).value })"
@@ -70,58 +71,71 @@ function patch(partial: Partial<VariantDraft>) {
         <option v-for="size in sizes" :key="size" :value="size" />
       </datalist>
     </label>
-    <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      {{ t('admin.variant.unitCost') }}
-      <input
-        :value="modelValue.unitCost"
-        type="number"
-        min="0"
-        step="0.01"
-        class="input"
-        @input="patch({ unitCost: ($event.target as HTMLInputElement).value })"
-      />
+    <label class="pos-field">
+      <span class="pos-label">{{ t('admin.variant.unitCost') }}</span>
+      <span class="relative">
+        <input
+          :value="modelValue.unitCost"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.01"
+          class="pos-input pe-12 pos-num"
+          @input="patch({ unitCost: ($event.target as HTMLInputElement).value })"
+        />
+        <span class="pointer-events-none absolute end-3.5 top-1/2 -translate-y-1/2 text-[12px] text-pos-muted">{{ t('common.currency') }}</span>
+      </span>
     </label>
-    <label class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      {{ t('admin.variant.sellPrice') }}
-      <input
-        :value="modelValue.sellPrice"
-        type="number"
-        min="0"
-        step="0.01"
-        class="input"
-        @input="patch({ sellPrice: ($event.target as HTMLInputElement).value })"
-      />
+    <label class="pos-field">
+      <span class="pos-label">{{ t('admin.variant.sellPrice') }}</span>
+      <span class="relative">
+        <input
+          :value="modelValue.sellPrice"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.01"
+          class="pos-input pe-12 pos-num"
+          @input="patch({ sellPrice: ($event.target as HTMLInputElement).value })"
+        />
+        <span class="pointer-events-none absolute end-3.5 top-1/2 -translate-y-1/2 text-[12px] text-pos-muted">{{ t('common.currency') }}</span>
+      </span>
     </label>
-    <label v-if="showQuantity !== false" class="flex flex-col gap-1 text-xs font-medium text-gray-600">
-      {{ quantityLabel ?? t('admin.variant.quantity') }}
+    <label v-if="showQuantity !== false" class="pos-field">
+      <span class="pos-label">{{ quantityLabel ?? t('admin.variant.quantity') }}</span>
       <input
         :value="modelValue.quantity"
         type="number"
+        inputmode="numeric"
         min="0"
         step="1"
-        class="input"
+        class="pos-input pos-num"
         @input="patch({ quantity: ($event.target as HTMLInputElement).value })"
       />
     </label>
-    <div class="flex items-end gap-4 pb-2 sm:col-span-2">
-      <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-        <input
-          type="checkbox"
-          class="size-4 rounded border-gray-300"
-          :checked="modelValue.availableOnline"
-          @change="patch({ availableOnline: ($event.target as HTMLInputElement).checked })"
+    <div class="flex flex-col justify-end gap-3 sm:col-span-2">
+      <div class="flex items-center justify-between gap-3">
+        <span :id="`${uid}-online`" class="text-[14px] text-pos-ink">{{ t('admin.variant.online') }}</span>
+        <button
+          type="button"
+          role="switch"
+          class="pos-switch"
+          :aria-labelledby="`${uid}-online`"
+          :aria-checked="modelValue.availableOnline"
+          @click="patch({ availableOnline: !modelValue.availableOnline })"
         />
-        {{ t('admin.variant.online') }}
-      </label>
-      <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-        <input
-          type="checkbox"
-          class="size-4 rounded border-gray-300"
-          :checked="modelValue.isActive"
-          @change="patch({ isActive: ($event.target as HTMLInputElement).checked })"
+      </div>
+      <div class="flex items-center justify-between gap-3">
+        <span :id="`${uid}-active`" class="text-[14px] text-pos-ink">{{ t('admin.variant.active') }}</span>
+        <button
+          type="button"
+          role="switch"
+          class="pos-switch"
+          :aria-labelledby="`${uid}-active`"
+          :aria-checked="modelValue.isActive"
+          @click="patch({ isActive: !modelValue.isActive })"
         />
-        {{ t('admin.variant.active') }}
-      </label>
+      </div>
     </div>
   </div>
 </template>

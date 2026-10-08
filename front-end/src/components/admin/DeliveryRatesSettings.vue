@@ -5,6 +5,7 @@ import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import { apiErrorMessage } from '@/services/products'
 import { getDeliveryRates, updateDeliveryRates } from '@/services/siteSettings'
 import type { WilayaDeliveryRate } from '@/types/api'
+import { Search } from 'lucide-vue-next'
 
 /**
  * Editable row for one wilaya. Checking “free” stores 0 for that service
@@ -155,107 +156,97 @@ onMounted(load)
 
 <template>
   <section class="flex flex-col gap-4">
-    <div>
-      <h3 class="section-title">{{ t('admin.settings.deliveryRates.title') }}</h3>
-      <p class="mt-1 max-w-3xl text-sm text-gray-600">{{ t('admin.settings.deliveryRates.hint') }}</p>
-    </div>
-
-    <div v-if="loading" class="card h-48 animate-pulse bg-gray-50" />
-
-    <form v-else class="flex flex-col gap-4" @submit.prevent="save">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <input
-          v-model="search"
-          type="search"
-          class="input max-w-sm"
-          :placeholder="t('admin.settings.deliveryRates.search')"
-        />
-        <div class="flex flex-wrap items-end gap-3">
-          <label class="flex flex-col gap-1 text-xs text-gray-600">
-            {{ t('admin.settings.deliveryRates.colStopdesk') }}
-            <input v-model.number="bulkStopdesk" type="number" min="0" step="1" class="input w-28" />
+    <div class="pos-surface flex flex-col gap-4 p-6">
+      <div>
+        <h2 class="section-title">{{ t('admin.settings.deliveryRates.title') }}</h2>
+        <p class="mt-1 max-w-3xl text-[13px] text-pos-muted">{{ t('admin.settings.deliveryRates.hint') }}</p>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="flex items-end gap-2 rounded-xl bg-pos-sunken p-3">
+          <label class="pos-field flex-1">
+            <span class="pos-label">{{ t('admin.settings.deliveryRates.colStopdesk') }}</span>
+            <input v-model.number="bulkStopdesk" type="number" inputmode="numeric" min="0" step="1" class="pos-input pos-num" />
           </label>
-          <button type="button" class="btn-secondary" @click="applyStopdeskToAll">
-            {{ t('admin.settings.deliveryRates.applyStopdeskAll') }}
-          </button>
-          <label class="flex flex-col gap-1 text-xs text-gray-600">
-            {{ t('admin.settings.deliveryRates.colHome') }}
-            <input v-model.number="bulkHome" type="number" min="0" step="1" class="input w-28" />
+          <button type="button" class="pos-btn-soft" @click="applyStopdeskToAll">{{ t('admin.settings.deliveryRates.applyStopdeskAll') }}</button>
+        </div>
+        <div class="flex items-end gap-2 rounded-xl bg-pos-sunken p-3">
+          <label class="pos-field flex-1">
+            <span class="pos-label">{{ t('admin.settings.deliveryRates.colHome') }}</span>
+            <input v-model.number="bulkHome" type="number" inputmode="numeric" min="0" step="1" class="pos-input pos-num" />
           </label>
-          <button type="button" class="btn-secondary" @click="applyHomeToAll">
-            {{ t('admin.settings.deliveryRates.applyHomeAll') }}
-          </button>
+          <button type="button" class="pos-btn-soft" @click="applyHomeToAll">{{ t('admin.settings.deliveryRates.applyHomeAll') }}</button>
         </div>
       </div>
+    </div>
 
-      <div class="overflow-x-auto rounded-lg border border-gray-200">
-        <table class="min-w-full text-start text-sm">
-          <thead class="border-b border-gray-200 bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500">
+    <div v-if="loading" class="pos-skeleton h-64 rounded-2xl" />
+
+    <form v-else class="pos-surface flex flex-col overflow-hidden" @submit.prevent="save">
+      <div class="p-4">
+        <div class="relative max-w-sm">
+          <Search class="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-pos-faint" aria-hidden="true" />
+          <input v-model="search" type="search" class="pos-input pos-input-icon" :placeholder="t('admin.settings.deliveryRates.search')" :aria-label="t('admin.settings.deliveryRates.search')" />
+        </div>
+      </div>
+      <div class="max-h-[60vh] overflow-auto border-t border-pos-line">
+        <table class="pos-table min-w-[560px]">
+          <thead>
             <tr>
-              <th class="px-4 py-3 text-start">{{ t('admin.settings.deliveryRates.colWilaya') }}</th>
-              <th class="px-4 py-3 text-start">{{ t('admin.settings.deliveryRates.colStopdesk') }}</th>
-              <th class="px-4 py-3 text-start">{{ t('admin.settings.deliveryRates.free') }}</th>
-              <th class="px-4 py-3 text-start">{{ t('admin.settings.deliveryRates.colHome') }}</th>
-              <th class="px-4 py-3 text-start">{{ t('admin.settings.deliveryRates.free') }}</th>
+              <th scope="col">{{ t('admin.settings.deliveryRates.colWilaya') }}</th>
+              <th scope="col">{{ t('admin.settings.deliveryRates.colStopdesk') }}</th>
+              <th scope="col">{{ t('admin.settings.deliveryRates.colHome') }}</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="row in filtered" :key="row.wilaya" class="hover:bg-gray-50">
-              <td class="px-4 py-2 font-medium text-gray-900">{{ row.wilaya }}</td>
-              <td class="px-4 py-2">
-                <input
-                  :value="row.stopdeskFee"
-                  type="number"
-                  min="0"
-                  step="1"
-                  class="input w-28"
-                  :disabled="row.stopdeskFree"
-                  @input="onStopdeskAmount(row, Number(($event.target as HTMLInputElement).value))"
-                />
-              </td>
-              <td class="px-4 py-2">
-                <label class="inline-flex items-center gap-2 text-gray-700">
+          <tbody>
+            <tr v-for="row in filtered" :key="row.wilaya">
+              <td class="font-medium text-pos-ink">{{ row.wilaya }}</td>
+              <td>
+                <div class="flex items-center gap-3">
                   <input
-                    type="checkbox"
-                    class="h-4 w-4"
-                    :checked="row.stopdeskFree"
-                    @change="onStopdeskFree(row, ($event.target as HTMLInputElement).checked)"
+                    :value="row.stopdeskFee"
+                    type="number"
+                    inputmode="numeric"
+                    min="0"
+                    step="1"
+                    class="pos-input h-9 w-28 pos-num disabled:bg-pos-sunken disabled:text-pos-faint"
+                    :disabled="row.stopdeskFree"
+                    :aria-label="`${row.wilaya} · ${t('admin.settings.deliveryRates.colStopdesk')}`"
+                    @input="onStopdeskAmount(row, Number(($event.target as HTMLInputElement).value))"
                   />
-                  {{ t('admin.settings.deliveryRates.free') }}
-                </label>
+                  <label class="inline-flex cursor-pointer items-center gap-2 text-[13px] text-pos-ink-2">
+                    <input type="checkbox" class="h-4 w-4" :checked="row.stopdeskFree" @change="onStopdeskFree(row, ($event.target as HTMLInputElement).checked)" />
+                    {{ t('admin.settings.deliveryRates.free') }}
+                  </label>
+                </div>
               </td>
-              <td class="px-4 py-2">
-                <input
-                  :value="row.homeFee"
-                  type="number"
-                  min="0"
-                  step="1"
-                  class="input w-28"
-                  :disabled="row.homeFree"
-                  @input="onHomeAmount(row, Number(($event.target as HTMLInputElement).value))"
-                />
-              </td>
-              <td class="px-4 py-2">
-                <label class="inline-flex items-center gap-2 text-gray-700">
+              <td>
+                <div class="flex items-center gap-3">
                   <input
-                    type="checkbox"
-                    class="h-4 w-4"
-                    :checked="row.homeFree"
-                    @change="onHomeFree(row, ($event.target as HTMLInputElement).checked)"
+                    :value="row.homeFee"
+                    type="number"
+                    inputmode="numeric"
+                    min="0"
+                    step="1"
+                    class="pos-input h-9 w-28 pos-num disabled:bg-pos-sunken disabled:text-pos-faint"
+                    :disabled="row.homeFree"
+                    :aria-label="`${row.wilaya} · ${t('admin.settings.deliveryRates.colHome')}`"
+                    @input="onHomeAmount(row, Number(($event.target as HTMLInputElement).value))"
                   />
-                  {{ t('admin.settings.deliveryRates.free') }}
-                </label>
+                  <label class="inline-flex cursor-pointer items-center gap-2 text-[13px] text-pos-ink-2">
+                    <input type="checkbox" class="h-4 w-4" :checked="row.homeFree" @change="onHomeFree(row, ($event.target as HTMLInputElement).checked)" />
+                    {{ t('admin.settings.deliveryRates.free') }}
+                  </label>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-
-      <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
-      <p v-else-if="message" class="text-sm text-green-600">{{ message }}</p>
-
-      <div>
-        <button type="submit" class="btn-primary" :disabled="saving || !isDirty">
+      <div class="flex flex-col gap-3 border-t border-pos-line bg-pos-sunken/60 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <p v-if="error" class="text-[13px] text-pos-err" role="alert">{{ error }}</p>
+        <p v-else-if="isDirty" class="text-[13px] text-pos-warn">{{ t('admin.product.unsavedChanges') }}</p>
+        <p v-else class="text-[13px] text-pos-ok" aria-live="polite">{{ message }}</p>
+        <button type="submit" class="pos-btn-primary" :disabled="saving || !isDirty">
           {{ saving ? t('common.saving') : t('admin.settings.deliveryRates.save') }}
         </button>
       </div>

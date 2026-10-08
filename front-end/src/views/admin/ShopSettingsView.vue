@@ -7,7 +7,8 @@ import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import type { Shop } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
-import SkeletonForm from '@/components/ui/SkeletonForm.vue'
+import { useToast } from '@/composables/useToast'
+import { apiErrorMessage } from '@/services/products'
 import HomeBannerSettings from '@/components/admin/HomeBannerSettings.vue'
 import DeliveryRatesSettings from '@/components/admin/DeliveryRatesSettings.vue'
 
@@ -27,7 +28,8 @@ const auth = useAuthStore()
 const shop = ref<Shop | null>(null)
 const loading = ref(true)
 const form = ref({ serviceCity: '', deliveryFee: 0, address: '', creditReminderDays: 30 })
-const message = ref('')
+const saving = ref(false)
+const toast = useToast()
 
 const tabs = computed(() => [
   { id: 'banner' as const, label: t('admin.banner.title'), icon: Image },
@@ -61,7 +63,7 @@ function onTabKeydown(event: KeyboardEvent, index: number) {
   else return
 
   event.preventDefault()
-  const section = tabs.value[next].id
+  const section = tabs.value[next]!.id
   selectSection(section)
   requestAnimationFrame(() => document.getElementById(`settings-tab-${section}`)?.focus())
 }
@@ -72,7 +74,7 @@ async function loadShop() {
     loading.value = false
     return
   }
-  loading.value = true
+  loading.value = !shop.value
   try {
     const { data } = await api.get<{ data: Shop }>(`/shops/${shopId}`)
     shop.value = data.data
@@ -89,10 +91,17 @@ async function loadShop() {
 
 async function save() {
   const shopId = auth.selectedShopId
-  if (!shopId) return
-  await api.patch(`/shops/${shopId}`, form.value)
-  message.value = t('admin.settings.saved')
-  await loadShop()
+  if (!shopId || saving.value) return
+  saving.value = true
+  try {
+    await api.patch(`/shops/${shopId}`, form.value)
+    toast.success(t('admin.settings.saved'))
+    await loadShop()
+  } catch (e) {
+    toast.error(apiErrorMessage(e, t('admin.settings.saveFailed')))
+  } finally {
+    saving.value = false
+  }
 }
 
 onMounted(loadShop)
@@ -101,25 +110,16 @@ watch(() => auth.selectedShopId, loadShop)
 
 <template>
   <div class="page-shell">
-    <PageHeader :title="t('admin.settings.title')" />
+    <PageHeader :title="t('admin.settings.title')" :subtitle="t('admin.settings.subtitle')" />
 
-    <nav
-      class="flex gap-2 overflow-x-auto"
-      role="tablist"
-      :aria-label="t('admin.settings.sectionsAria')"
-    >
+    <nav class="pos-segmented w-fit max-w-full overflow-x-auto bg-black/[0.045]" role="tablist" :aria-label="t('admin.settings.sectionsAria')">
       <button
         v-for="tab in tabs"
         :id="`settings-tab-${tab.id}`"
         :key="tab.id"
         type="button"
         role="tab"
-        class="inline-flex shrink-0 items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-medium"
-        :class="
-          activeSection === tab.id
-            ? 'border-gray-900 bg-gray-900 text-white'
-            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-        "
+        class="pos-segment min-h-10 px-4 whitespace-nowrap"
         :aria-selected="activeSection === tab.id"
         :aria-controls="`settings-panel-${tab.id}`"
         :tabindex="activeSection === tab.id ? 0 : -1"
@@ -131,50 +131,55 @@ watch(() => auth.selectedShopId, loadShop)
       </button>
     </nav>
 
-    <div
-      :id="`settings-panel-${activeSection}`"
-      role="tabpanel"
-      :aria-labelledby="`settings-tab-${activeSection}`"
-    >
+    <div :id="`settings-panel-${activeSection}`" role="tabpanel" :aria-labelledby="`settings-tab-${activeSection}`">
       <HomeBannerSettings v-show="activeSection === 'banner'" />
       <DeliveryRatesSettings v-show="activeSection === 'delivery'" />
 
-      <section v-show="activeSection === 'shop'" class="flex flex-col gap-4">
-        <div>
-          <h3 class="section-title">{{ t('admin.settings.selectedShop') }}</h3>
-          <p class="mt-1 max-w-3xl text-sm text-gray-600">{{ t('admin.settings.selectedShopHint') }}</p>
+      <section v-show="activeSection === 'shop'" class="pos-surface flex max-w-2xl flex-col">
+        <div class="px-6 pt-6 pb-2">
+          <h2 class="section-title">{{ t('admin.settings.selectedShop') }}</h2>
+          <p class="mt-1 text-[13px] text-pos-muted">{{ t('admin.settings.selectedShopHint') }}</p>
         </div>
 
-        <SkeletonForm v-if="loading" :fields="4" />
+        <div v-if="loading" class="flex flex-col gap-4 p-6" role="status">
+          <span class="sr-only">{{ t('common.loading') }}</span>
+          <div v-for="i in 4" :key="i" class="pos-skeleton h-11 rounded-xl" />
+        </div>
 
-        <form v-else-if="shop" class="card flex max-w-md flex-col gap-4" @submit.prevent="save">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.settings.fieldShop') }}</label>
-            <p class="text-gray-900">{{ shop.name }}</p>
+        <form v-else-if="shop" class="flex flex-col" @submit.prevent="save">
+          <div class="grid gap-4 p-6 sm:grid-cols-2">
+            <div class="pos-field sm:col-span-2">
+              <span class="pos-label">{{ t('admin.settings.fieldShop') }}</span>
+              <p class="flex h-11 items-center rounded-xl bg-pos-sunken px-3.5 text-[14px] font-medium text-pos-ink">{{ shop.name }}</p>
+            </div>
+            <label class="pos-field sm:col-span-2">
+              <span class="pos-label">{{ t('admin.settings.fieldAddress') }}</span>
+              <input v-model="form.address" class="pos-input" />
+            </label>
+            <label class="pos-field">
+              <span class="pos-label">{{ t('admin.settings.fieldServiceCity') }}</span>
+              <input v-model="form.serviceCity" class="pos-input" />
+            </label>
+            <label class="pos-field">
+              <span class="pos-label">{{ t('admin.settings.fieldDeliveryFee') }}</span>
+              <span class="relative">
+                <input v-model.number="form.deliveryFee" type="number" inputmode="decimal" min="0" class="pos-input pe-12 pos-num" />
+                <span class="pointer-events-none absolute end-3.5 top-1/2 -translate-y-1/2 text-[12px] text-pos-muted">{{ t('common.currency') }}</span>
+              </span>
+              <span class="pos-field-hint">{{ t('admin.settings.deliveryFeeFallbackHint') }}</span>
+            </label>
+            <label class="pos-field">
+              <span class="pos-label">{{ t('admin.settings.fieldReminderDays') }}</span>
+              <input v-model.number="form.creditReminderDays" type="number" inputmode="numeric" min="1" class="pos-input pos-num" />
+              <span class="pos-field-hint">{{ t('admin.settings.reminderDaysHint') }}</span>
+            </label>
           </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.settings.fieldAddress') }}</label>
-            <input v-model="form.address" class="input" />
+          <div class="flex justify-end border-t border-pos-line bg-pos-sunken/60 px-6 py-4">
+            <button type="submit" class="pos-btn-primary" :disabled="saving">{{ saving ? t('common.saving') : t('common.save') }}</button>
           </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.settings.fieldServiceCity') }}</label>
-            <input v-model="form.serviceCity" class="input" />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.settings.fieldDeliveryFee') }}</label>
-            <input v-model.number="form.deliveryFee" type="number" class="input" />
-            <p class="mt-1 text-xs text-gray-500">{{ t('admin.settings.deliveryFeeFallbackHint') }}</p>
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.settings.fieldReminderDays') }}</label>
-            <input v-model.number="form.creditReminderDays" type="number" min="1" class="input" />
-            <p class="mt-1 text-xs text-gray-500">{{ t('admin.settings.reminderDaysHint') }}</p>
-          </div>
-          <p v-if="message" class="text-sm text-green-600">{{ message }}</p>
-          <button type="submit" class="btn-primary self-start">{{ t('common.save') }}</button>
         </form>
 
-        <p v-else class="card max-w-md text-sm text-gray-600">{{ t('admin.settings.noShop') }}</p>
+        <p v-else class="px-6 pb-6 text-[13px] text-pos-muted">{{ t('admin.settings.noShop') }}</p>
       </section>
     </div>
   </div>

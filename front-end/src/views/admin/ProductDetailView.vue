@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ArrowLeft } from 'lucide-vue-next'
+import { AlertCircle, Plus } from 'lucide-vue-next'
 import type { Product, ProductFamily } from '@/types/api'
 import {
   addFamilyVariant,
@@ -19,6 +19,7 @@ import {
 } from '@/services/products'
 import { useAuthStore } from '@/stores/auth'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
+import { formatCount } from '@/utils/formatMoney'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonForm from '@/components/ui/SkeletonForm.vue'
 import ProductEditorShell from '@/components/admin/products/ProductEditorShell.vue'
@@ -26,6 +27,8 @@ import ProductInformationCard from '@/components/admin/products/ProductInformati
 import ProductImageManager from '@/components/admin/products/ProductImageManager.vue'
 import VariantTable from '@/components/admin/products/VariantTable.vue'
 import VariantModal from '@/components/admin/products/VariantModal.vue'
+import AdminConfirm from '@/components/admin/AdminConfirm.vue'
+import { useToast } from '@/composables/useToast'
 import {
   PRODUCT_DESCRIPTION_MAX,
   PRODUCT_NAME_MAX,
@@ -37,8 +40,8 @@ import {
 
 const { t } = useI18n()
 const route = useRoute()
-const router = useRouter()
 const auth = useAuthStore()
+const toast = useToast()
 
 const familyId = computed(() => String(route.params.familyId))
 const canManage = computed(() => auth.isManager)
@@ -48,7 +51,6 @@ const loading = ref(true)
 const loadError = ref('')
 const saving = ref(false)
 const variantBusy = ref(false)
-const feedback = ref('')
 const error = ref('')
 const variantError = ref('')
 const uploading = ref(false)
@@ -92,6 +94,7 @@ const extraSizes = computed(() =>
 const modalMode = ref<'add' | 'edit' | null>(null)
 const editingId = ref<string | null>(null)
 const confirmDeleteId = ref<string | null>(null)
+const confirmImageId = ref<string | null>(null)
 const modalDraft = ref<VariantDraft>(emptyVariantDraft())
 
 function applyFamily(next: ProductFamily) {
@@ -121,9 +124,11 @@ async function loadFamily() {
 
 watch([familyId, () => auth.selectedShopId], loadFamily, { immediate: true })
 
-function goBack() {
-  router.push({ name: 'admin-products' })
-}
+const variantSummary = computed(() => {
+  const variants = family.value?.variants ?? []
+  const stock = variants.reduce((sum, variant) => sum + (variant.shopQuantity ?? 0), 0)
+  return t('admin.product.summary', { n: formatCount(variants.length), stock: formatCount(stock) }, variants.length)
+})
 
 async function saveProduct() {
   if (!family.value) return
@@ -142,8 +147,7 @@ async function saveProduct() {
   }
   saving.value = true
   error.value = ''
-  feedback.value = ''
-  try {
+    try {
     applyFamily(
       await updateProductFamily(
         family.value.id,
@@ -156,7 +160,7 @@ async function saveProduct() {
         auth.selectedShopId ?? undefined,
       ),
     )
-    feedback.value = t('admin.product.saved')
+    toast.success(t('admin.product.saved'))
   } catch (e) {
     error.value = apiErrorMessage(e, t('admin.product.saveError'))
   } finally {
@@ -183,7 +187,7 @@ async function saveStock(variant: Product) {
   try {
     await setVariantStock(variant.id, shopId, parsed)
     applyFamily(await getProductFamily(familyId.value, shopId))
-    feedback.value = parsed === 0 ? t('admin.product.stockZeroFeedback') : t('admin.product.stockUpdated')
+    toast.success(parsed === 0 ? t('admin.product.stockZeroFeedback') : t('admin.product.stockUpdated'))
     stockState.value[variant.id] = 'idle'
   } catch (e) {
     stockDraft.value[variant.id] = String(variant.shopQuantity ?? 0)
@@ -249,8 +253,7 @@ async function submitNewVariant() {
   variantBusy.value = true
   variantError.value = ''
   error.value = ''
-  feedback.value = ''
-  try {
+    try {
     const result = await addFamilyVariant(family.value.id, {
       attributes: attrs,
       unitCost,
@@ -261,9 +264,7 @@ async function submitNewVariant() {
       shopId: auth.selectedShopId ?? undefined,
     })
     applyFamily(result.family)
-    feedback.value = result.created
-      ? t('admin.variant.created')
-      : t('admin.variant.mergedExisting')
+    toast.success(result.created ? t('admin.variant.created') : t('admin.variant.mergedExisting'))
     modalMode.value = null
   } catch (e) {
     variantError.value = apiErrorMessage(e, t('admin.variant.addError'))
@@ -304,7 +305,7 @@ async function saveEdit() {
     applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
     modalMode.value = null
     editingId.value = null
-    feedback.value = t('admin.variant.updated')
+    toast.success(t('admin.variant.updated'))
   } catch (e) {
     variantError.value = apiErrorMessage(e, t('admin.variant.updateError'))
   } finally {
@@ -320,7 +321,7 @@ async function confirmDelete() {
     await deleteProduct(confirmDeleteId.value)
     applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
     confirmDeleteId.value = null
-    feedback.value = t('admin.variant.deleted')
+    toast.success(t('admin.variant.deleted'))
   } catch (e) {
     error.value = apiErrorMessage(e, t('admin.variant.deleteError'))
   } finally {
@@ -340,7 +341,7 @@ async function onUpload(files: File[]) {
       })
     }
     applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
-    feedback.value = t('admin.productImages.uploaded')
+    toast.success(t('admin.productImages.uploaded'))
   } catch (e) {
     error.value = apiErrorMessage(e, t('admin.productImages.uploadFailed'))
   } finally {
@@ -349,14 +350,21 @@ async function onUpload(files: File[]) {
   }
 }
 
-async function onRemove(imageId: string) {
-  if (!family.value) return
-  if (!window.confirm(t('admin.productImages.confirmRemove'))) return
+function onRemove(imageId: string) {
+  confirmImageId.value = imageId
+}
+
+async function confirmRemoveImage() {
+  const imageId = confirmImageId.value
+  if (!family.value || !imageId) return
   try {
     await deleteFamilyImage(family.value.id, imageId)
     applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
+    toast.success(t('admin.productImages.removed'))
   } catch (e) {
     error.value = apiErrorMessage(e, t('admin.productImages.removeError'))
+  } finally {
+    confirmImageId.value = null
   }
 }
 
@@ -365,7 +373,7 @@ async function onSetPrimary(imageId: string) {
   try {
     await setPrimaryFamilyImage(family.value.id, imageId)
     applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
-    feedback.value = t('admin.productImages.primaryUpdated')
+    toast.success(t('admin.productImages.primaryUpdated'))
   } catch (e) {
     error.value = apiErrorMessage(e, t('admin.productImages.primaryError'))
   }
@@ -373,45 +381,55 @@ async function onSetPrimary(imageId: string) {
 </script>
 
 <template>
-  <div class="page-shell max-w-6xl overflow-x-hidden">
-    <button
-      type="button"
-      class="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-      @click="goBack"
-    >
-      <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
-      {{ t('admin.products.back') }}
-    </button>
+  <div class="page-shell">
+    <div v-if="loading" class="flex flex-col gap-6" role="status">
+      <span class="sr-only">{{ t('common.loading') }}</span>
+      <div class="pos-skeleton h-8 w-64" />
+      <div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <div class="pos-skeleton h-80 rounded-2xl" />
+        <div class="pos-skeleton h-80 rounded-2xl" />
+      </div>
+      <div class="pos-skeleton h-56 rounded-2xl" />
+    </div>
 
-    <SkeletonForm v-if="loading" :fields="8" />
-
-    <p v-else-if="loadError" class="rounded-lg border border-gray-200 bg-white px-4 py-8 text-center text-gray-600">
-      {{ loadError }}
-    </p>
+    <template v-else-if="loadError">
+      <PageHeader :back="{ name: 'admin-products' }" :back-label="t('admin.products.back')" />
+      <p class="pos-notice bg-pos-err-bg text-pos-err" role="alert">
+        <AlertCircle class="mt-px h-4 w-4 shrink-0" />
+        {{ loadError }}
+      </p>
+    </template>
 
     <ProductEditorShell v-else-if="family">
       <template #header>
-        <PageHeader :title="family.name">
+        <PageHeader
+          :title="family.name"
+          :subtitle="variantSummary"
+          :back="{ name: 'admin-products' }"
+          :back-label="t('admin.products.back')"
+        >
           <template #actions>
-            <span
-              class="rounded-full border px-3 py-1 text-sm"
-              :class="productUnavailable ? 'border-gray-300 text-gray-600' : 'border-gray-200 bg-gray-50 text-gray-700'"
-            >
+            <span :class="productUnavailable ? 'pos-badge-err' : 'pos-badge-ok'">
+              <span class="pos-dot" />
               {{ productUnavailable ? t('admin.product.statusUnavailable') : t('admin.product.statusAvailable') }}
             </span>
+            <span v-if="isDirty" class="pos-badge-warn">{{ t('admin.product.unsaved') }}</span>
             <button
               v-if="canManage"
               type="button"
-              class="btn-primary"
-              :disabled="saving"
+              class="pos-btn-primary"
+              :disabled="saving || !isDirty"
               @click="saveProduct"
             >
+              <span v-if="saving" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
               {{ saving ? t('common.saving') : t('admin.product.save') }}
             </button>
           </template>
         </PageHeader>
-        <p v-if="feedback" class="text-sm text-green-700">{{ feedback }}</p>
-        <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+        <p v-if="error" class="pos-notice bg-pos-err-bg text-pos-err" role="alert">
+          <AlertCircle class="mt-px h-4 w-4 shrink-0" />
+          {{ error }}
+        </p>
       </template>
 
       <template #information>
@@ -442,8 +460,14 @@ async function onSetPrimary(imageId: string) {
 
       <template #variants>
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('admin.variant.sectionTitle') }}</h3>
-          <button v-if="canManage" type="button" class="btn-secondary" @click="openAddVariant">{{ t('admin.variant.add') }}</button>
+          <div>
+            <h2 class="section-title">{{ t('admin.variant.sectionTitle') }}</h2>
+            <p class="mt-0.5 text-[12.5px] text-pos-muted">{{ t('admin.variant.stockEditHint') }}</p>
+          </div>
+          <button v-if="canManage" type="button" class="pos-btn-soft" @click="openAddVariant">
+            <Plus class="h-4 w-4" />
+            {{ t('admin.variant.add') }}
+          </button>
         </div>
         <VariantTable
           :variants="family.variants"
@@ -458,11 +482,14 @@ async function onSetPrimary(imageId: string) {
       </template>
 
       <template #footer>
-        <div v-if="canManage" class="flex flex-wrap justify-end gap-2">
-          <button type="button" class="btn-secondary" @click="goBack">{{ t('common.cancel') }}</button>
-          <button type="button" class="btn-primary" :disabled="saving" @click="saveProduct">
-            {{ saving ? t('common.saving') : t('admin.product.save') }}
-          </button>
+        <div v-if="canManage && isDirty" class="sticky bottom-4 z-10 flex justify-end">
+          <div class="pos-surface flex items-center gap-3 p-2 ps-4" style="box-shadow: var(--pos-shadow-lg) !important">
+            <span class="text-[13px] text-pos-muted">{{ t('admin.product.unsavedChanges') }}</span>
+            <button type="button" class="pos-btn-ghost pos-btn-sm" @click="applyFamily(family)">{{ t('admin.product.discard') }}</button>
+            <button type="button" class="pos-btn-primary pos-btn-sm" :disabled="saving" @click="saveProduct">
+              {{ saving ? t('common.saving') : t('admin.product.save') }}
+            </button>
+          </div>
         </div>
       </template>
     </ProductEditorShell>
@@ -487,17 +514,25 @@ async function onSetPrimary(imageId: string) {
       @submit="submitVariant"
     />
 
-    <div
+    <AdminConfirm
       v-if="confirmDeleteId"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
-    >
-      <div class="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-5">
-        <p class="text-sm text-gray-800">{{ t('admin.variant.confirmDelete') }}</p>
-        <div class="mt-4 flex justify-end gap-2">
-          <button type="button" class="btn-secondary" @click="confirmDeleteId = null">{{ t('common.cancel') }}</button>
-          <button type="button" class="btn-danger" :disabled="variantBusy" @click="confirmDelete">{{ t('common.delete') }}</button>
-        </div>
-      </div>
-    </div>
+      :title="t('admin.variant.deleteTitle')"
+      :body="t('admin.variant.confirmDelete')"
+      :confirm-label="t('common.delete')"
+      danger
+      :busy="variantBusy"
+      @close="confirmDeleteId = null"
+      @confirm="confirmDelete"
+    />
+
+    <AdminConfirm
+      v-if="confirmImageId"
+      :title="t('admin.productImages.removeTitle')"
+      :body="t('admin.productImages.confirmRemove')"
+      :confirm-label="t('admin.productImages.removeAria')"
+      danger
+      @close="confirmImageId = null"
+      @confirm="confirmRemoveImage"
+    />
   </div>
 </template>

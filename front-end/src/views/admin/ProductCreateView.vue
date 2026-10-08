@@ -2,7 +2,8 @@
 import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ArrowLeft } from 'lucide-vue-next'
+import { AlertCircle, Pencil, Plus, Trash2 } from 'lucide-vue-next'
+import { formatCount, formatMoney } from '@/utils/formatMoney'
 import { apiErrorMessage, createProductFamily, uploadFamilyImage } from '@/services/products'
 import { useAuthStore } from '@/stores/auth'
 import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
@@ -170,26 +171,27 @@ onBeforeUnmount(revokeUrls)
 </script>
 
 <template>
-  <div class="page-shell max-w-6xl overflow-x-hidden">
-    <button
-      type="button"
-      class="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-      @click="goBack"
-    >
-      <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
-      {{ t('admin.products.back') }}
-    </button>
-
+  <div class="page-shell">
     <ProductEditorShell>
       <template #header>
-        <PageHeader :title="t('admin.productCreate.title')">
+        <PageHeader
+          :title="t('admin.productCreate.title')"
+          :subtitle="t('admin.productCreate.subtitle')"
+          :back="{ name: 'admin-products' }"
+          :back-label="t('admin.products.back')"
+        >
           <template #actions>
-            <button type="button" class="btn-primary" :disabled="submitting" @click="createProduct">
+            <button type="button" class="pos-btn-ghost" :disabled="submitting" @click="goBack">{{ t('common.cancel') }}</button>
+            <button type="button" class="pos-btn-primary" :disabled="submitting" @click="createProduct">
+              <span v-if="submitting" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
               {{ submitting ? t('admin.productCreate.creating') : t('admin.productCreate.create') }}
             </button>
           </template>
         </PageHeader>
-        <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+        <p v-if="error && !modalOpen" class="pos-notice bg-pos-err-bg text-pos-err" role="alert">
+          <AlertCircle class="mt-px h-4 w-4 shrink-0" />
+          {{ error }}
+        </p>
       </template>
 
       <template #information>
@@ -217,48 +219,48 @@ onBeforeUnmount(revokeUrls)
 
       <template #variants>
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('admin.variant.sectionTitle') }}</h3>
-          <button type="button" class="btn-secondary" @click="openAddVariant">{{ t('admin.variant.add') }}</button>
+          <div>
+            <h2 class="section-title">{{ t('admin.variant.sectionTitle') }}</h2>
+            <p class="mt-0.5 text-[12.5px] text-pos-muted">{{ t('admin.productCreate.variantsHint') }}</p>
+          </div>
+          <button type="button" class="pos-btn-soft" @click="openAddVariant">
+            <Plus class="h-4 w-4" />
+            {{ t('admin.variant.add') }}
+          </button>
         </div>
 
-        <div class="overflow-auto rounded-lg border border-gray-200">
-          <table class="min-w-full text-sm">
-            <thead class="bg-gray-50 text-start text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <div v-if="variants.length" class="-mx-6 overflow-x-auto">
+          <table class="pos-table min-w-[560px]">
+            <thead>
               <tr>
-                <th class="px-4 py-2">{{ t('admin.variant.color') }}</th>
-                <th class="px-4 py-2">{{ t('admin.variant.size') }}</th>
-                <th class="px-4 py-2">{{ t('admin.variant.cost') }}</th>
-                <th class="px-4 py-2">{{ t('admin.variant.price') }}</th>
-                <th class="px-4 py-2">{{ t('admin.variant.stock') }}</th>
-                <th class="px-4 py-2">{{ t('common.actions') }}</th>
+                <th scope="col" class="ps-6">{{ t('admin.variant.color') }}</th>
+                <th scope="col">{{ t('admin.variant.size') }}</th>
+                <th scope="col" class="pos-cell-num">{{ t('admin.variant.cost') }}</th>
+                <th scope="col" class="pos-cell-num">{{ t('admin.variant.price') }}</th>
+                <th scope="col" class="pos-cell-num">{{ t('admin.variant.stock') }}</th>
+                <th scope="col" class="pos-cell-actions pe-6"><span class="sr-only">{{ t('common.actions') }}</span></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
-              <tr v-if="variants.length === 0">
-                <td colspan="6" class="px-4 py-10 text-center text-gray-500">
-                  {{ t('admin.variant.empty') }}
-                  <button type="button" class="mt-2 block w-full text-sm text-gray-800 underline" @click="openAddVariant">
-                    {{ t('admin.variant.addPlain') }}
-                  </button>
-                </td>
-              </tr>
+            <tbody>
               <tr v-for="(variant, index) in variants" :key="index">
-                <td class="px-4 py-3 font-medium text-gray-900">{{ variant.color || t('common.emDash') }}</td>
-                <td class="px-4 py-3">{{ variant.size || t('common.emDash') }}</td>
-                <td class="px-4 py-3 tabular-nums">{{ variant.unitCost }}</td>
-                <td class="px-4 py-3 tabular-nums">{{ variant.sellPrice }}</td>
-                <td class="px-4 py-3 tabular-nums">{{ variant.quantity }}</td>
-                <td class="px-4 py-3">
-                  <div class="flex gap-2">
-                    <button type="button" class="text-sm text-gray-700 underline" @click="openEditVariant(index)">
-                      {{ t('common.edit') }}
+                <td class="ps-6 font-medium text-pos-ink">{{ variant.color || t('common.emDash') }}</td>
+                <td class="text-pos-ink-2">{{ variant.size || t('common.emDash') }}</td>
+                <td class="pos-cell-num text-pos-muted">{{ formatMoney(variant.unitCost) }}</td>
+                <td class="pos-cell-num font-medium text-pos-ink">{{ formatMoney(variant.sellPrice) }}</td>
+                <td class="pos-cell-num">{{ formatCount(Number(variant.quantity) || 0) }}</td>
+                <td class="pos-cell-actions pe-6">
+                  <div class="flex items-center justify-end gap-1">
+                    <button type="button" class="pos-icon-btn h-9 w-9" :aria-label="t('common.edit')" :title="t('common.edit')" @click="openEditVariant(index)">
+                      <Pencil class="h-4 w-4" />
                     </button>
                     <button
                       type="button"
-                      class="text-sm text-red-600 underline"
+                      class="pos-icon-btn h-9 w-9 hover:bg-pos-err-bg hover:text-pos-err"
+                      :aria-label="t('common.delete')"
+                      :title="t('common.delete')"
                       @click="variants = variants.filter((_, i) => i !== index)"
                     >
-                      {{ t('common.delete') }}
+                      <Trash2 class="h-4 w-4" />
                     </button>
                   </div>
                 </td>
@@ -266,15 +268,18 @@ onBeforeUnmount(revokeUrls)
             </tbody>
           </table>
         </div>
-      </template>
-
-      <template #footer>
-        <div class="flex flex-wrap justify-end gap-2">
-          <button type="button" class="btn-secondary" :disabled="submitting" @click="goBack">{{ t('common.cancel') }}</button>
-          <button type="button" class="btn-primary" :disabled="submitting" @click="createProduct">
-            {{ submitting ? t('admin.productCreate.creating') : t('admin.productCreate.create') }}
-          </button>
-        </div>
+        <button
+          v-else
+          type="button"
+          class="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[#d9d9d9] px-4 py-10 text-[13px] text-pos-muted transition-colors hover:border-pos-faint hover:bg-pos-sunken/60"
+          @click="openAddVariant"
+        >
+          <span class="flex h-10 w-10 items-center justify-center rounded-full bg-white text-pos-muted" style="box-shadow: var(--pos-shadow-sm) !important">
+            <Plus class="h-[18px] w-[18px]" />
+          </span>
+          <span class="font-medium text-pos-ink">{{ t('admin.variant.addPlain') }}</span>
+          <span>{{ t('admin.variant.empty') }}</span>
+        </button>
       </template>
     </ProductEditorShell>
 
@@ -289,7 +294,7 @@ onBeforeUnmount(revokeUrls)
       :error="error"
       :quantity-hint="t('admin.variant.stockZeroHint')"
       @update:model-value="modalDraft = $event"
-      @cancel="modalOpen = false"
+      @cancel="modalOpen = false; error = ''"
       @submit="saveDraftVariant"
     />
   </div>
