@@ -36,7 +36,7 @@ const currentLanguage = computed(() => i18nStore.currentLocaleInfo)
 const minimal = computed(() => props.variant === 'minimal')
 
 /** Compact toggle labels: script-native, so each reads in its own language. */
-const SHORT_LABELS: Record<string, string> = { en: 'EN', ar: 'عربي' }
+const SHORT_LABELS: Record<string, string> = { en: 'EN', fr: 'FR', ar: 'عربي' }
 </script>
 
 <template>

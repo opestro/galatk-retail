@@ -1,11 +1,13 @@
 import { createI18n } from 'vue-i18n'
 import en from './locales/en.json'
 import ar from './locales/ar.json'
+import fr from './locales/fr.json'
 
 export const LOCALE_STORAGE_KEY = 'galatk_retail_locale'
 
 export const supportedLocales = [
   { code: 'en', name: 'English', nativeName: 'English', dir: 'ltr' as const },
+  { code: 'fr', name: 'French', nativeName: 'Français', dir: 'ltr' as const },
   { code: 'ar', name: 'Arabic', nativeName: 'العربية', dir: 'rtl' as const },
 ] as const
 
@@ -49,6 +51,7 @@ const i18n = createI18n({
   fallbackLocale: 'en',
   messages: {
     en,
+    fr,
     ar,
   },
 })

@@ -9,5 +9,14 @@ export function translate(key: string, values?: Record<string, unknown>): string
 }
 
 export function numberLocale(): string {
-  return i18n.global.locale.value === 'ar' ? 'ar-DZ' : 'en-US'
+  const locale = i18n.global.locale.value
+  if (locale === 'ar') return 'ar-DZ'
+  if (locale === 'fr') return 'fr-DZ'
+  return 'en-US'
+}
+
+/** Locale for number/date formatting; Arabic uses Arabic-Indic digits. */
+export function displayLocale(): string {
+  const locale = numberLocale()
+  return locale === 'ar-DZ' ? 'ar-DZ-u-nu-arab' : locale
 }

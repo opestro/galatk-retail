@@ -3,8 +3,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = dirname(fileURLToPath(import.meta.url))
-const en = JSON.parse(readFileSync(join(root, '../src/i18n/locales/en.json'), 'utf8'))
-const ar = JSON.parse(readFileSync(join(root, '../src/i18n/locales/ar.json'), 'utf8'))
+const load = (code) =>
+  JSON.parse(readFileSync(join(root, `../src/i18n/locales/${code}.json`), 'utf8'))
 
 function flatten(value, prefix = '') {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -15,16 +15,20 @@ function flatten(value, prefix = '') {
   return [prefix]
 }
 
-const enKeys = new Set(flatten(en))
-const arKeys = new Set(flatten(ar))
-const missingInAr = [...enKeys].filter((key) => !arKeys.has(key))
-const extraInAr = [...arKeys].filter((key) => !enKeys.has(key))
+const enKeys = new Set(flatten(load('en')))
+let failed = false
 
-if (missingInAr.length || extraInAr.length) {
-  console.error('Locale key mismatch')
-  if (missingInAr.length) console.error('Missing in ar.json:', missingInAr.join('\n'))
-  if (extraInAr.length) console.error('Extra in ar.json:', extraInAr.join('\n'))
-  process.exit(1)
+for (const code of ['ar', 'fr']) {
+  const keys = new Set(flatten(load(code)))
+  const missing = [...enKeys].filter((key) => !keys.has(key))
+  const extra = [...keys].filter((key) => !enKeys.has(key))
+  if (missing.length || extra.length) {
+    failed = true
+    console.error(`Locale key mismatch in ${code}.json`)
+    if (missing.length) console.error(`Missing in ${code}.json:`, missing.join('\n'))
+    if (extra.length) console.error(`Extra in ${code}.json:`, extra.join('\n'))
+  }
 }
 
+if (failed) process.exit(1)
 console.log(`Locale parity OK (${enKeys.size} keys)`)
