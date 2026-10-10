@@ -37,6 +37,10 @@ export interface PublicCatalogProductSummary {
   slug: string
   name: string
   description: string | null
+  /** Dominant retail category of the family's variants (older APIs omit it). */
+  category?: string | null
+  /** ISO creation time of the family (older APIs omit it). */
+  createdAt?: string
   images: PublicCatalogImage[]
   fromPrice: string
   hasPriceRange: boolean

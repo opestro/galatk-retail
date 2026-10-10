@@ -65,19 +65,21 @@ watch(
 <template>
   <div class="flex flex-col gap-4">
     <label class="flex flex-col gap-1.5">
-        <span class="text-sm text-gray-700">{{ $t('shop.guest.fullName') }}</span>
+      <span class="sf-label">{{ $t('shop.guest.fullName') }}</span>
       <input
         :value="modelValue.customerName"
         type="text"
         autocomplete="name"
-        class="input"
+        class="sf-input"
+        :aria-invalid="Boolean(errors?.name)"
+        :aria-describedby="errors?.name ? 'guest-name-error' : undefined"
         @input="patch({ customerName: ($event.target as HTMLInputElement).value })"
       />
-      <p v-if="errors?.name" class="text-xs text-red-600">{{ errors.name }}</p>
+      <p v-if="errors?.name" id="guest-name-error" class="sf-field-error">{{ errors.name }}</p>
     </label>
 
     <label class="flex flex-col gap-1.5">
-        <span class="text-sm text-gray-700">{{ $t('shop.guest.phone') }}</span>
+      <span class="sf-label">{{ $t('shop.guest.phone') }}</span>
       <div class="relative">
         <input
           :value="modelValue.customerPhone"
@@ -85,33 +87,38 @@ watch(
           inputmode="tel"
           autocomplete="tel"
           :placeholder="$t('shop.guest.phonePlaceholder')"
-          class="input"
+          class="sf-input"
+          :aria-invalid="Boolean(errors?.phone)"
+          :aria-describedby="errors?.phone ? 'guest-phone-error' : undefined"
           @input="patch({ customerPhone: ($event.target as HTMLInputElement).value })"
         />
         <Loader2
           v-if="lookupStatus === 'loading'"
-          class="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400"
+          class="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-mute"
         />
         <Check
           v-else-if="lookupStatus === 'found'"
-          class="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600"
+          class="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ok"
         />
       </div>
-      <p v-if="lookupStatus === 'found'" class="text-xs text-green-600">{{ $t('shop.guest.welcomeBack') }}</p>
-      <p v-if="errors?.phone" class="text-xs text-red-600">{{ errors.phone }}</p>
+      <p v-if="lookupStatus === 'found'" class="text-xs text-ok">{{ $t('shop.guest.welcomeBack') }}</p>
+      <p v-if="errors?.phone" id="guest-phone-error" class="sf-field-error">{{ errors.phone }}</p>
     </label>
 
     <label class="flex flex-col gap-1.5">
-        <span class="text-sm text-gray-700">{{ $t('shop.guest.wilaya') }}</span>
+      <span class="sf-label">{{ $t('shop.guest.wilaya') }}</span>
       <select
         :value="modelValue.customerWilaya"
-        class="input"
+        class="sf-input"
+        autocomplete="address-level1"
+        :aria-invalid="Boolean(errors?.wilaya)"
+        :aria-describedby="errors?.wilaya ? 'guest-wilaya-error' : undefined"
         @change="patch({ customerWilaya: ($event.target as HTMLSelectElement).value })"
       >
         <option value="">{{ $t('shop.guest.selectWilaya') }}</option>
         <option v-for="wilaya in ALGERIA_WILAYAS" :key="wilaya" :value="wilaya">{{ wilaya }}</option>
       </select>
-      <p v-if="errors?.wilaya" class="text-xs text-red-600">{{ errors.wilaya }}</p>
+      <p v-if="errors?.wilaya" id="guest-wilaya-error" class="sf-field-error">{{ errors.wilaya }}</p>
     </label>
   </div>
 </template>

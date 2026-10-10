@@ -7,8 +7,7 @@ import { useStorefrontCartStore } from '@/stores/storefrontCart'
 import { useCustomerAuthStore } from '@/stores/customerAuth'
 import { lookupCustomerByPhoneStorefront } from '@/services/globalStore'
 import { ALGERIA_WILAYAS } from '@/data/algeriaWilayas'
-import PageHeader from '@/components/ui/PageHeader.vue'
-import SkeletonForm from '@/components/ui/SkeletonForm.vue'
+import DeliveryMethodPicker, { type DeliveryMethodOption } from '@/components/storefront/DeliveryMethodPicker.vue'
 import { Check, Loader2 } from 'lucide-vue-next'
 import type { CustomerLoginResponse, DeliveryService, WilayaDeliveryRate } from '@/types/api'
 import { deliveryFeeForWilaya } from '@/utils/deliveryFee'
@@ -58,6 +57,12 @@ const selectedDeliveryFee = computed(() => {
     fallbackFee.value,
   )
 })
+
+const methodOptions = computed<DeliveryMethodOption<'PICKUP' | DeliveryService>[]>(() => [
+  { value: 'PICKUP', label: t('shop.checkout.pickup'), hint: t('shop.checkout.pickupHint'), fee: t('shop.checkout.free') },
+  { value: 'STOPDESK', label: t('shop.checkout.stopdesk'), hint: t('shop.checkout.stopdeskHint'), fee: feeLabel('STOPDESK') },
+  { value: 'HOME', label: t('shop.checkout.home'), hint: t('shop.checkout.homeHint'), fee: feeLabel('HOME') },
+])
 
 const grandTotal = computed(() => cart.total + selectedDeliveryFee.value)
 
@@ -135,71 +140,76 @@ async function submit() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
-    <PageHeader :title="$t('shop.checkout.title')" />
+  <div class="flex flex-col gap-10">
+    <h1 class="sf-display text-5xl md:text-7xl rtl:text-4xl rtl:md:text-6xl">{{ $t('shop.checkout.title') }}</h1>
 
-    <ul class="list-panel">
-      <li v-for="line in cart.lines" :key="line.productId" class="list-row">
-        <span>{{ line.name }} × {{ line.quantity }}</span>
-        <span>{{ (Number(line.sellPrice) * line.quantity).toFixed(2) }} {{ $t('common.currency') }}</span>
-      </li>
-    </ul>
+    <div class="grid gap-10 lg:grid-cols-12 lg:gap-16">
+      <aside class="sf-panel h-fit p-6 md:p-7 lg:order-2 lg:col-span-5" :aria-label="$t('shop.checkout.orderSummary')">
+        <h2 class="sf-eyebrow">{{ $t('shop.checkout.orderSummary') }}</h2>
+        <ul class="mt-5 flex flex-col gap-3 text-sm">
+          <li v-for="line in cart.lines" :key="line.productId" class="flex justify-between gap-4">
+            <span class="text-ink">{{ line.name }} <span class="text-mute">× {{ line.quantity }}</span></span>
+            <span class="text-ink tabular-nums">{{ formatDzd(Number(line.sellPrice) * line.quantity) }}</span>
+          </li>
+        </ul>
+        <div class="mt-6 flex items-center justify-between border-t border-line pt-5">
+          <span class="font-medium text-ink">{{ $t('shop.checkout.total') }}</span>
+          <span class="text-lg font-medium text-ink tabular-nums">{{ formatDzd(grandTotal) }}</span>
+        </div>
+      </aside>
 
-    <SkeletonForm v-if="loading" :fields="5" />
+      <div class="lg:order-1 lg:col-span-7">
+        <div v-if="loading" class="flex flex-col gap-4" role="status">
+          <span class="sr-only">{{ $t('common.loading') }}</span>
+          <div v-for="n in 5" :key="n" class="sf-skeleton h-12" />
+        </div>
 
-    <form v-else class="card flex max-w-lg flex-col gap-4" @submit.prevent="submit">
-      <div class="flex flex-col gap-3">
-        <label class="flex items-center gap-2 text-sm text-gray-700">
-          <input v-model="form.method" type="radio" value="PICKUP" />
-          {{ $t('shop.checkout.pickup') }}
-        </label>
-        <label class="flex items-center gap-2 text-sm text-gray-700">
-          <input v-model="form.method" type="radio" value="STOPDESK" />
-          {{ $t('shop.checkout.stopdesk') }}
-          <span class="text-gray-500">({{ feeLabel('STOPDESK') }})</span>
-        </label>
-        <label class="flex items-center gap-2 text-sm text-gray-700">
-          <input v-model="form.method" type="radio" value="HOME" />
-          {{ $t('shop.checkout.home') }}
-          <span class="text-gray-500">({{ feeLabel('HOME') }})</span>
-        </label>
+        <form v-else class="flex flex-col gap-5" @submit.prevent="submit">
+          <DeliveryMethodPicker
+            v-model="form.method"
+            name="shop-checkout-method"
+            :legend="$t('shop.checkout.stepDelivery')"
+            :options="methodOptions"
+          />
+
+          <input v-model="form.customerName" :aria-label="$t('shop.checkout.placeholderName')" :placeholder="$t('shop.checkout.placeholderName')" autocomplete="name" required class="sf-input" />
+          <div class="relative">
+            <input v-model="form.customerPhone" type="tel" :aria-label="$t('shop.checkout.placeholderPhone')" :placeholder="$t('shop.checkout.placeholderPhone')" autocomplete="tel" required class="sf-input" />
+            <Loader2
+              v-if="lookupStatus === 'loading'"
+              class="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-mute"
+            />
+            <Check
+              v-else-if="lookupStatus === 'found'"
+              class="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ok"
+            />
+          </div>
+          <p v-if="lookupStatus === 'found'" class="-mt-2 text-xs text-ok">
+            {{ $t('shop.checkout.welcomeBack') }}
+          </p>
+          <input v-model="form.customerEmail" type="email" :aria-label="$t('shop.checkout.placeholderEmail')" :placeholder="$t('shop.checkout.placeholderEmail')" autocomplete="email" class="sf-input" />
+          <select v-model="form.customerWilaya" :aria-label="$t('shop.checkout.selectWilaya')" required class="sf-input">
+            <option value="">{{ $t('shop.checkout.selectWilaya') }}</option>
+            <option v-for="wilaya in ALGERIA_WILAYAS" :key="wilaya" :value="wilaya">{{ wilaya }}</option>
+          </select>
+
+          <template v-if="form.method === 'HOME'">
+            <input v-model="form.deliveryAddress" :aria-label="$t('shop.checkout.placeholderAddress')" :placeholder="$t('shop.checkout.placeholderAddress')" autocomplete="street-address" required class="sf-input" />
+            <input
+              v-model="form.deliveryCity"
+              :aria-label="$t('shop.checkout.placeholderCityMustBe', { city: shop?.serviceCity })"
+              :placeholder="$t('shop.checkout.placeholderCityMustBe', { city: shop?.serviceCity })"
+              class="sf-input"
+            />
+          </template>
+
+          <p v-if="error" class="border-s-2 border-alert bg-paper px-4 py-3 text-sm text-alert" role="alert">{{ error }}</p>
+
+          <button type="submit" class="sf-btn mt-2 w-full">
+            {{ $t('shop.checkout.placeOrder', { total: grandTotal.toFixed(2) }) }}
+          </button>
+        </form>
       </div>
-
-      <input v-model="form.customerName" :placeholder="$t('shop.checkout.placeholderName')" required class="input" />
-      <div class="relative">
-        <input v-model="form.customerPhone" :placeholder="$t('shop.checkout.placeholderPhone')" required class="input" />
-        <Loader2
-          v-if="lookupStatus === 'loading'"
-          class="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400"
-        />
-        <Check
-          v-else-if="lookupStatus === 'found'"
-          class="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600"
-        />
-      </div>
-      <p v-if="lookupStatus === 'found'" class="-mt-2 text-xs text-green-600">
-        {{ $t('shop.checkout.welcomeBack') }}
-      </p>
-      <input v-model="form.customerEmail" type="email" :placeholder="$t('shop.checkout.placeholderEmail')" class="input" />
-      <select v-model="form.customerWilaya" required class="input">
-        <option value="">{{ $t('shop.checkout.selectWilaya') }}</option>
-        <option v-for="wilaya in ALGERIA_WILAYAS" :key="wilaya" :value="wilaya">{{ wilaya }}</option>
-      </select>
-
-      <template v-if="form.method === 'HOME'">
-        <input v-model="form.deliveryAddress" :placeholder="$t('shop.checkout.placeholderAddress')" required class="input" />
-        <input
-          v-model="form.deliveryCity"
-          :placeholder="$t('shop.checkout.placeholderCityMustBe', { city: shop?.serviceCity })"
-          class="input"
-        />
-      </template>
-
-      <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
-
-      <button type="submit" class="btn-primary w-full">
-        {{ $t('shop.checkout.placeOrder', { total: grandTotal.toFixed(2) }) }}
-      </button>
-    </form>
+    </div>
   </div>
 </template>

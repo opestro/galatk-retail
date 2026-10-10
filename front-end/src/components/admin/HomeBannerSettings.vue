@@ -157,100 +157,94 @@ onMounted(load)
 </script>
 
 <template>
-  <section class="card flex max-w-2xl flex-col gap-4">
-    <div>
-      <h3 class="text-base font-medium text-gray-900">{{ t('admin.banner.title') }}</h3>
-      <p class="mt-1 text-sm text-gray-500">
-        {{ t('admin.banner.description') }}
-      </p>
+  <section class="pos-surface flex max-w-3xl flex-col">
+    <div class="px-6 pt-6 pb-2">
+      <h2 class="section-title">{{ t('admin.banner.title') }}</h2>
+      <p class="mt-1 text-[13px] text-pos-muted">{{ t('admin.banner.description') }}</p>
     </div>
 
-    <div v-if="loading" class="flex flex-col gap-3" role="status">
+    <div v-if="loading" class="flex flex-col gap-3 p-6" role="status">
       <span class="sr-only">{{ t('common.loading') }}</span>
-      <Skeleton height="h-10" width="w-full" />
-      <Skeleton height="h-10" width="w-full" />
-      <Skeleton height="h-24" width="w-full" />
-      <Skeleton height="h-10" width="w-32" />
+      <div class="pos-skeleton h-11 rounded-xl" />
+      <div class="pos-skeleton h-11 rounded-xl" />
+      <div class="pos-skeleton h-24 rounded-xl" />
     </div>
 
-    <form v-else class="flex flex-col gap-4" @submit.prevent="save">
-      <label class="flex items-center gap-2 text-sm text-gray-800">
-        <input v-model="form.bannerEnabled" type="checkbox" class="h-4 w-4 rounded border-gray-300" />
-        {{ t('admin.banner.enabled') }}
-      </label>
-
-      <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.banner.titleField') }}</label>
-        <input v-model="form.bannerTitle" class="input" maxlength="120" required />
-      </div>
-
-      <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.banner.subtitleField') }}</label>
-        <textarea v-model="form.bannerSubtitle" class="input min-h-24" maxlength="400" rows="3" />
-      </div>
-
-      <div>
-        <label class="mb-1 block text-sm font-medium text-gray-700">{{ t('admin.banner.interval') }}</label>
-        <input
-          v-model.number="form.intervalSeconds"
-          type="number"
-          min="2"
-          max="60"
-          class="input max-w-32"
-        />
-        <p class="mt-1 text-xs text-gray-500">{{ t('admin.banner.intervalHint') }}</p>
-      </div>
-
-      <div>
-        <label class="mb-2 block text-sm font-medium text-gray-700">{{ t('admin.banner.imagesLabel') }}</label>
-        <div v-if="form.images.length === 0" class="mb-3 rounded-md border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-500">
-          {{ t('admin.banner.emptyImages') }}
+    <form v-else class="flex flex-col" @submit.prevent="save">
+      <div class="flex flex-col gap-5 p-6">
+        <div class="flex items-center justify-between gap-4 rounded-xl bg-pos-sunken px-4 py-3">
+          <span>
+            <span id="banner-enabled-label" class="block text-[14px] font-medium text-pos-ink">{{ t('admin.banner.enabled') }}</span>
+          </span>
+          <button
+            type="button"
+            role="switch"
+            class="pos-switch"
+            aria-labelledby="banner-enabled-label"
+            :aria-checked="form.bannerEnabled"
+            @click="form.bannerEnabled = !form.bannerEnabled"
+          />
         </div>
-        <div v-else class="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div
-            v-for="image in form.images"
-            :key="image.id"
-            class="group relative aspect-[16/9] overflow-hidden rounded-md border border-gray-200 bg-gray-100"
-          >
-            <img :src="mediaUrl(image.url)" alt="" class="h-full w-full object-cover object-center" />
-            <button
-              type="button"
-              class="absolute end-1.5 top-1.5 rounded bg-white p-1.5 text-red-600"
-              :aria-label="t('admin.banner.removeAria')"
-              :disabled="uploading"
-              @click="removeImage(image.id)"
+
+        <label class="pos-field">
+          <span class="pos-label">{{ t('admin.banner.titleField') }}</span>
+          <input v-model="form.bannerTitle" class="pos-input" maxlength="120" required />
+        </label>
+
+        <label class="pos-field">
+          <span class="pos-label">{{ t('admin.banner.subtitleField') }}</span>
+          <textarea v-model="form.bannerSubtitle" class="pos-input h-auto min-h-24 resize-none py-3" maxlength="400" rows="3" />
+        </label>
+
+        <label class="pos-field">
+          <span class="pos-label">{{ t('admin.banner.interval') }}</span>
+          <input v-model.number="form.intervalSeconds" type="number" inputmode="numeric" min="2" max="60" class="pos-input max-w-32 pos-num" />
+          <span class="pos-field-hint">{{ t('admin.banner.intervalHint') }}</span>
+        </label>
+
+        <div class="pos-field">
+          <span class="pos-label">{{ t('admin.banner.imagesLabel') }}</span>
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div
+              v-for="image in form.images"
+              :key="image.id"
+              class="group relative aspect-[16/9] overflow-hidden rounded-xl bg-pos-sunken"
             >
-              <Trash2 class="h-3.5 w-3.5" />
+              <img :src="mediaUrl(image.url)" alt="" class="h-full w-full object-cover object-center" />
+              <button
+                type="button"
+                class="absolute end-2 top-2 flex h-8 w-8 items-center justify-center rounded-lg bg-white/95 text-pos-err opacity-100 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
+                :aria-label="t('admin.banner.removeAria')"
+                :title="t('admin.banner.removeAria')"
+                :disabled="uploading"
+                @click="removeImage(image.id)"
+              >
+                <Trash2 class="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <button
+              v-if="form.images.length < MAX_IMAGES"
+              type="button"
+              class="flex aspect-[16/9] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#d9d9d9] text-[12.5px] text-pos-muted transition-colors hover:border-pos-faint hover:bg-pos-sunken/60"
+              :disabled="uploading"
+              @click="imageInput?.click()"
+            >
+              <ImagePlus class="h-5 w-5" />
+              {{ uploading ? t('common.uploading') : t('admin.banner.addImages') }}
             </button>
           </div>
+          <span class="pos-field-hint">{{ t('admin.banner.imageRequirements') }}</span>
+          <input ref="imageInput" type="file" class="hidden" :accept="IMAGE_ACCEPT" multiple @change="onImageChange" />
         </div>
-        <input
-          ref="imageInput"
-          type="file"
-          class="hidden"
-          :accept="IMAGE_ACCEPT"
-          multiple
-          @change="onImageChange"
-        />
-        <button
-          type="button"
-          class="btn-secondary"
-          :disabled="uploading || form.images.length >= MAX_IMAGES"
-          @click="imageInput?.click()"
-        >
-          <ImagePlus class="me-2 h-4 w-4" />
-          {{ uploading ? t('common.uploading') : t('admin.banner.addImages') }}
-        </button>
-        <p class="mt-1 text-xs text-gray-500">
-          {{ t('admin.banner.imageRequirements') }}
-        </p>
-      </div>
 
-      <p v-if="message" class="text-sm text-green-600">{{ message }}</p>
-      <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
-      <button type="submit" class="btn-primary self-start" :disabled="saving">
-        {{ saving ? t('common.saving') : t('admin.banner.save') }}
-      </button>
+        <p v-if="error" class="pos-notice bg-pos-err-bg text-pos-err" role="alert">{{ error }}</p>
+      </div>
+      <div class="flex items-center justify-between gap-3 border-t border-pos-line bg-pos-sunken/60 px-6 py-4">
+        <p class="text-[13px] text-pos-ok" aria-live="polite">{{ message }}</p>
+        <button type="submit" class="pos-btn-primary" :disabled="saving">
+          {{ saving ? t('common.saving') : t('admin.banner.save') }}
+        </button>
+      </div>
     </form>
   </section>
 </template>

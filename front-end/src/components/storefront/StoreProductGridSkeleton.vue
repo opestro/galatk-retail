@@ -1,24 +1,18 @@
 <script setup lang="ts">
-import Skeleton from '@/components/ui/Skeleton.vue'
-
 defineProps<{
   count?: number
 }>()
 </script>
 
 <template>
-  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4" role="status">
+  <div class="sf-grid" role="status">
     <span class="sr-only">{{ $t('shop.catalog.loading') }}</span>
-    <div
-      v-for="i in count ?? 8"
-      :key="i"
-      class="overflow-hidden rounded-xl border border-gray-200 bg-white"
-    >
-      <Skeleton height="h-48" rounded="rounded-none" />
-      <div class="flex flex-col gap-3 p-4">
-        <Skeleton height="h-5" width="w-2/3" />
-        <Skeleton height="h-4" width="w-1/3" />
-        <Skeleton height="h-10" />
+    <div v-for="i in count ?? 8" :key="i" aria-hidden="true">
+      <div class="sf-skeleton aspect-[3/4]" />
+      <div class="mt-4">
+        <div class="sf-skeleton h-3 w-3/4" />
+        <div class="sf-skeleton mt-2.5 h-3 w-1/3" />
+        <div class="sf-skeleton mt-3 h-3 w-16" />
       </div>
     </div>
   </div>

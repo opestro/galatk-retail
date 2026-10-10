@@ -14,22 +14,18 @@ const { t } = useI18n()
     <slot name="header" />
 
     <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
-      <section class="card flex flex-col gap-5">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          {{ informationTitle ?? t('admin.product.informationTitle') }}
-        </h3>
+      <section class="pos-surface flex flex-col gap-5 p-6">
+        <h2 class="section-title">{{ informationTitle ?? t('admin.product.informationTitle') }}</h2>
         <slot name="information" />
       </section>
 
-      <section class="card flex flex-col gap-4">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          {{ imagesTitle ?? t('admin.product.imagesTitle') }}
-        </h3>
+      <section class="pos-surface flex flex-col gap-4 p-6">
+        <h2 class="section-title">{{ imagesTitle ?? t('admin.product.imagesTitle') }}</h2>
         <slot name="images" />
       </section>
     </div>
 
-    <section class="card flex flex-col gap-4">
+    <section class="pos-surface flex flex-col gap-4 p-6">
       <slot name="variants" />
     </section>
 

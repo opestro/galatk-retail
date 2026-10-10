@@ -1,0 +1,641 @@
+/*
+ * POS design system — "calm retail OS". Scoped under `.pos` (set by PosLayout)
+ * so the storefront and admin keep their own languages.
+ *
+ * Soft canvas, white elevated surfaces, near-black ink, one dark accent.
+ * Elevation comes from two very soft shadow layers instead of borders — the
+ * one deliberate exception to the global no-shadow rule, hence `!important`.
+ * Text tokens pass WCAG AA (4.5:1) on both white and the canvas.
+ */
+@theme {
+  --color-pos-ink: #111827;      /* headings, primary text */
+  --color-pos-ink-2: #1f2937;    /* body copy */
+  --color-pos-espresso: #18181b; /* primary actions */
+  --color-pos-muted: #63666f;    /* metadata (5.3:1 on canvas) */
+  --color-pos-faint: #8a8f98;    /* decorative icons only */
+  --color-pos-canvas: #f4f5f7;
+  --color-pos-sunken: #f8f8f6;   /* wells, hover rows, image fallbacks */
+  --color-pos-line: #ececec;
+  --color-pos-ok-bg: #e6f4ea;
+  --color-pos-ok: #137333;
+  --color-pos-warn-bg: #fef3c7;
+  --color-pos-warn: #92400e;
+  --color-pos-err-bg: #fee2e2;
+  --color-pos-err: #b91c1c;
+
+  --font-pos: "Inter", "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-pos-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --ease-pos: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+:root {
+  --pos-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+  --pos-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.05), 0 12px 28px rgba(0, 0, 0, 0.07);
+  --pos-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 32px 64px rgba(0, 0, 0, 0.12);
+}
+
+@layer base {
+  .pos {
+    font-family: var(--font-pos);
+    font-size: 14px;
+    line-height: 1.5;
+    background-color: var(--color-pos-canvas);
+    color: var(--color-pos-ink-2);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .pos :focus-visible {
+    outline: 2px solid var(--color-pos-ink);
+    outline-offset: 2px;
+  }
+
+  .pos ::selection {
+    background: #e5e7eb;
+    color: var(--color-pos-ink);
+  }
+
+  .pos .lucide {
+    stroke-width: 1.75;
+  }
+
+  .pos :where(button, a, [role='button'], summary) {
+    touch-action: manipulation;
+  }
+
+  .pos :where(button:not(:disabled), [role='button']) {
+    cursor: pointer;
+  }
+}
+
+/* Base shapes that the button and badge variants below build on. */
+@utility pos-btn {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-[14px] font-medium whitespace-nowrap transition-[background-color,color,transform,box-shadow,opacity] duration-150 ease-[var(--ease-pos)] select-none disabled:cursor-not-allowed disabled:opacity-40;
+
+  &:not(:disabled):active {
+    transform: scale(0.98);
+  }
+}
+
+@utility pos-badge {
+  @apply inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium whitespace-nowrap;
+}
+
+@layer components {
+  /* ---- Surfaces ---- */
+  .pos-surface {
+    @apply rounded-2xl bg-white;
+    box-shadow: var(--pos-shadow-sm) !important;
+  }
+
+  .pos-page {
+    @apply mx-auto flex w-full max-w-7xl flex-col gap-6;
+  }
+
+  .pos-page-title {
+    @apply text-[22px] font-semibold tracking-[-0.01em] text-pos-ink;
+  }
+
+  .pos-page-sub {
+    @apply mt-0.5 text-[13px] text-pos-muted;
+  }
+
+  .pos-label {
+    @apply text-[12px] font-medium text-pos-muted;
+  }
+
+  .pos-num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Inputs ---- */
+  .pos-input {
+    @apply h-11 w-full rounded-xl border border-pos-line bg-white px-3.5 text-[14px] text-pos-ink transition-[border-color,background-color] duration-200 ease-[var(--ease-pos)] placeholder:text-pos-faint hover:border-[#dcdcdc] focus:border-pos-ink focus:outline-none;
+  }
+
+  .pos-input:focus-visible {
+    outline: none;
+  }
+
+  /* Amounts are typed, not nudged: drop the native spinner arrows. */
+  .pos-input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  .pos-input[type='number']::-webkit-inner-spin-button,
+  .pos-input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .pos-input-icon {
+    @apply ps-10;
+  }
+
+  /* ---- Buttons ---- */
+  .pos-btn-primary {
+    @apply pos-btn bg-pos-espresso text-white hover:bg-[#2a2a2e];
+  }
+
+  .pos-btn-primary:not(:disabled):hover {
+    box-shadow: 0 4px 14px rgba(17, 24, 39, 0.22) !important;
+  }
+
+  .pos-btn-ghost {
+    @apply pos-btn bg-transparent text-pos-ink-2 hover:bg-black/[0.04] active:bg-black/[0.06];
+  }
+
+  .pos-btn-soft {
+    @apply pos-btn bg-white text-pos-ink-2 hover:bg-pos-sunken;
+    box-shadow: inset 0 0 0 1px var(--color-pos-line) !important;
+  }
+
+  .pos-btn-danger {
+    @apply pos-btn bg-pos-err text-white hover:bg-[#991b1b];
+  }
+
+  .pos-btn-sm {
+    @apply min-h-9 rounded-[10px] px-3 text-[13px];
+  }
+
+  .pos-icon-btn {
+    @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-pos-muted transition-colors duration-150 hover:bg-black/[0.05] hover:text-pos-ink;
+  }
+
+  /* ---- Navigation pills ---- */
+  .pos-nav {
+    @apply flex items-center gap-1 rounded-xl bg-pos-canvas p-1;
+  }
+
+  .pos-nav-pill {
+    @apply relative inline-flex h-9 items-center gap-2 rounded-[10px] px-2.5 text-[13px] sm:px-3 font-medium whitespace-nowrap text-pos-muted transition-[background-color,color,box-shadow] duration-200 ease-[var(--ease-pos)] hover:text-pos-ink;
+  }
+
+  .pos-nav-pill[aria-current='page'] {
+    @apply bg-white text-pos-ink;
+    box-shadow: var(--pos-shadow-sm) !important;
+  }
+
+  /* ---- Segmented control ---- */
+  .pos-segmented {
+    @apply grid auto-cols-fr grid-flow-col gap-1 rounded-xl bg-pos-canvas p-1;
+  }
+
+  .pos-segment {
+    @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-[10px] px-3 text-[13px] font-medium text-pos-muted transition-[background-color,color,box-shadow] duration-200 ease-[var(--ease-pos)] hover:text-pos-ink;
+  }
+
+  .pos-segment[aria-pressed='true'],
+  .pos-segment[aria-checked='true'],
+  .pos-segment[aria-selected='true'] {
+    @apply bg-white text-pos-ink;
+    box-shadow: var(--pos-shadow-sm) !important;
+  }
+
+  /* ---- Keyboard hints ---- */
+  .pos-kbd {
+    font-family: var(--font-pos-mono);
+    @apply inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-black/[0.06] bg-pos-canvas px-1.5 text-[10.5px] leading-none font-medium text-pos-muted;
+  }
+
+  .pos-kbd-dark {
+    @apply border-white/10 bg-white/10 text-white/75;
+  }
+
+  /* ---- Chips & badges ---- */
+  .pos-chip {
+    @apply inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-3 text-[13px] font-medium text-pos-ink-2 transition-[background-color,color,box-shadow] duration-200 ease-[var(--ease-pos)] hover:bg-pos-sunken;
+    box-shadow: inset 0 0 0 1px var(--color-pos-line) !important;
+  }
+
+  .pos-chip[aria-pressed='true'] {
+    @apply bg-pos-espresso text-white hover:bg-pos-espresso;
+    box-shadow: none !important;
+  }
+
+  .pos-badge-ok {
+    @apply pos-badge bg-pos-ok-bg text-pos-ok;
+  }
+
+  .pos-badge-warn {
+    @apply pos-badge bg-pos-warn-bg text-pos-warn;
+  }
+
+  .pos-badge-err {
+    @apply pos-badge bg-pos-err-bg text-pos-err;
+  }
+
+  .pos-badge-neutral {
+    @apply pos-badge bg-pos-canvas text-pos-ink-2;
+  }
+
+  .pos-dot {
+    @apply h-1.5 w-1.5 shrink-0 rounded-full bg-current;
+  }
+
+  /* ---- Notices ---- */
+  .pos-notice {
+    @apply flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-[13px] leading-snug;
+  }
+
+  /* ---- Product tiles ---- */
+  .pos-tile {
+    @apply relative flex flex-col overflow-hidden rounded-2xl bg-white text-start transition-[transform,box-shadow] duration-200 ease-[var(--ease-pos)];
+    box-shadow: var(--pos-shadow-sm) !important;
+  }
+
+  .pos-tile:hover,
+  .pos-tile[data-highlight='true'] {
+    box-shadow: var(--pos-shadow-md) !important;
+  }
+
+  .pos-tile[data-highlight='true'] {
+    outline: 2px solid var(--color-pos-ink);
+    outline-offset: 2px;
+  }
+
+  .pos-tile:disabled {
+    @apply cursor-not-allowed opacity-55;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pos-tile:not(:disabled):hover {
+      transform: translateY(-2px);
+    }
+
+    .pos-tile:not(:disabled):active {
+      transform: translateY(0) scale(0.985);
+    }
+  }
+
+  /* ---- Tables ---- */
+  .pos-table {
+    @apply w-full border-separate border-spacing-0 text-[13.5px];
+  }
+
+  .pos-table thead th {
+    @apply sticky top-0 z-[1] bg-white px-4 py-3 text-start text-[12px] font-medium whitespace-nowrap text-pos-muted;
+    border-bottom: 1px solid var(--color-pos-line);
+  }
+
+  .pos-table tbody td {
+    @apply px-4 py-3.5 align-middle text-pos-ink-2;
+    border-bottom: 1px solid #f3f3f3;
+  }
+
+  .pos-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .pos-table tbody tr {
+    @apply transition-colors duration-150;
+  }
+
+  .pos-table tbody tr:hover td {
+    @apply bg-pos-sunken;
+  }
+
+  .pos-table :where(th, td).pos-cell-num {
+    @apply text-end whitespace-nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pos-table :where(th, td).pos-cell-actions {
+    @apply w-px text-end whitespace-nowrap;
+  }
+
+  /* ---- Menus / popovers ---- */
+  .pos-menu {
+    @apply absolute z-50 min-w-48 rounded-xl bg-white p-1;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04), var(--pos-shadow-md) !important;
+  }
+
+  .pos-menu-item {
+    @apply flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 text-start text-[13.5px] text-pos-ink-2 transition-colors duration-150 hover:bg-pos-canvas focus-visible:bg-pos-canvas;
+  }
+
+  .pos-menu-item-danger {
+    @apply text-pos-err hover:bg-pos-err-bg focus-visible:bg-pos-err-bg;
+  }
+
+  /* ---- Modal ---- */
+  .pos-backdrop {
+    @apply fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-6;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .pos-dialog {
+    @apply flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white sm:rounded-2xl;
+    box-shadow: var(--pos-shadow-lg) !important;
+  }
+
+  /* ---- Admin building blocks ---- */
+  .pos-section-label {
+    @apply text-[12px] font-medium tracking-[0.01em] text-pos-muted;
+  }
+
+  .pos-field {
+    @apply flex flex-col gap-1.5;
+  }
+
+  .pos-field-hint {
+    @apply text-[12px] leading-snug text-pos-muted;
+  }
+
+  .pos-link {
+    @apply font-medium text-pos-ink underline decoration-pos-line decoration-1 underline-offset-4 transition-colors hover:decoration-pos-ink;
+  }
+
+  .pos-row-link {
+    @apply cursor-pointer;
+  }
+
+  .pos-switch {
+    @apply relative inline-flex h-6 w-10 shrink-0 cursor-pointer items-center rounded-full bg-[#dcdde1] transition-colors duration-200;
+  }
+
+  .pos-switch[aria-checked='true'] {
+    @apply bg-pos-espresso;
+  }
+
+  .pos-switch::after {
+    content: '';
+    @apply absolute start-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 ease-[var(--ease-pos)];
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .pos-switch[aria-checked='true']::after {
+    transform: translateX(1rem);
+  }
+
+  html[dir='rtl'] .pos-switch[aria-checked='true']::after {
+    transform: translateX(-1rem);
+  }
+
+  .pos-switch:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .pos-side-link {
+    @apply flex min-h-9 items-center gap-3 rounded-[10px] px-3 text-[13.5px] font-medium text-pos-muted transition-[background-color,color] duration-150 hover:bg-black/[0.04] hover:text-pos-ink;
+  }
+
+  .pos-side-link[aria-current='page'] {
+    @apply bg-white text-pos-ink;
+    box-shadow: var(--pos-shadow-sm) !important;
+  }
+
+  .pos-toast {
+    @apply pointer-events-auto flex min-w-64 max-w-sm items-start gap-2.5 rounded-xl bg-pos-espresso px-4 py-3 text-[13.5px] text-white;
+    box-shadow: var(--pos-shadow-lg) !important;
+  }
+
+  /* ---- Loading ---- */
+  .pos-skeleton {
+    @apply rounded-lg;
+    background: linear-gradient(90deg, #ececee 0%, #f5f5f6 50%, #ececee 100%);
+    background-size: 200% 100%;
+    animation: pos-shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+/*
+ * Legacy shared classes rendered inside the staff UI (POS and admin) adopt the
+ * same language without forking components. The storefront and login keep the
+ * originals because they are not under `.pos`.
+ */
+@layer components {
+  .pos .input {
+    @apply min-h-11 rounded-xl border-pos-line bg-white px-3.5 text-[14px] text-pos-ink transition-[border-color,background-color] duration-200 placeholder:text-pos-faint hover:border-[#dcdcdc] focus:border-pos-ink focus:outline-none disabled:cursor-not-allowed disabled:bg-pos-sunken disabled:text-pos-muted;
+  }
+
+  .pos .input:focus-visible {
+    outline: none;
+  }
+
+  .pos textarea.input {
+    @apply py-3 leading-relaxed;
+  }
+
+  /* Native selects get the same chevron in both directions. */
+  .pos select.input,
+  .pos select.pos-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2363666f' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.875rem center;
+    padding-inline-end: 2.5rem;
+  }
+
+  html[dir='rtl'] .pos select.input,
+  html[dir='rtl'] .pos select.pos-input {
+    background-position: left 0.875rem center;
+  }
+
+  .pos input[type='checkbox'],
+  .pos input[type='radio'] {
+    accent-color: var(--color-pos-espresso);
+  }
+
+  .pos input[type='date'].input,
+  .pos input[type='date'].pos-input {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pos .input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  .pos .input[type='number']::-webkit-inner-spin-button,
+  .pos .input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .pos .btn-primary {
+    @apply pos-btn bg-pos-espresso text-white hover:bg-[#2a2a2e] active:bg-pos-espresso;
+  }
+
+  .pos .btn-secondary {
+    @apply pos-btn border-0 bg-white text-pos-ink-2 hover:bg-pos-sunken active:bg-pos-canvas;
+    box-shadow: inset 0 0 0 1px var(--color-pos-line) !important;
+  }
+
+  .pos .btn-danger {
+    @apply pos-btn border-0 bg-pos-err text-white hover:bg-[#991b1b] active:bg-pos-err;
+  }
+
+  .pos .page-shell {
+    @apply mx-auto flex w-full max-w-7xl flex-col gap-6;
+  }
+
+  .pos .page-header {
+    @apply flex flex-wrap items-end justify-between gap-4;
+  }
+
+  .pos .page-title {
+    @apply text-[22px] font-semibold tracking-[-0.01em] text-pos-ink;
+  }
+
+  .pos .section-title {
+    @apply text-[15px] font-semibold tracking-[-0.005em] text-pos-ink;
+  }
+
+  .pos .list-panel {
+    @apply divide-y divide-pos-line/70 overflow-hidden rounded-2xl border-0 bg-white;
+    box-shadow: var(--pos-shadow-sm) !important;
+  }
+
+  .pos .list-row {
+    @apply transition-colors duration-150 hover:bg-pos-sunken;
+  }
+
+  .pos .skeleton {
+    @apply rounded-lg;
+    background: linear-gradient(90deg, #ececee 0%, #f5f5f6 50%, #ececee 100%);
+    background-size: 200% 100%;
+    animation: pos-shimmer 1.4s ease-in-out infinite;
+  }
+
+  .pos .card {
+    @apply rounded-2xl border-0 bg-white;
+    box-shadow: var(--pos-shadow-sm) !important;
+  }
+}
+
+/* Arabic: no tracking on the script, a touch more leading for dots and marks. */
+html[dir='rtl'] .pos {
+  line-height: 1.6;
+}
+
+html[dir='rtl'] .pos .pos-page-title {
+  letter-spacing: 0;
+}
+
+@keyframes pos-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@keyframes pos-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes pos-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pos-rise {
+    animation: pos-rise 0.32s var(--ease-pos) both;
+    animation-delay: calc(var(--i, 0) * 30ms);
+  }
+
+  .pos-bump {
+    animation: pos-bump 0.3s var(--ease-pos);
+  }
+}
+
+/* Route change: quick crossfade, never slows the cashier down. */
+.pos-page-enter-active {
+  transition: opacity 0.2s var(--ease-pos), transform 0.2s var(--ease-pos);
+}
+
+.pos-page-leave-active {
+  transition: opacity 0.1s ease-in;
+}
+
+.pos-page-enter-from,
+.pos-page-leave-to {
+  opacity: 0;
+}
+
+/* Modal: backdrop fades, panel rises (sheet on phones, scale on desktop). */
+.pos-modal-enter-active,
+.pos-modal-leave-active {
+  transition: opacity 0.2s var(--ease-pos);
+}
+
+.pos-modal-enter-active .pos-dialog,
+.pos-modal-leave-active .pos-dialog {
+  transition: transform 0.25s var(--ease-pos), opacity 0.2s var(--ease-pos);
+}
+
+.pos-modal-leave-active,
+.pos-modal-leave-active .pos-dialog {
+  transition-duration: 0.15s;
+}
+
+.pos-modal-enter-from,
+.pos-modal-leave-to {
+  opacity: 0;
+}
+
+.pos-modal-enter-from .pos-dialog,
+.pos-modal-leave-to .pos-dialog {
+  opacity: 0;
+}
+
+/* Cart lines slide in/out; remaining rows glide into place. */
+.pos-list-enter-active,
+.pos-list-leave-active {
+  transition: opacity 0.2s var(--ease-pos), transform 0.2s var(--ease-pos);
+}
+
+.pos-list-leave-active {
+  position: absolute;
+  inset-inline: 0;
+}
+
+.pos-list-move {
+  transition: transform 0.25s var(--ease-pos);
+}
+
+.pos-list-enter-from,
+.pos-list-leave-to {
+  opacity: 0;
+}
+
+/* Popover menus. */
+.pos-pop-enter-active {
+  transition: opacity 0.16s var(--ease-pos), transform 0.16s var(--ease-pos);
+}
+
+.pos-pop-leave-active {
+  transition: opacity 0.1s ease-in;
+}
+
+.pos-pop-enter-from,
+.pos-pop-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pos-page-enter-from {
+    transform: translateY(4px);
+  }
+
+  .pos-modal-enter-from .pos-dialog {
+    transform: translateY(16px) scale(0.98);
+  }
+
+  .pos-list-enter-from {
+    transform: translateY(-6px);
+  }
+
+  .pos-list-leave-to {
+    transform: translateX(12px);
+  }
+
+  .pos-pop-enter-from {
+    transform: translateY(-4px) scale(0.98);
+  }
+}

@@ -1,14 +1,45 @@
 @import "tailwindcss";
 @import './base.css';
+@import './pos.css';
 
 @theme {
   --spacing-page: 1.5rem;
   --spacing-page-lg: 2rem;
   --spacing-section: 1.5rem;
   --spacing-card: 1.25rem;
+
+  /*
+   * Storefront palette — "quiet luxury": warm paper neutrals, charcoal ink,
+   * one soft-brown accent. Text tokens pass WCAG AA (4.5:1) on ivory, cream and paper.
+   */
+  --color-paper: #fdfbf7;   /* inputs, raised surfaces */
+  --color-ivory: #f8f5ef;   /* page background */
+  --color-cream: #f0eae0;   /* image wells, panels */
+  --color-sand: #e5dacb;    /* campaign bands, skeletons */
+  --color-blush: #f2e7de;   /* soft notice wash (credit due) */
+  --color-line: #e2d9cb;    /* hairlines */
+  --color-ink: #1b1815;     /* charcoal-black: headings, primary actions */
+  --color-ink-soft: #3d3832;/* body copy */
+  --color-mute: #645b52;    /* metadata */
+  --color-taupe: #6e5c4a;   /* eyebrows, icons */
+  --color-clay: #7e5939;    /* soft brown accent — italics, emphasis only */
+  --color-alert: #9a3a2d;
+  --color-ok: #46684a;
+
+  /*
+   * Latin faces carry no Arabic glyphs, so each stack falls through to its
+   * Arabic partner per character: Cormorant <-> Amiri (classical high-contrast
+   * serifs), Montserrat <-> IBM Plex Sans Arabic (clean UI sans). One stack,
+   * one brand voice, in both directions.
+   */
+  --font-display: "Cormorant Garamond", "Amiri", Georgia, "Times New Roman", serif;
+  --font-store: "Montserrat", "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-label: "Montserrat", "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --ease-store: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-/* Constitution: no box-shadows — borders and spacing only */
+/* Constitution: no box-shadows — borders and spacing only. The POS (pos.css) opts back in explicitly. */
 *, *::before, *::after {
   box-shadow: none !important;
 }
@@ -18,9 +49,11 @@
   font-weight: normal;
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
+@layer base {
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
 }
 
 input, select, textarea, button {
@@ -84,4 +117,369 @@ input, select, textarea, button {
 
 html[dir="rtl"] {
   font-family: "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+}
+
+/*
+ * Customer storefront design language. Scoped under `.storefront` (set by the
+ * store layouts) so admin and POS keep their dense dashboard styling.
+ *
+ * Direction: quiet luxury + modern editorial. Serif display for voice,
+ * small tracked capitals for wayfinding, generous whitespace, hairlines
+ * instead of cards, square corners, no shadows.
+ */
+@layer base {
+  .storefront {
+    font-family: var(--font-store);
+    font-size: 15px;
+    line-height: 1.65;
+    background-color: var(--color-ivory);
+    color: var(--color-ink-soft);
+    font-kerning: normal;
+    text-rendering: optimizeLegibility;
+  }
+
+  .storefront :where(h1, h2, h3) {
+    text-wrap: balance;
+  }
+
+  .storefront :where(p) {
+    text-wrap: pretty;
+  }
+
+  .storefront :focus-visible {
+    outline: 1.5px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
+  .storefront ::selection {
+    background: var(--color-sand);
+    color: var(--color-ink);
+  }
+
+  /* One icon line weight across the storefront: fine 1.25px strokes. */
+  .storefront .lucide {
+    stroke-width: 1.25;
+  }
+
+  .storefront :where(button, a, summary, [role='button']) {
+    touch-action: manipulation;
+  }
+}
+
+@layer components {
+  .sf-container {
+    @apply mx-auto w-full max-w-[90rem] px-5 sm:px-8 lg:px-12;
+  }
+
+  .sf-section {
+    @apply py-20 md:py-28 lg:py-32;
+  }
+
+  /* Standard product grid: two-up on phones, four-up on desktop, airy rows. */
+  .sf-grid {
+    @apply grid grid-cols-2 gap-x-3 gap-y-12 sm:gap-x-5 md:gap-x-6 lg:grid-cols-4 lg:gap-y-16;
+  }
+
+  /* Hero / campaign headlines. */
+  .sf-display {
+    font-family: var(--font-display);
+    @apply font-light leading-[0.98] tracking-[-0.015em] text-ink;
+  }
+
+  /* Section headings. */
+  .sf-heading {
+    font-family: var(--font-display);
+    @apply text-[2.25rem] font-light leading-[1.05] tracking-[-0.01em] text-ink md:text-[3.25rem];
+  }
+
+  /* Sub-headings, step titles, store names. */
+  .sf-title {
+    font-family: var(--font-display);
+    @apply font-medium leading-snug text-ink;
+  }
+
+  /* Wayfinding capitals: eyebrows, section labels. */
+  .sf-eyebrow {
+    font-family: var(--font-label);
+    @apply text-[10.5px] font-medium uppercase leading-normal tracking-[0.24em] text-taupe;
+  }
+
+  /* Product names on cards and line items. */
+  .sf-name {
+    font-family: var(--font-store);
+    @apply text-[13px] font-normal uppercase leading-snug tracking-[0.08em] text-ink;
+  }
+
+  .sf-price {
+    font-family: var(--font-label);
+    @apply text-[13px] font-normal tracking-[0.02em] text-ink tabular-nums;
+  }
+
+  /* Tabular figures for totals and summary rows. */
+  .sf-figure {
+    font-family: var(--font-label);
+    @apply tabular-nums;
+  }
+
+  .sf-btn {
+    font-family: var(--font-label);
+    @apply inline-flex min-h-[3.25rem] cursor-pointer items-center justify-center gap-3 bg-ink px-9 text-[11px] font-medium uppercase tracking-[0.2em] text-ivory transition-colors duration-300 ease-[var(--ease-store)] hover:bg-[#3a332c] active:bg-black disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .sf-btn-outline {
+    font-family: var(--font-label);
+    @apply inline-flex min-h-[3.25rem] cursor-pointer items-center justify-center gap-3 border border-ink/80 px-9 text-[11px] font-medium uppercase tracking-[0.2em] text-ink transition-colors duration-300 ease-[var(--ease-store)] hover:border-ink hover:bg-ink hover:text-ivory disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  /* Editorial text link: tracked capitals over a hairline that draws in on hover. */
+  .sf-link {
+    font-family: var(--font-label);
+    background-image: linear-gradient(currentColor, currentColor);
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
+    transition: background-size 0.45s var(--ease-store), opacity 0.2s;
+    @apply inline-flex cursor-pointer items-center gap-2.5 pb-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-ink;
+  }
+
+  .sf-link:hover {
+    background-size: 35% 1px;
+  }
+
+  .sf-label {
+    @apply text-[12px] font-medium tracking-[0.04em] text-ink-soft;
+  }
+
+  .sf-input {
+    @apply h-12 w-full border border-line bg-paper px-4 text-base text-ink transition-colors placeholder:text-mute/70 hover:border-taupe/60 focus:border-ink focus:outline-none aria-[invalid=true]:border-alert md:text-[14px];
+  }
+
+  .sf-field-error {
+    @apply text-xs text-alert;
+  }
+
+  .sf-chip {
+    @apply inline-flex min-h-10 cursor-pointer items-center gap-2 border border-line bg-paper px-4 text-[12.5px] tracking-[0.02em] text-ink-soft transition-colors duration-200 hover:border-ink;
+  }
+
+  .sf-chip-active {
+    @apply border-ink bg-ink text-ivory hover:border-ink;
+  }
+
+  /* Text filter tab: tracked capitals, hairline under the active one. */
+  .sf-tab {
+    font-family: var(--font-label);
+    @apply inline-flex min-h-11 cursor-pointer items-center whitespace-nowrap border-b border-transparent text-[11px] font-medium uppercase tracking-[0.18em] text-mute transition-colors duration-200 hover:text-ink;
+  }
+
+  .sf-tab-active {
+    @apply border-ink text-ink;
+  }
+
+  .sf-panel {
+    @apply border border-line bg-cream;
+  }
+
+  .sf-icon-btn {
+    @apply relative inline-flex h-11 w-11 cursor-pointer items-center justify-center text-ink transition-opacity duration-200 hover:opacity-55;
+  }
+
+  .sf-badge-count {
+    @apply absolute end-0.5 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-ink px-1 text-[9px] font-medium leading-none text-ivory tabular-nums;
+  }
+
+  .sf-skeleton {
+    @apply animate-pulse bg-sand/45;
+  }
+
+  /* Wordmark: widely tracked display capitals. */
+  .sf-wordmark {
+    font-family: var(--font-display);
+    @apply font-normal uppercase leading-none tracking-[0.32em] text-ink;
+  }
+}
+
+/*
+ * Arabic: never letter-space or case-transform the script, give Amiri and
+ * Plex the line-height their ascenders and dots need, and nudge the UI sizes
+ * up because Arabic reads smaller than tracked Latin capitals.
+ */
+html[dir="rtl"] .storefront {
+  line-height: 1.8;
+}
+
+html[dir="rtl"] .storefront :is(
+  .sf-eyebrow, .sf-btn, .sf-btn-outline, .sf-link, .sf-name, .sf-display, .sf-tab,
+  .sf-heading, .sf-title, .sf-wordmark, .sf-label, .sf-chip, .sf-price
+) {
+  letter-spacing: 0;
+}
+
+html[dir="rtl"] .storefront .sf-display {
+  line-height: 1.35;
+  font-weight: 400;
+}
+
+html[dir="rtl"] .storefront .sf-heading {
+  line-height: 1.4;
+  font-weight: 400;
+  font-size: 2rem;
+}
+
+@media (min-width: 768px) {
+  html[dir="rtl"] .storefront .sf-heading {
+    font-size: 2.75rem;
+  }
+}
+
+html[dir="rtl"] .storefront .sf-title {
+  font-weight: 700;
+}
+
+html[dir="rtl"] .storefront .sf-eyebrow {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+html[dir="rtl"] .storefront :is(.sf-btn, .sf-btn-outline, .sf-link, .sf-tab) {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+html[dir="rtl"] .storefront .sf-name {
+  font-size: 14.5px;
+}
+
+html[dir="rtl"] .storefront .sf-wordmark {
+  font-weight: 700;
+}
+
+/* Hairline links draw in from the reading-start edge in both directions. */
+html[dir="rtl"] .storefront .sf-link {
+  background-position: 100% 100%;
+}
+
+@keyframes sf-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sf-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sf-reveal {
+    animation: sf-fade-up 0.9s var(--ease-store) both;
+  }
+
+  .sf-pop {
+    animation: sf-pop 0.45s var(--ease-store);
+  }
+}
+
+.sf-scroll-x {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sf-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * Interaction motion. Opacity fades always run (they are not vestibular);
+ * movement is added only when the viewer has not asked for reduced motion.
+ * Exits are quicker than entrances so the UI never feels like it lags.
+ */
+
+/* Dropdown menus: fade + short drop from the trigger (`sf-menu-up` rises for menus that open upwards). */
+.sf-menu-enter-active,
+.sf-menu-up-enter-active {
+  transition: opacity 0.22s var(--ease-store), transform 0.22s var(--ease-store);
+}
+
+.sf-menu-leave-active,
+.sf-menu-up-leave-active {
+  transition: opacity 0.14s ease-in, transform 0.14s ease-in;
+}
+
+.sf-menu-enter-from,
+.sf-menu-leave-to,
+.sf-menu-up-enter-from,
+.sf-menu-up-leave-to {
+  opacity: 0;
+}
+
+/* Content swaps in place (filtered results, prices, headings): crossfade. */
+.sf-fade-enter-active {
+  transition: opacity 0.35s var(--ease-store), transform 0.35s var(--ease-store);
+}
+
+.sf-fade-leave-active {
+  transition: opacity 0.15s ease-in;
+}
+
+.sf-fade-enter-from,
+.sf-fade-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sf-menu-enter-from,
+  .sf-menu-leave-to {
+    transform: translateY(-6px);
+  }
+
+  .sf-menu-up-enter-from,
+  .sf-menu-up-leave-to {
+    transform: translateY(6px);
+  }
+
+  .sf-fade-enter-from {
+    transform: translateY(6px);
+  }
+
+  /* Grid items rise in sequence; `--i` is the item's position, capped by the caller. */
+  .sf-stagger {
+    animation: sf-fade-up 0.6s var(--ease-store) both;
+    animation-delay: calc(var(--i, 0) * 45ms);
+  }
+
+  /* Accordions open and close smoothly where the browser supports animating to `auto`. */
+  .storefront {
+    interpolate-size: allow-keywords;
+  }
+
+  .storefront details::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition: block-size 0.35s var(--ease-store), content-visibility 0.35s allow-discrete;
+  }
+
+  .storefront details[open]::details-content {
+    block-size: auto;
+  }
+}
+
+/* Route transition for storefront pages. */
+.sf-page-enter-active {
+  transition: opacity 0.3s var(--ease-store);
+}
+
+.sf-page-leave-active {
+  transition: opacity 0.18s ease-in;
+}
+
+.sf-page-enter-from,
+.sf-page-leave-to {
+  opacity: 0;
 }

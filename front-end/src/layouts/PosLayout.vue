@@ -1,76 +1,59 @@
 <script setup lang="ts">
-import { ref, computed, provide } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { ref, computed, provide, nextTick, watch } from 'vue'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
-import {
-  ShoppingCart,
-  Package,
-  Users,
-  History,
-  ChevronDown,
-  LogOut,
-  Search,
-  Wallet,
-  CheckCircle2,
-  Settings,
-} from 'lucide-vue-next'
+import { ShoppingCart, Package, Users, History, LogOut, Search, Wallet, Settings, Keyboard } from 'lucide-vue-next'
 import ClientPaymentModal from '@/components/pos/ClientPaymentModal.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import ShopSelector from '@/components/admin/ShopSelector.vue'
+import { usePosHotkeys } from '@/composables/usePosHotkeys'
+import { isTouchDevice, shortcutLabel } from '@/utils/platform'
 import type { Client } from '@/types/api'
 
 interface RegisterApi {
   focusSearch: () => void
   completeSale: () => void
+  clearCart: () => void
 }
 
 const { t } = useI18n()
 const auth = useAuthStore()
 const route = useRoute()
+const router = useRouter()
 
 const showPaymentModal = ref(false)
 const paymentInitialClient = ref<Client | null>(null)
 const userMenuOpen = ref(false)
+const shortcutsOpen = ref(false)
 
 const registerApi = ref<RegisterApi | null>(null)
 
-const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
-const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
-
 const navItems = computed(() => [
-  { to: '/pos', name: t('pos.nav.register'), icon: ShoppingCart },
-  { to: '/pos/orders', name: t('pos.nav.orders'), icon: Package },
-  { to: '/pos/credits', name: t('pos.nav.credits'), icon: Users },
-  { to: '/pos/history', name: t('pos.nav.history'), icon: History },
-])
-
-interface QuickAction {
-  id: 'search' | 'payment' | 'sale'
-  label: string
-  icon: typeof Wallet
-  primary: boolean
-  mac: string
-  win: string
-}
-
-const quickActions = computed<QuickAction[]>(() => [
-  { id: 'search', label: t('pos.quickActions.search'), icon: Search, primary: false, mac: '⌥2', win: 'F2' },
-  { id: 'payment', label: t('pos.quickActions.recordPayment'), icon: Wallet, primary: false, mac: '⌥4', win: 'F4' },
-  { id: 'sale', label: t('pos.quickActions.completeSale'), icon: CheckCircle2, primary: true, mac: '⌘↵', win: 'F12' },
+  { to: '/pos', name: 'pos-register', label: t('pos.nav.register'), icon: ShoppingCart },
+  { to: '/pos/orders', name: 'pos-orders', label: t('pos.nav.orders'), icon: Package },
+  { to: '/pos/credits', name: 'pos-credits', label: t('pos.nav.credits'), icon: Users },
+  { to: '/pos/history', name: 'pos-history', label: t('pos.nav.history'), icon: History },
 ])
 
 const hotkeys = computed(() => [
-  { mac: '⌥2', win: 'F2', label: t('pos.shortcuts.searchProducts') },
-  { mac: '⌥4', win: 'F4', label: t('pos.shortcuts.recordPayment') },
-  { mac: '⌘↵', win: 'F12', label: t('pos.shortcuts.completeSale') },
-  { mac: 'Esc', win: 'Esc', label: t('pos.shortcuts.clearCart') },
+  { keys: shortcutLabel('F2', '⌥2'), label: t('pos.shortcuts.searchProducts') },
+  { keys: shortcutLabel('F4', '⌥4'), label: t('pos.shortcuts.recordPayment') },
+  { keys: shortcutLabel('F12', '⌘↵'), label: t('pos.shortcuts.completeSale') },
+  { keys: 'Esc', label: t('pos.shortcuts.clearCart') },
+  { keys: '↑ ↓ ↵', label: t('pos.shortcuts.browse') },
 ])
 
 const isRegister = computed(() => route.name === 'pos-register')
 
-const visibleQuickActions = computed(() =>
-  quickActions.value.filter((a) => (a.id === 'payment' ? true : isRegister.value)),
+const staffName = computed(() => auth.staff?.name ?? t('common.staff'))
+const initials = computed(() =>
+  staffName.value
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join(''),
 )
 
 function handleLogout() {
@@ -88,16 +71,40 @@ function closePaymentModal() {
   paymentInitialClient.value = null
 }
 
-// Quick action bar — buttons call handlers directly (no synthetic KeyboardEvent).
-function triggerQuick(id: QuickAction['id']) {
-  if (id === 'payment') {
-    openPaymentModal()
-  } else if (id === 'search') {
-    registerApi.value?.focusSearch()
-  } else if (id === 'sale') {
-    registerApi.value?.completeSale()
+/** From any POS page, search jumps to the register and focuses its field once it mounts. */
+let focusSearchOnMount = false
+
+function focusSearch() {
+  if (isRegister.value && registerApi.value) {
+    registerApi.value.focusSearch()
+    return
   }
+  focusSearchOnMount = true
+  void router.push({ name: 'pos-register' })
 }
+
+watch(
+  registerApi,
+  (api) => {
+    if (!api || !focusSearchOnMount) return
+    focusSearchOnMount = false
+    void nextTick(() => api.focusSearch())
+  },
+  { flush: 'post' },
+)
+
+usePosHotkeys({
+  onFocusSearch: focusSearch,
+  onRecordPayment: () => {
+    if (!showPaymentModal.value) openPaymentModal()
+  },
+  onCompleteSale: () => {
+    if (isRegister.value) registerApi.value?.completeSale()
+  },
+  onClearCart: () => {
+    if (isRegister.value) registerApi.value?.clearCart()
+  },
+})
 
 provide('posOpenPayment', () => openPaymentModal())
 provide('posOpenPaymentForClient', (client: Client) => openPaymentModal(client))
@@ -105,115 +112,142 @@ provide('posRegisterApi', registerApi)
 </script>
 
 <template>
-  <div class="flex h-screen flex-col bg-gray-50 text-gray-900">
-    <!-- Top bar: icon-card nav (start) + quick actions + language + user menu (end) -->
-    <header class="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-200 bg-white px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
-      <nav class="flex items-center gap-1.5 sm:gap-2">
+  <div class="pos flex h-dvh flex-col">
+    <!-- Unified top bar -->
+    <header
+      class="relative z-30 flex shrink-0 flex-wrap items-center gap-x-2 gap-y-2.5 bg-white px-3 py-2.5 sm:gap-x-3 sm:px-5 md:h-16 md:flex-nowrap md:py-0"
+      style="box-shadow: 0 1px 0 var(--color-pos-line) !important"
+    >
+      <!-- Brand -->
+      <RouterLink to="/pos" class="hidden shrink-0 items-center gap-2.5 rounded-lg sm:flex" :aria-label="$t('pos.brand')">
+        <span class="flex h-8 w-8 items-center justify-center rounded-[10px] bg-pos-espresso text-[14px] font-semibold text-white">G</span>
+        <span class="hidden text-[15px] font-semibold tracking-[-0.01em] text-pos-ink xl:inline">{{ $t('pos.brand') }}</span>
+      </RouterLink>
+
+      <!-- Navigation pills -->
+      <nav class="pos-nav shrink-0" :aria-label="$t('pos.nav.label')">
         <RouterLink
           v-for="item in navItems"
           :key="item.to"
           :to="item.to"
-          class="flex min-h-11 w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-lg border border-gray-200 px-1 py-1.5 text-center text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 sm:w-16 sm:py-2 sm:text-xs"
-          active-class="!bg-gray-900 !text-white !border-gray-900"
+          class="pos-nav-pill"
+          :aria-current="route.name === item.name ? 'page' : undefined"
+          :title="item.label"
         >
-          <component :is="item.icon" class="h-5 w-5" />
-          <span class="truncate">{{ item.name }}</span>
+          <component :is="item.icon" class="h-4 w-4" />
+          <span class="hidden xl:inline">{{ item.label }}</span>
         </RouterLink>
       </nav>
 
-      <div class="ms-auto flex items-center gap-1.5 sm:gap-2">
+      <!-- Search: the register teleports its live field here -->
+      <div class="order-last w-full md:order-none md:mx-2 md:w-auto md:max-w-md md:flex-1">
+        <div v-show="isRegister" id="pos-header-search" class="w-full" />
         <button
-          v-for="action in visibleQuickActions"
-          :key="action.id"
+          v-if="!isRegister"
           type="button"
-          :class="[
-            'flex min-h-11 items-center gap-2 rounded-lg px-2.5 text-sm font-medium transition-colors sm:px-3 sm:py-2',
-            action.primary
-              ? 'bg-gray-900 text-white hover:bg-gray-800'
-              : 'border border-gray-300 text-gray-700 hover:bg-gray-50',
-          ]"
-          @click="triggerQuick(action.id)"
+          class="relative flex h-10 w-full items-center gap-2.5 rounded-xl bg-pos-canvas ps-3.5 pe-3 text-start text-[14px] text-pos-faint transition-colors hover:bg-[#eceef1]"
+          @click="focusSearch"
         >
-          <component :is="action.icon" class="h-4 w-4" />
-          <span class="hidden sm:inline">{{ action.label }}</span>
-          <kbd
-            v-if="!isTouchDevice"
-            class="hidden rounded bg-black/10 px-1.5 py-0.5 font-mono text-[10px] tabular-nums sm:inline"
-            :class="action.primary ? 'bg-white/15 text-white/80' : 'text-gray-500'"
-          >
-            {{ isMac ? action.mac : action.win }}
-          </kbd>
+          <Search class="h-4 w-4" aria-hidden="true" />
+          <span class="flex-1 truncate">{{ $t('pos.header.searchPlaceholder') }}</span>
+          <kbd v-if="!isTouchDevice" class="pos-kbd bg-white">{{ shortcutLabel('F2', '⌥2') }}</kbd>
+        </button>
+      </div>
+
+      <!-- Actions -->
+      <div class="ms-auto flex shrink-0 items-center gap-1 sm:gap-2">
+        <button
+          type="button"
+          class="pos-btn-soft h-10 min-h-10 px-3"
+          :aria-label="$t('pos.quickActions.recordPayment')"
+          :title="$t('pos.quickActions.recordPayment')"
+          @click="openPaymentModal()"
+        >
+          <Wallet class="h-4 w-4" />
+          <span class="hidden lg:inline">{{ $t('pos.quickActions.recordPayment') }}</span>
+          <kbd v-if="!isTouchDevice" class="pos-kbd hidden lg:inline-flex">{{ shortcutLabel('F4', '⌥4') }}</kbd>
         </button>
 
-        <ShopSelector compact />
-        <LanguageSwitcher />
+        <!-- Shortcuts reference -->
+        <div v-if="!isTouchDevice" class="relative hidden md:block">
+          <button
+            type="button"
+            class="pos-icon-btn"
+            :class="shortcutsOpen ? 'bg-black/5 text-pos-ink' : ''"
+            :aria-label="$t('pos.header.shortcuts')"
+            :aria-expanded="shortcutsOpen"
+            @click="shortcutsOpen = !shortcutsOpen"
+          >
+            <Keyboard class="h-[18px] w-[18px]" />
+          </button>
+          <div v-if="shortcutsOpen" class="fixed inset-0 z-40" @click="shortcutsOpen = false" />
+          <Transition name="pos-pop">
+            <div v-if="shortcutsOpen" class="pos-menu end-0 top-full mt-2 w-72 p-3" @keydown.esc.stop="shortcutsOpen = false">
+              <p class="px-1 pb-2 text-[12px] font-medium text-pos-muted">{{ $t('pos.shortcuts.title') }}</p>
+              <ul class="flex flex-col">
+                <li v-for="hk in hotkeys" :key="hk.label" class="flex items-center justify-between gap-3 rounded-lg px-1 py-1.5 text-[13px] text-pos-ink-2">
+                  <span>{{ hk.label }}</span>
+                  <kbd class="pos-kbd">{{ hk.keys }}</kbd>
+                </li>
+              </ul>
+            </div>
+          </Transition>
+        </div>
 
-        <!-- User menu -->
+        <ShopSelector compact />
+        <LanguageSwitcher variant="segmented" />
+
+        <!-- Account -->
         <div class="relative">
           <button
             type="button"
-            class="flex min-h-11 items-center gap-2 rounded-lg border border-gray-300 px-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 sm:px-3 sm:py-2"
+            class="flex h-10 items-center gap-2 rounded-xl ps-1 pe-1 transition-colors hover:bg-black/[0.04] xl:pe-3"
+            :aria-label="$t('pos.header.account')"
+            :aria-expanded="userMenuOpen"
+            aria-haspopup="menu"
             @click="userMenuOpen = !userMenuOpen"
           >
-            <span class="hidden max-w-[10rem] truncate sm:inline">{{ auth.staff?.name ?? $t('common.staff') }}</span>
-            <ChevronDown class="h-4 w-4" />
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-pos-canvas text-[12px] font-semibold text-pos-ink">{{ initials }}</span>
+            <span class="hidden max-w-[9rem] truncate text-[13px] font-medium text-pos-ink xl:inline">{{ staffName }}</span>
           </button>
-          <div
-            v-if="userMenuOpen"
-            class="absolute end-0 z-50 mt-1 w-48 rounded-lg border border-gray-200 bg-white py-1"
-            @click.stop
-          >
-            <RouterLink
-              v-if="auth.isManager"
-              to="/admin"
-              class="flex min-h-11 items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              @click="userMenuOpen = false"
-            >
-              <Settings class="h-4 w-4" />
-              {{ $t('pos.userMenu.adminPanel') }}
-            </RouterLink>
-            <button
-              type="button"
-              class="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-start text-sm text-gray-700 hover:bg-gray-50"
-              @click="handleLogout"
-            >
-              <LogOut class="h-4 w-4" />
-              {{ $t('pos.userMenu.logout') }}
-            </button>
-          </div>
-          <button
-            v-if="userMenuOpen"
-            type="button"
-            class="fixed inset-0 -z-10 cursor-default"
-            tabindex="-1"
-            @click="userMenuOpen = false"
-          />
+          <div v-if="userMenuOpen" class="fixed inset-0 z-40" @click="userMenuOpen = false" />
+          <Transition name="pos-pop">
+            <div v-if="userMenuOpen" class="pos-menu end-0 top-full mt-2 w-56" role="menu" @keydown.esc.stop="userMenuOpen = false">
+              <div class="px-3 pt-2 pb-2.5">
+                <p class="truncate text-[13px] font-medium text-pos-ink">{{ staffName }}</p>
+                <p class="truncate text-[12px] text-pos-muted">{{ auth.staff?.email }}</p>
+              </div>
+              <div class="my-1 h-px bg-pos-line" />
+              <RouterLink
+                v-if="auth.isManager"
+                to="/admin"
+                class="pos-menu-item"
+                role="menuitem"
+                @click="userMenuOpen = false"
+              >
+                <Settings class="h-4 w-4 text-pos-muted" />
+                {{ $t('pos.userMenu.adminPanel') }}
+              </RouterLink>
+              <button type="button" class="pos-menu-item" role="menuitem" @click="handleLogout">
+                <LogOut class="h-4 w-4 text-pos-muted rtl:rotate-180" />
+                {{ $t('pos.userMenu.logout') }}
+              </button>
+            </div>
+          </Transition>
         </div>
       </div>
     </header>
 
-    <!-- Shortcut legend (register only, hidden on touch devices where hotkeys don't apply) -->
-    <div
-      v-if="isRegister && !isTouchDevice"
-      class="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 px-4 py-1.5 text-xs text-gray-500"
-    >
-      <span class="font-medium text-gray-600">{{ $t('pos.shortcuts.title') }}</span>
-      <span
-        v-for="hk in hotkeys"
-        :key="hk.win"
-        class="flex items-center gap-1 rounded border border-gray-200 bg-white px-1.5 py-0.5"
-      >
-        <kbd class="font-mono text-gray-800">{{ isMac ? hk.mac : hk.win }}</kbd>
-        <span class="text-gray-500">{{ hk.label }}</span>
-      </span>
-    </div>
-
     <!-- Main area: full-bleed on register, padded scroll elsewhere -->
     <main
-      :class="isRegister ? 'overflow-hidden p-0' : 'overflow-auto p-4 md:p-6'"
+      :class="isRegister ? 'overflow-hidden' : 'overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 lg:py-8'"
       class="flex min-h-0 flex-1"
     >
-      <RouterView />
+      <RouterView v-slot="{ Component }">
+        <Transition name="pos-page" mode="out-in">
+          <component :is="Component" />
+        </Transition>
+      </RouterView>
     </main>
 
     <ClientPaymentModal

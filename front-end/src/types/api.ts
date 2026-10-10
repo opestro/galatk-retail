@@ -238,6 +238,9 @@ export interface PosProduct {
   quantity: number
   category?: string
   variantLabel?: string | null
+  attributes?: Record<string, string>
+  /** First family photo (relative upload path), if any. */
+  imageUrl?: string | null
 }
 
 export interface Sale {

@@ -51,27 +51,52 @@
       "CREDIT": "لم يُدفع بعد · {remaining} آجل",
       "UNPAID": "لم يُدفع بعد",
       "NONE": "—"
-    }
+    },
+    "yes": "نعم",
+    "no": "لا"
   },
   "shop": {
     "brand": {
-      "name": "متجر غالاتك"
+      "name": "متجر غالاتك",
+      "wordmark": "غالاتك"
     },
     "nav": {
       "signIn": "تسجيل الدخول",
       "myOrders": "طلباتي",
-      "cart": "السلة"
+      "cart": "الحقيبة",
+      "home": "الرئيسية",
+      "shopAll": "تسوّق الكل",
+      "newIn": "وصل حديثاً",
+      "wishlist": "المفضلة",
+      "account": "الحساب",
+      "search": "بحث",
+      "menu": "فتح القائمة",
+      "closeMenu": "إغلاق القائمة",
+      "bagWithCount": "الحقيبة، {n} قطع",
+      "wishlistWithCount": "المفضلة، {n} قطع",
+      "categories": "الفئات",
+      "skipToContent": "تخطَّ إلى المحتوى",
+      "language": "اللغة",
+      "primary": "رئيسي"
     },
     "hero": {
-      "defaultTitle": "تسوّق من جميع متاجرنا",
-      "defaultSubtitle": "تصفح المنتجات من عدة مواقع. اختر المتجر المفضل لكل منتج واستمتع بخيارات الاستلام أو التوصيل.",
+      "defaultTitle": "قطعٌ مختارة بعناية، لكل يوم.",
+      "defaultSubtitle": "ملابس وإكسسوارات من جميع متاجرنا في مكان واحد. اطلب عبر الإنترنت للتوصيل إلى أي مكان في الجزائر، أو استلم من المتجر.",
       "ariaBanner": "لافتة المتجر",
       "ariaSlides": "شرائح اللافتة",
-      "ariaShowSlide": "عرض اللافتة {n}"
+      "ariaShowSlide": "عرض اللافتة {n}",
+      "eyebrow": "المجموعة",
+      "primaryCta": "تسوّق المجموعة",
+      "secondaryCta": "وصل حديثاً",
+      "pause": "إيقاف العرض",
+      "play": "تشغيل العرض"
     },
     "footer": {
-      "copyright": "© 2026 غالاتك للتجزئة. جميع الحقوق محفوظة.",
-      "support": "الدعم"
+      "copyright": "© 2026 غالاتك. جميع الحقوق محفوظة.",
+      "support": "الدعم",
+      "tagline": "ملابس وإكسسوارات من متاجرنا في أنحاء الجزائر، جاهزة للطلب عبر الإنترنت.",
+      "shopHeading": "تسوّق",
+      "accountHeading": "الحساب"
     },
     "catalog": {
       "searchPlaceholder": "ابحث عن المنتجات...",
@@ -82,7 +107,32 @@
       "viewProduct": "عرض المنتج",
       "add": "إضافة",
       "outOfStock": "غير متوفر",
-      "cartWithCount": "السلة ({n})"
+      "cartWithCount": "السلة ({n})",
+      "title": "جميع المنتجات",
+      "newTitle": "وصل حديثاً",
+      "resultsFor": "نتائج البحث عن «{q}»",
+      "count": "{n} منتج | {n} منتج",
+      "sort": "ترتيب حسب",
+      "sorts": {
+        "featured": "مميّز",
+        "new": "الأحدث",
+        "price-asc": "السعر: من الأقل إلى الأعلى",
+        "price-desc": "السعر: من الأعلى إلى الأقل",
+        "name": "الاسم"
+      },
+      "allCategories": "الكل",
+      "categoryFilter": "الفئة",
+      "shopFilter": "المتجر",
+      "clearFilters": "مسح عوامل التصفية",
+      "loadMore": "عرض المزيد",
+      "showing": "عرض {shown} من {total}",
+      "emptyFiltered": "لا توجد منتجات تطابق هذه الاختيارات.",
+      "retry": "أعد المحاولة",
+      "newBadge": "جديد",
+      "addToWishlist": "أضف {name} إلى المفضلة",
+      "removeFromWishlist": "أزل {name} من المفضلة",
+      "searchLabel": "ابحث ضمن المنتجات",
+      "intro": "كل قطعة من كل متاجر غالاتك، في مكان واحد."
     },
     "product": {
       "notFoundTitle": "المنتج غير موجود",
@@ -97,18 +147,35 @@
       "comboUnavailable": "هذا التوليفة غير متوفرة.",
       "quantity": "الكمية",
       "adding": "جارٍ الإضافة...",
-      "added": "أُضيف إلى السلة",
+      "added": "أُضيف إلى الحقيبة",
       "unavailable": "غير متاح",
-      "addToCart": "أضف إلى السلة",
+      "addToCart": "أضف إلى الحقيبة",
       "outOfStockCta": "غير متوفر",
-      "goToCart": "الذهاب إلى السلة",
+      "goToCart": "عرض الحقيبة",
       "createAccountCta": "أنشئ حساباً لإتمام الطلب",
       "orderFormTitle": "أتمم طلبك",
       "fulfillmentLabel": "التوصيل",
       "subtotal": "المجموع الفرعي",
       "deliveryFee": "رسوم التوصيل",
       "loading": "جارٍ تحميل المنتج…",
-      "viewImage": "عرض الصورة"
+      "viewImage": "عرض الصورة",
+      "description": "الوصف",
+      "orderDirectly": "اطلب مباشرة",
+      "orderDirectlyHint": "تخطَّ الحقيبة واطلب هذا المنتج الآن مع التوصيل.",
+      "deliveryInfo": "توصيل إلى كامل الجزائر — تختلف الرسوم حسب ولايتك.",
+      "pickupInfo": "استلام مجاني من {shop}.",
+      "pickupInfoGeneric": "استلام مجاني من المتجر.",
+      "accountInfo": "تابع كل طلب من حسابك.",
+      "inStock": "متوفر",
+      "toOrder": "متاح للطلب",
+      "relatedEyebrow": "أكمل الإطلالة",
+      "relatedTitle": "قد يعجبك أيضاً",
+      "saveToWishlist": "احفظ في المفضلة",
+      "savedToWishlist": "محفوظ في المفضلة",
+      "imageOf": "الصورة {n} من {total}",
+      "previousImage": "الصورة السابقة",
+      "nextImage": "الصورة التالية",
+      "selectOption": "اختر"
     },
     "price": {
       "from": "ابتداءً من {price}"
@@ -149,7 +216,18 @@
       "insufficientStock": "لا توجد كمية كافية لهذا المنتج. يرجى تعديل الكمية.",
       "accountExists": "هذا الرقم مرتبط بحساب. سجّل الدخول للمتابعة.",
       "genericError": "تعذر إتمام الطلب. يرجى المحاولة مرة أخرى.",
-      "errorAddress": "يرجى إدخال عنوان التوصيل للمنزل."
+      "errorAddress": "يرجى إدخال عنوان التوصيل للمنزل.",
+      "stepContact": "بيانات التواصل",
+      "stepDelivery": "طريقة الاستلام",
+      "pickupHint": "استلم من المتجر دون أي تكلفة.",
+      "stopdeskHint": "استلم من مكتب شركة الشحن في ولايتك.",
+      "homeHint": "يُوصَل إلى عنوانك.",
+      "editBag": "تعديل الحقيبة",
+      "showSummary": "ملخص الطلب",
+      "delivery": "التوصيل",
+      "selectWilayaForFee": "اختر ولايتك لعرض رسوم التوصيل.",
+      "addressLabel": "عنوان التوصيل",
+      "items": "{n} قطعة | {n} قطعة"
     },
     "confirmation": {
       "placedTitle": "تم تقديم الطلب!",
@@ -185,7 +263,11 @@
       "password": "كلمة المرور",
       "confirmPassword": "تأكيد كلمة المرور",
       "creatingAccount": "جارٍ إنشاء الحساب…",
-      "signingIn": "جارٍ تسجيل الدخول…"
+      "signingIn": "جارٍ تسجيل الدخول…",
+      "eyebrow": "حسابك",
+      "perkOrders": "تابع طلباتك عبر الإنترنت ومشترياتك في المتجر",
+      "perkFaster": "إتمام أسرع للطلب ببياناتك المحفوظة",
+      "perkCredit": "اطّلع على أي مبلغ مستحق في مكان واحد"
     },
     "guest": {
       "fullName": "الاسم الكامل",
@@ -222,7 +304,97 @@
       "allPurchases": "كل المشتريات",
       "purchaseNotFound": "تعذر العثور على هذا الشراء.",
       "historyEmpty": "لا توجد طلبات أو مشتريات داخل المتجر بعد.",
-      "shopBalance": "{shop}: {amount}"
+      "shopBalance": "{shop}: {amount}",
+      "hello": "مرحباً، {name}",
+      "history": "سجل الطلبات",
+      "eyebrow": "حسابك",
+      "signInAgain": "سجّل الدخول من جديد"
+    },
+    "announce": {
+      "message": "توصيل إلى كامل الجزائر — استلام مجاني من المتجر"
+    },
+    "search": {
+      "placeholder": "ابحث في المجموعة",
+      "label": "البحث عن المنتجات",
+      "close": "إغلاق البحث",
+      "recent": "عمليات البحث الأخيرة",
+      "clearRecent": "مسح",
+      "browse": "تصفّح الفئات",
+      "results": "المنتجات",
+      "viewAll": "عرض كل النتائج",
+      "noResults": "لا توجد نتائج لـ «{q}».",
+      "noResultsHint": "جرّب كلمة أخرى، أو تصفّح الفئات أدناه.",
+      "submit": "بحث"
+    },
+    "home": {
+      "categoriesEyebrow": "تسوّق حسب الفئة",
+      "itemsCount": "{n} منتج | {n} منتج",
+      "newEyebrow": "وصل حديثاً",
+      "newTitle": "مختارات هذا الأسبوع",
+      "viewAll": "عرض الكل",
+      "campaignEyebrow": "في المتجر وعبر الإنترنت",
+      "campaignTitle": "اطلب عبر الإنترنت واستلم من المتجر.",
+      "campaignBody": "اختر أحد متاجرنا عند إتمام الطلب واستلم طلبك مجاناً — أو اطلب توصيله إلى باب منزلك.",
+      "campaignCta": "ابدأ التسوّق",
+      "collectionEyebrow": "المجموعة",
+      "collectionTitle": "اكتشف المجموعة",
+      "serviceDelivery": "توصيل إلى كامل الجزائر",
+      "serviceDeliveryBody": "توصيل إلى مكتب الشحن أو إلى المنزل، حسب الولاية.",
+      "servicePickup": "استلام مجاني من المتجر",
+      "servicePickupBody": "احجز عبر الإنترنت واستلم من المتجر الذي تختاره.",
+      "serviceAccount": "متابعة كل طلب",
+      "serviceAccountBody": "طلباتك عبر الإنترنت ومشترياتك في المتجر في حساب واحد.",
+      "joinEyebrow": "العضوية",
+      "joinTitle": "انضم إلى غالاتك",
+      "joinBody": "أنشئ حساباً لمتابعة طلباتك وإتمام الشراء بسرعة أكبر في المرة القادمة.",
+      "joinCta": "إنشاء حساب"
+    },
+    "breadcrumb": {
+      "label": "مسار التنقل",
+      "home": "الرئيسية",
+      "shop": "المتجر",
+      "bag": "الحقيبة",
+      "wishlist": "المفضلة",
+      "account": "الحساب"
+    },
+    "added": {
+      "title": "أُضيف إلى حقيبتك",
+      "viewBag": "عرض الحقيبة",
+      "checkout": "إتمام الطلب",
+      "close": "إغلاق",
+      "qty": "الكمية {n}"
+    },
+    "cart": {
+      "title": "حقيبتك",
+      "itemsCount": "{n} قطعة | {n} قطعة",
+      "remove": "إزالة",
+      "decrease": "إنقاص الكمية",
+      "increase": "زيادة الكمية",
+      "qtyLabel": "الكمية",
+      "summary": "ملخص الطلب",
+      "subtotal": "المجموع الفرعي",
+      "delivery": "التوصيل",
+      "deliveryAtCheckout": "يُحتسب عند إتمام الطلب",
+      "total": "الإجمالي",
+      "checkout": "متابعة إتمام الطلب",
+      "continue": "مواصلة التسوّق",
+      "trustPickup": "استلام مجاني من أي متجر من متاجرنا",
+      "trustDelivery": "توصيل إلى كل الولايات",
+      "trustTrack": "تابع طلبك من حسابك",
+      "emptyTitle": "حقيبتك فارغة",
+      "emptyBody": "اكتشف المجموعة وأضف القطع التي تحبها.",
+      "fromShop": "من {shop}",
+      "each": "{price} للقطعة"
+    },
+    "wishlist": {
+      "title": "المفضلة",
+      "emptyTitle": "قائمة المفضلة فارغة",
+      "emptyBody": "اضغط على القلب في أي قطعة لحفظها هنا.",
+      "chooseOptions": "اختر الخيارات",
+      "remove": "إزالة",
+      "unavailable": "لم يعد متوفراً",
+      "deviceNote": "محفوظة على هذا الجهاز.",
+      "shopSimilar": "تسوّق منتجات مشابهة"
     }
   },
   "staff": {
@@ -265,7 +437,9 @@
     "a11y": {
       "openMenu": "فتح القائمة",
       "closeMenu": "إغلاق القائمة",
-      "close": "إغلاق"
+      "close": "إغلاق",
+      "mainNav": "تنقل لوحة الإدارة",
+      "sidebar": "الشريط الجانبي"
     },
     "factory": {
       "redirectMissing": "المصنع لم يُرجع رابط إعادة التوجيه",
@@ -324,7 +498,9 @@
       "confirmRemove": "إزالة هذه الصورة؟",
       "removeError": "تعذر إزالة الصورة",
       "primaryUpdated": "تم تحديث الصورة الرئيسية",
-      "primaryError": "تعذر تحديث الصورة الرئيسية"
+      "primaryError": "تعذر تحديث الصورة الرئيسية",
+      "removeTitle": "حذف الصورة",
+      "removed": "تم حذف الصورة"
     },
     "variant": {
       "color": "اللون",
@@ -344,7 +520,7 @@
       "factoryBadge": "المصنع",
       "unavailable": "غير متوفر",
       "sectionTitle": "المتغيرات",
-      "add": "+ إضافة متغير",
+      "add": "إضافة متغير",
       "addPlain": "إضافة متغير",
       "addTitle": "إضافة متغير",
       "editTitle": "تعديل المتغير",
@@ -364,7 +540,10 @@
       "updateError": "تعذر تحديث المتغير",
       "deleted": "تم حذف المتغير",
       "deleteError": "تعذر حذف المتغير",
-      "confirmDelete": "حذف هذا المتغير؟ لا يمكن التراجع عن ذلك."
+      "confirmDelete": "حذف هذا المتغير؟ لا يمكن التراجع عن ذلك.",
+      "deleteTitle": "حذف المتغير",
+      "stockEditHint": "عدّل المخزون مباشرة — يُحفظ التغيير عند مغادرة الحقل.",
+      "stockFor": "مخزون {name}"
     },
     "product": {
       "name": "اسم المنتج",
@@ -392,7 +571,11 @@
       "saveError": "تعذر حفظ المنتج",
       "save": "حفظ المنتج",
       "statusUnavailable": "غير متوفر",
-      "statusAvailable": "متوفر"
+      "statusAvailable": "متوفر",
+      "summary": "{n} متغير · {stock} في المخزون | {n} متغيرات · {stock} في المخزون",
+      "unsaved": "غير محفوظ",
+      "unsavedChanges": "لديك تغييرات غير محفوظة",
+      "discard": "تجاهل"
     },
     "productCreate": {
       "variantInvalid": "يحتاج كل متغير إلى لون و/أو مقاس، وتكلفة وسعر صالحين، وكمية ≥ 0",
@@ -400,16 +583,27 @@
       "failed": "تعذر إنشاء المنتج",
       "title": "إضافة منتج",
       "creating": "جارٍ الإنشاء…",
-      "create": "إنشاء المنتج"
+      "create": "إنشاء المنتج",
+      "subtitle": "أضف المعلومات الأساسية والصور ومتغيراً واحداً على الأقل.",
+      "variantsHint": "كل تركيبة لون ومقاس هي متغير مستقل."
     },
     "products": {
       "title": "المنتجات",
-      "add": "+ إضافة منتج",
+      "add": "إضافة منتج",
       "searchPlaceholder": "ابحث في المنتجات والمتغيرات ورمز المخزون…",
       "empty": "لا توجد منتجات تطابق بحثك.",
       "variantCount": "{n} متغير | {n} متغيرات",
       "unavailable": "غير متوفر",
-      "back": "المنتجات"
+      "back": "المنتجات",
+      "subtitle": "{n} منتج · {available} متوفر | {n} منتجات · {available} متوفرة",
+      "colProduct": "المنتج",
+      "colVariants": "المتغيرات",
+      "colPrice": "السعر",
+      "colStock": "في المخزون",
+      "emptySearch": "جرّب اسماً أو رمزاً آخر.",
+      "filterAll": "الكل",
+      "filterLabel": "تصفية",
+      "inactive": "غير نشط"
     },
     "dashboard": {
       "title": "لوحة التحكم",
@@ -426,7 +620,13 @@
       "outstandingCredit": "الآجل المستحق",
       "totalCharges": "إجمالي المصروفات",
       "lowStockAlerts": "تنبيهات انخفاض المخزون",
-      "quantityLeft": "متبقي {n}"
+      "quantityLeft": "متبقي {n}",
+      "todaySection": "اليوم",
+      "cashFlow": "التدفق النقدي",
+      "marginHint": "هامش {n}٪",
+      "outOfStockHint": "{n} نفد من المخزون",
+      "receiveStock": "استلام مخزون",
+      "stockHealthy": "مستويات المخزون جيدة."
     },
     "shops": {
       "title": "المتاجر",
@@ -435,13 +635,30 @@
       "slugPlaceholder": "المعرف (اختياري)",
       "addressPlaceholder": "العنوان",
       "serviceCityPlaceholder": "مدينة الخدمة",
-      "deliveryFeePlaceholder": "رسوم التوصيل"
+      "deliveryFeePlaceholder": "رسوم التوصيل",
+      "subtitle": "{n} متجر | {n} متاجر",
+      "addTitle": "متجر جديد",
+      "nameLabel": "اسم المتجر",
+      "slugLabel": "معرّف الرابط",
+      "addressLabel": "العنوان",
+      "cityLabel": "مدينة الخدمة",
+      "deliveryFeeLabel": "رسوم التوصيل الافتراضية",
+      "deliveryFrom": "التوصيل ابتداءً من {fee}",
+      "active": "الحالي",
+      "created": "تم إنشاء المتجر",
+      "createFailed": "تعذر إنشاء المتجر",
+      "empty": "لا توجد متاجر بعد."
     },
     "stock": {
       "title": "نظرة عامة على المخزون",
       "colProduct": "المنتج",
       "colPrice": "السعر",
-      "colQuantity": "الكمية"
+      "colQuantity": "الكمية",
+      "subtitle": "{n} منتجات · {units} وحدة متوفرة",
+      "searchPlaceholder": "ابحث عن المنتجات…",
+      "low": "منخفض",
+      "out": "نفد",
+      "empty": "لا شيء يطابق هذا العرض."
     },
     "inbound": {
       "success": "تم تسجيل التحويل بنجاح",
@@ -450,8 +667,15 @@
       "refPlaceholder": "مرجع تحويل غالاتك (اختياري)",
       "notePlaceholder": "ملاحظة (اختياري)",
       "selectProduct": "اختر المنتج",
-      "addLine": "+ إضافة سطر",
-      "submit": "تسجيل التحويل"
+      "addLine": "إضافة سطر",
+      "submit": "تسجيل التحويل",
+      "subtitle": "سجّل المخزون المستلم من ورشة غالاتك.",
+      "refLabel": "مرجع التحويل",
+      "noteLabel": "ملاحظة",
+      "linesTitle": "المنتجات المستلمة",
+      "units": "{n} وحدة | {n} وحدات",
+      "removeLine": "حذف السطر",
+      "hint": "تُضاف الكميات إلى مخزون هذا المتجر."
     },
     "orders": {
       "title": "الطلبات",
@@ -465,7 +689,9 @@
       "colTotal": "الإجمالي",
       "colPayment": "الدفع",
       "colStatus": "الحالة",
-      "empty": "لا توجد طلبات."
+      "empty": "لا توجد طلبات.",
+      "subtitle": "{n} طلب | {n} طلبات",
+      "emptyFiltered": "جرّب مسح البحث أو عوامل التصفية."
     },
     "orderDetail": {
       "notFound": "الطلب غير موجود.",
@@ -508,7 +734,16 @@
       "removeLine": "حذف",
       "confirmRemove": "حذف هذا المنتج من الطلب وإعادته للمخزون؟",
       "lineUpdateError": "تعذر تحديث منتجات الطلب.",
-      "lastLine": "يجب أن يبقى منتج واحد على الأقل في الطلب."
+      "lastLine": "يجب أن يبقى منتج واحد على الأقل في الطلب.",
+      "cancelOrder": "إلغاء الطلب",
+      "cancelTitle": "إلغاء هذا الطلب؟",
+      "removeTitle": "حذف المنتج؟",
+      "itemCount": "{n} صنف | {n} أصناف",
+      "lineAdded": "تمت إضافة المنتج إلى الطلب",
+      "lineRemoved": "تم حذف المنتج من الطلب",
+      "statusSection": "الحالة والدفع",
+      "statusFinal": "هذا الطلب مغلق؛ لم يعد بالإمكان تغيير حالته.",
+      "statusSaved": "تم تحديث الحالة إلى {status}"
     },
     "clients": {
       "created": "تم إنشاء العميل",
@@ -522,7 +757,20 @@
       "addressOptional": "العنوان (اختياري)",
       "notesOptional": "ملاحظات (اختياري)",
       "creditLimitLabel": "حد الآجل (دج، فارغ = غير محدود)",
-      "limit": "الحد: {n}"
+      "limit": "الحد: {n}",
+      "subtitle": "{n} عميل | {n} عملاء",
+      "addTitle": "عميل جديد",
+      "nameLabel": "الاسم الكامل",
+      "phoneLabel": "الهاتف",
+      "emailLabel": "البريد الإلكتروني",
+      "addressLabel": "العنوان",
+      "notesLabel": "ملاحظات",
+      "optional": "اختياري",
+      "colLimit": "حد الآجل",
+      "limitUsed": "المستخدم من حد الآجل",
+      "inactive": "غير نشط",
+      "empty": "لا يوجد عملاء بعد.",
+      "emptySearch": "لا يوجد عميل بهذا الاسم أو الهاتف."
     },
     "clientProfile": {
       "updated": "تم تحديث العميل",
@@ -548,7 +796,28 @@
       "note": "ملاحظة",
       "applyAdjustment": "تطبيق التسوية",
       "ledger": "دفتر الحساب",
-      "voidPayment": "إلغاء الدفعة"
+      "voidPayment": "إلغاء الدفعة",
+      "back": "العملاء",
+      "colType": "النوع",
+      "colBy": "سجّله",
+      "entries": "قيود السجل",
+      "ledgerEmpty": "لا يوجد نشاط على هذا الحساب بعد.",
+      "owes": "مستحق للمتجر",
+      "settled": "الحساب مسدد",
+      "updateFailed": "تعذر تحديث العميل",
+      "adjustmentFailed": "تعذر تطبيق التسوية",
+      "adjustmentHint": "القيمة الموجبة تزيد ما على العميل، والسالبة تنقصه.",
+      "voidFailed": "تعذر إلغاء الدفعة",
+      "voidPaymentBody": "تُعكس الدفعة ويعود المبلغ إلى رصيد العميل.",
+      "ledgerType": {
+        "SALE_CREDIT": "بيع بالآجل",
+        "PAYMENT": "دفعة",
+        "PAYMENT_VOID": "دفعة ملغاة",
+        "SALE_VOID_REVERSAL": "بيع ملغى",
+        "ADJUSTMENT": "تسوية"
+      },
+      "loadFailed": "تعذر تحميل هذا العميل.",
+      "retry": "إعادة المحاولة"
     },
     "credit": {
       "contactNotePrompt": "ملاحظة التواصل (اختياري)",
@@ -561,7 +830,15 @@
       "reminderList": "قائمة التذكير",
       "daysOverdue": "متأخر {n} أيام",
       "lastContact": "آخر تواصل: {date}",
-      "markContacted": "تسجيل التواصل"
+      "markContacted": "تسجيل التواصل",
+      "subtitle": "تابع العملاء ذوي الأرصدة المتأخرة",
+      "colLastContact": "آخر تواصل",
+      "never": "أبداً",
+      "noneDue": "لا توجد تذكيرات مستحقة — الجميع محدَّث.",
+      "logContact": "تسجيل التواصل",
+      "noteLabel": "ملاحظة",
+      "contactBody": "سجّل أنك تواصلت مع {name} بخصوص {amount}.",
+      "contactFailed": "تعذر تسجيل التواصل"
     },
     "charges": {
       "category": {
@@ -581,7 +858,15 @@
       "void": "إلغاء",
       "voidTitle": "إلغاء المصروف",
       "voidConfirm": "إلغاء هذا المصروف؟",
-      "voidReason": "السبب (اختياري)"
+      "voidReason": "السبب (اختياري)",
+      "subtitle": "مصاريف المتجر المخصومة من الربح",
+      "total": "إجمالي المصاريف",
+      "colCategory": "الفئة",
+      "statusActive": "نشط",
+      "statusVoided": "ملغى",
+      "empty": "لا توجد مصاريف في هذه الفترة.",
+      "emptyBody": "سجّل طعام الفريق أو النقل أو المصروفات النثرية فور حدوثها.",
+      "voidFailed": "تعذر إلغاء المصروف"
     },
     "staff": {
       "title": "الموظفون",
@@ -593,6 +878,22 @@
         "CASHIER": "أمين صندوق",
         "MANAGER": "مدير",
         "OWNER": "مالك"
+      },
+      "subtitle": "{n} عضو | {n} أعضاء",
+      "addTitle": "إضافة عضو للفريق",
+      "nameLabel": "الاسم الكامل",
+      "colMember": "العضو",
+      "colRole": "الدور",
+      "colShops": "المتاجر",
+      "you": "أنت",
+      "created": "تمت إضافة العضو",
+      "createFailed": "تعذر إضافة العضو",
+      "needShop": "عيّن متجراً واحداً على الأقل.",
+      "empty": "لا يوجد أعضاء بعد.",
+      "roleHint": {
+        "CASHIER": "يدير الصندوق وتسليم الطلبات عبر الإنترنت.",
+        "MANAGER": "يدير المنتجات والمخزون والعملاء والمصاريف.",
+        "OWNER": "وصول كامل لكل المتاجر وعرض الشبكة."
       }
     },
     "settings": {
@@ -623,7 +924,9 @@
         "saved": "تم حفظ أسعار التوصيل",
         "loadError": "تعذر تحميل أسعار التوصيل",
         "saveError": "تعذر حفظ أسعار التوصيل"
-      }
+      },
+      "subtitle": "واجهة المتجر والتوصيل وتفاصيل المتجر",
+      "saveFailed": "تعذر حفظ الإعدادات"
     },
     "network": {
       "title": "نظرة عامة على الشبكة",
@@ -635,7 +938,28 @@
       "clientPayments": "مدفوعات العملاء",
       "totalCashIn": "إجمالي النقد الداخل",
       "outstandingCredit": "الآجل المستحق",
-      "totalCharges": "إجمالي المصروفات"
+      "totalCharges": "إجمالي المصروفات",
+      "subtitle": "كل المتاجر جنباً إلى جنب",
+      "byShop": "حسب المتجر",
+      "colShop": "المتجر"
+    },
+    "navGroup": {
+      "overview": "نظرة عامة",
+      "sales": "المبيعات",
+      "catalog": "الكتالوج",
+      "operations": "العمليات"
+    },
+    "range": {
+      "label": "الفترة",
+      "all": "كل الفترات",
+      "today": "اليوم",
+      "7d": "٧ أيام",
+      "30d": "٣٠ يوماً",
+      "from": "من",
+      "to": "إلى"
+    },
+    "confirm": {
+      "irreversible": "لا يمكن التراجع عن هذا الإجراء."
     }
   },
   "pos": {
@@ -643,7 +967,8 @@
       "register": "الصندوق",
       "orders": "الطلبات",
       "credits": "الآجل",
-      "history": "السجل"
+      "history": "السجل",
+      "label": "نقطة البيع"
     },
     "quickActions": {
       "search": "بحث",
@@ -655,7 +980,8 @@
       "searchProducts": "البحث عن المنتجات",
       "recordPayment": "تسجيل دفعة",
       "completeSale": "إتمام البيع",
-      "clearCart": "إفراغ السلة"
+      "clearCart": "إفراغ السلة",
+      "browse": "تصفح المنتجات وأضفها"
     },
     "userMenu": {
       "adminPanel": "لوحة الإدارة",
@@ -677,8 +1003,8 @@
       "removeLine": "إزالة",
       "emptyCart": "اضغط على المنتجات لإضافتها.",
       "paymentType": "نوع الدفع",
-      "paidNow": "المدفوع الآن (دج)",
-      "creditAmount": "الآجل: {amount} دج",
+      "paidNow": "المدفوع الآن",
+      "creditAmount": "سيُضاف {amount} إلى آجل العميل.",
       "confirmWalkInHintDesktop": "أكد كزبون عابر أو اختر عميلاً أدناه.",
       "completeSale": "إتمام البيع",
       "cartDrawerTitle": "السلة · {n} أصناف",
@@ -687,7 +1013,36 @@
       "errorCheckoutFailed": "فشل إتمام البيع — تحقق من المخزون أو العميل أو حد الآجل",
       "errorCreditLimit": "تم تجاوز حد الآجل — يلزم موافقة المدير",
       "successTitle": "اكتملت عملية البيع",
-      "successMessage": "الإجمالي {total} دج — تم تحصيل {paid} دج."
+      "successMessage": "الإجمالي {total} — تم تحصيل {paid}.",
+      "lowStock": "متبقٍ {n} فقط",
+      "stock": "{n} في المخزون",
+      "inCart": "{n} في السلة",
+      "currentSale": "البيع الحالي",
+      "items": "{n} قطعة | {n} قطع",
+      "clearCart": "إفراغ",
+      "removeItem": "إزالة {name}",
+      "each": "{price} للقطعة",
+      "decrease": "إنقاص {name}",
+      "increase": "زيادة {name}",
+      "emptyCartTitle": "سلتك فارغة.",
+      "emptyCartBody": "امسح رمزاً شريطياً أو اختر منتجاً للبدء.",
+      "subtotal": "المجموع الفرعي",
+      "onCredit": "على الآجل",
+      "total": "الإجمالي",
+      "paymentMethod": "طريقة الدفع",
+      "clearSearch": "مسح البحث",
+      "breadcrumb": "مسار التنقل",
+      "catalog": "الكتالوج",
+      "allProducts": "كل المنتجات",
+      "familyCount": "{n} عائلة | {n} عائلات",
+      "filterBySize": "تصفية حسب المقاس",
+      "allSizes": "الكل",
+      "qtyHint": "الكمية",
+      "addQty": "إضافة ×{n}",
+      "fromPrice": "ابتداءً من {price}",
+      "noResultsTitle": "لا نتائج لـ «{q}»",
+      "noProductsTitle": "لا توجد منتجات في المخزون",
+      "viewCart": "عرض السلة"
     },
     "checkout": {
       "full": "كامل",
@@ -706,7 +1061,12 @@
       "acceptReady": "قبول وتعيين كجاهز",
       "completeCollect": "إكمال وتحصيل الدفع",
       "viewPurchases": "عرض المشتريات",
-      "empty": "لا توجد طلبات في هذا العرض."
+      "empty": "لا توجد طلبات في هذا العرض.",
+      "items": "{n} صنف | {n} أصناف",
+      "owes": "عليه {amount}",
+      "markReady": "تعيين كجاهز",
+      "complete": "إكمال",
+      "emptyBody": "ستظهر هنا الطلبات الجديدة عبر الإنترنت لهذا المتجر."
     },
     "credits": {
       "title": "آجل وديون العملاء",
@@ -716,26 +1076,39 @@
       "oldestDebt": "أقدم دين: {n} أيام",
       "viewPurchases": "عرض المشتريات",
       "collectPayment": "تحصيل دفعة",
-      "empty": "لا يوجد عملاء برصيد مستحق."
+      "empty": "لا يوجد عملاء برصيد مستحق.",
+      "totalOwedLabel": "إجمالي المستحق",
+      "debtorsLabel": "عملاء لديهم رصيد",
+      "days": "{n} يوم | {n} أيام",
+      "collect": "تحصيل",
+      "emptyBody": "جميع العملاء سددوا ما عليهم.",
+      "emptySearch": "جرّب اسماً أو رقم هاتف آخر."
     },
     "history": {
       "title": "سجل المبيعات",
       "saleMeta": "{total} دج · {paymentMethod}",
       "print": "طباعة",
-      "void": "إلغاء"
+      "void": "إلغاء",
+      "subtitle": "{n} عملية بيع · {total} مكتملة | {n} عمليات بيع · {total} مكتملة",
+      "filterAll": "الكل",
+      "byCashier": "بواسطة {name}",
+      "onCredit": "{amount} على الآجل",
+      "printReceipt": "طباعة الإيصال",
+      "empty": "لا توجد مبيعات بعد.",
+      "emptyBody": "ستظهر هنا المبيعات المكتملة من الصندوق."
     },
     "orderComplete": {
       "successTitle": "اكتمل الطلب",
-      "successMessage": "{orderNumber} · تم تحصيل {total} دج.",
+      "successMessage": "{orderNumber} · تم تحصيل {total}.",
       "title": "إكمال الطلب",
       "total": "الإجمالي: {total} دج",
-      "clientBalance": "العميل: {name} · الرصيد {balance} دج",
+      "clientBalance": "{name} · الرصيد {balance}",
       "paymentRecovery": "استرداد الدفع",
       "modeFull": "تم تحصيل المبلغ كاملاً",
       "modePartial": "دفعة جزئية",
       "modePayLater": "الدفع لاحقاً (آجل كامل)",
-      "amountCollected": "المبلغ المحصّل (دج)",
-      "onCredit": "على الآجل: {amount} دج",
+      "amountCollected": "المبلغ المحصّل",
+      "onCredit": "على الآجل: {amount}",
       "saving": "جارٍ الحفظ…",
       "submit": "إكمال الطلب",
       "errorFailed": "تعذر إكمال الطلب — تحقق من الدفع أو حد الآجل",
@@ -747,11 +1120,13 @@
     },
     "void": {
       "title": "إلغاء البيع",
-      "confirmBody": "إلغاء بيع بمبلغ {total} دج بواسطة {cashier}؟",
+      "confirmBody": "إلغاء بيع بمبلغ {total} بواسطة {cashier}؟",
       "reasonPlaceholder": "السبب (اختياري)",
       "voiding": "جارٍ الإلغاء…",
       "submit": "إلغاء البيع",
-      "errorDenied": "رُفض الإلغاء — تحقق من قواعد نفس اليوم والملكية"
+      "errorDenied": "رُفض الإلغاء — تحقق من قواعد نفس اليوم والملكية",
+      "warning": "يُعاد المخزون ويُسجَّل البيع كملغى. لا يمكن التراجع عن ذلك.",
+      "reasonLabel": "السبب"
     },
     "clientPicker": {
       "labelDebtOnly": "عميل لديه آجل مستحق",
@@ -759,17 +1134,18 @@
       "searchPlaceholder": "ابحث بالاسم أو الهاتف…",
       "clear": "مسح",
       "searching": "جارٍ البحث…",
-      "balance": "الرصيد: {balance} دج",
-      "limit": "· الحد: {limit} دج",
+      "balance": "الرصيد {balance}",
+      "limit": "· الحد {limit}",
       "resultBalance": "{balance} دج"
     },
     "payLater": {
       "titleLimitExceeded": "تم تجاوز حد الآجل",
       "titleConfirm": "تأكيد الدفع لاحقاً",
-      "willOwe": "سيصبح على {name} مبلغ {amount} دج",
-      "paidNowSuffix": "({paid} دج مدفوعة الآن)",
-      "balanceLimit": "الرصيد الحالي: {balance} دج · الحد: {limit} دج",
-      "managerOverride": "تجاوز المدير — السماح بالبيع فوق حد الآجل"
+      "willOwe": "سيصبح على {name} مبلغ {amount}",
+      "paidNowSuffix": "({paid} مدفوعة الآن)",
+      "balanceLimit": "الرصيد الحالي: {balance} · الحد: {limit}",
+      "managerOverride": "تجاوز المدير — السماح بالبيع فوق حد الآجل",
+      "onCreditLabel": "يُسجَّل على الآجل"
     },
     "purchases": {
       "inStore": "شراء داخل المتجر",
@@ -784,7 +1160,7 @@
       "title": "تحصيل دفعة آجل",
       "subtitle": "ابحث عن العملاء المدينين وسجّل دفعة (توزيع حسب الأقدم أولاً).",
       "outstanding": "المستحق: {balance} دج",
-      "amountLabel": "المبلغ (دج)",
+      "amountLabel": "المبلغ",
       "payFullBalance": "دفع الرصيد كاملاً",
       "paymentMethod": "طريقة الدفع",
       "processing": "جارٍ المعالجة…",
@@ -792,7 +1168,9 @@
       "errorExceedsBalance": "لا يمكن أن يتجاوز المبلغ رصيد العميل",
       "errorFailed": "فشل الدفع — تحقق من المبلغ وحاول مرة أخرى",
       "successTitle": "تم تسجيل الدفعة",
-      "successMessage": "تم استلام {amount} دج من {clientName}. الرصيد الجديد: {newBalance} دج."
+      "successMessage": "تم استلام {amount} من {clientName}. الرصيد الجديد: {newBalance}.",
+      "outstandingLabel": "الرصيد المستحق",
+      "remainingAfter": "يتبقى {amount} بعد هذه الدفعة"
     },
     "receipt": {
       "printError": "تعذر طباعة الإيصال.",
@@ -822,6 +1200,27 @@
       "colTotal": "الإجمالي",
       "subtotal": "المجموع الفرعي",
       "deliveryFee": "التوصيل"
+    },
+    "brand": "Galatk نقطة البيع",
+    "header": {
+      "searchPlaceholder": "ابحث عن المنتجات…",
+      "shortcuts": "اختصارات لوحة المفاتيح",
+      "account": "الحساب"
+    },
+    "table": {
+      "date": "التاريخ",
+      "reference": "المرجع",
+      "client": "العميل",
+      "method": "الطريقة",
+      "amount": "المبلغ",
+      "status": "الحالة",
+      "actions": "الإجراءات",
+      "moreActions": "إجراءات أخرى",
+      "walkIn": "زبون عابر",
+      "payment": "الدفع",
+      "phone": "الهاتف",
+      "oldestDebt": "أقدم دين",
+      "balance": "الرصيد"
     }
   }
 }

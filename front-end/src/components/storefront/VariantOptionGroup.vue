@@ -15,25 +15,30 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <fieldset class="flex flex-col gap-2">
-    <legend class="text-sm font-medium text-gray-900">{{ label }}</legend>
+  <fieldset class="flex flex-col gap-3">
+    <legend class="mb-4 flex items-baseline gap-3">
+      <span class="sf-eyebrow text-ink">{{ label }}</span>
+      <span v-if="modelValue" class="text-[13px] text-mute">{{ modelValue }}</span>
+    </legend>
     <div class="flex flex-wrap gap-2">
       <button
         v-for="value in values"
         :key="value"
         type="button"
         :disabled="disabledValues.includes(value)"
-        class="inline-flex min-h-10 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
+        :aria-pressed="modelValue === value"
+        class="inline-flex h-11 min-w-12 cursor-pointer items-center justify-center gap-2 border px-4 text-[12.5px] tracking-[0.04em] transition-colors duration-200 disabled:cursor-not-allowed disabled:border-dashed disabled:text-mute/60 disabled:line-through"
         :class="
           modelValue === value
-            ? 'border-gray-900 bg-gray-900 text-white'
-            : 'border-gray-300 text-gray-800 hover:border-gray-400'
+            ? 'border-ink bg-ink text-ivory'
+            : 'border-line bg-paper text-ink hover:border-ink'
         "
         @click="emit('update:modelValue', value)"
       >
         <span
           v-if="optionKey === 'color' && colorSwatch(value)"
-          class="h-3.5 w-3.5 rounded-full border border-black/10"
+          class="h-4 w-4 rounded-full border"
+          :class="modelValue === value ? 'border-ivory/60' : 'border-black/10'"
           :style="{ backgroundColor: colorSwatch(value) ?? undefined }"
         />
         {{ value }}

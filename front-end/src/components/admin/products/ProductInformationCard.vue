@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-defineProps<{
+const props = defineProps<{
   name: string
   description: string
   availableOnline: boolean
@@ -21,58 +21,67 @@ const emit = defineEmits<{
 
 <template>
   <div class="flex h-full flex-col gap-5">
-    <label class="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
-      {{ t('admin.product.name') }}
+    <div class="pos-field">
+      <label for="product-name" class="pos-label">{{ t('admin.product.name') }}</label>
       <input
-        class="input text-base"
-        :value="name"
+        id="product-name"
+        class="pos-input"
+        :value="props.name"
         :disabled="disabled"
         maxlength="120"
         :placeholder="t('admin.product.namePlaceholder')"
         @input="emit('update:name', ($event.target as HTMLInputElement).value)"
       />
-    </label>
+    </div>
 
-    <label class="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
-      {{ t('admin.product.description') }}
+    <div class="pos-field">
+      <div class="flex items-center justify-between">
+        <label for="product-description" class="pos-label">{{ t('admin.product.description') }}</label>
+        <span class="text-[11.5px] text-pos-faint pos-num">{{ props.description.length }}/4000</span>
+      </div>
       <textarea
-        class="input min-h-36 resize-y"
-        :value="description"
+        id="product-description"
+        class="pos-input h-auto min-h-36 resize-y py-3 leading-relaxed"
+        :value="props.description"
         :disabled="disabled"
         maxlength="4000"
         :placeholder="t('admin.product.descriptionPlaceholder')"
         @input="emit('update:description', ($event.target as HTMLTextAreaElement).value)"
       />
-    </label>
+    </div>
 
-    <div class="flex flex-col gap-3 border-t border-gray-100 pt-4">
-      <h4 class="text-sm font-semibold text-gray-800">{{ t('admin.product.visibility') }}</h4>
-      <label class="flex items-start gap-3 text-sm text-gray-800">
-        <input
-          type="checkbox"
-          class="mt-0.5 size-4 rounded border-gray-300"
-          :checked="availableOnline"
-          :disabled="disabled"
-          @change="emit('update:availableOnline', ($event.target as HTMLInputElement).checked)"
-        />
+    <div class="flex flex-col gap-1 border-t border-pos-line pt-4">
+      <h3 class="pos-label pb-2">{{ t('admin.product.visibility') }}</h3>
+      <div class="flex items-start justify-between gap-4 rounded-xl px-1 py-2">
         <span>
-          <span class="font-medium">{{ t('admin.product.availableOnline') }}</span>
-          <span class="mt-0.5 block text-xs font-normal text-gray-500">{{ t('admin.product.availableOnlineHint') }}</span>
+          <span id="product-online-label" class="block text-[14px] font-medium text-pos-ink">{{ t('admin.product.availableOnline') }}</span>
+          <span class="mt-0.5 block text-[12.5px] text-pos-muted">{{ t('admin.product.availableOnlineHint') }}</span>
         </span>
-      </label>
-      <label class="flex items-start gap-3 text-sm text-gray-800">
-        <input
-          type="checkbox"
-          class="mt-0.5 size-4 rounded border-gray-300"
-          :checked="isActive"
+        <button
+          type="button"
+          role="switch"
+          class="pos-switch mt-0.5"
+          aria-labelledby="product-online-label"
+          :aria-checked="availableOnline"
           :disabled="disabled"
-          @change="emit('update:isActive', ($event.target as HTMLInputElement).checked)"
+          @click="emit('update:availableOnline', !availableOnline)"
         />
+      </div>
+      <div class="flex items-start justify-between gap-4 rounded-xl px-1 py-2">
         <span>
-          <span class="font-medium">{{ t('admin.product.active') }}</span>
-          <span class="mt-0.5 block text-xs font-normal text-gray-500">{{ t('admin.product.activeHint') }}</span>
+          <span id="product-active-label" class="block text-[14px] font-medium text-pos-ink">{{ t('admin.product.active') }}</span>
+          <span class="mt-0.5 block text-[12.5px] text-pos-muted">{{ t('admin.product.activeHint') }}</span>
         </span>
-      </label>
+        <button
+          type="button"
+          role="switch"
+          class="pos-switch mt-0.5"
+          aria-labelledby="product-active-label"
+          :aria-checked="isActive"
+          :disabled="disabled"
+          @click="emit('update:isActive', !isActive)"
+        />
+      </div>
     </div>
   </div>
 </template>

@@ -119,6 +119,23 @@ function priceSummary(variants: PublicCatalogVariant[]): { fromPrice: string; ha
   }
 }
 
+function dominantCategory(products: Product[]): string | null {
+  const counts = new Map<string, number>()
+  for (const product of products) {
+    const category = product.category?.trim()
+    if (category) counts.set(category, (counts.get(category) ?? 0) + 1)
+  }
+  let best: string | null = null
+  let bestCount = 0
+  for (const [category, count] of counts) {
+    if (count > bestCount) {
+      best = category
+      bestCount = count
+    }
+  }
+  return best
+}
+
 /**
  * Builds a customer-safe catalog family. Returns null when the family is
  * unpublished, inactive, or has no shop-associated online variants.
@@ -142,11 +159,14 @@ export function presentCatalogFamily(
   }
 
   const { fromPrice, hasPriceRange } = priceSummary(variants)
+  const onlineIds = new Set(variants.map((variant) => variant.id))
   return {
     id: family.id,
     slug: family.slug,
     name: family.name,
     description: family.description,
+    category: dominantCategory(family.products.filter((product) => onlineIds.has(product.id))),
+    createdAt: family.createdAt.toISOString(),
     images: publicImages(family.images),
     fromPrice,
     hasPriceRange,

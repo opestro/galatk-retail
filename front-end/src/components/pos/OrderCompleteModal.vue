@@ -8,6 +8,14 @@ import PayLaterConfirm from '@/components/pos/PayLaterConfirm.vue'
 import PosSuccessDialog from '@/components/pos/PosSuccessDialog.vue'
 import { saveOrderReceiptPdf } from '@/utils/orderReceiptPdf'
 import type { OnlineOrder } from '@/types/api'
+import { AlertCircle, Banknote, CreditCard, Info } from 'lucide-vue-next'
+import PosModal from '@/components/pos/PosModal.vue'
+import { formatMoney } from '@/utils/formatMoney'
+
+const methods = [
+  { id: 'CASH' as const, icon: Banknote },
+  { id: 'CARD' as const, icon: CreditCard },
+]
 
 const props = defineProps<{
   order: OnlineOrder
@@ -95,68 +103,96 @@ function handleComplete() {
   <PosSuccessDialog
     v-if="showSuccess"
     :title="$t('pos.orderComplete.successTitle')"
-    :message="$t('pos.orderComplete.successMessage', { orderNumber: order.orderNumber, total: order.total })"
+    :message="$t('pos.orderComplete.successMessage', { orderNumber: order.orderNumber, total: formatMoney(order.total) })"
     @close="emit('completed')"
     @print="saveOrderReceiptPdf(order)"
   />
 
-  <div v-else class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-    <div class="card flex max-h-[90vh] w-full max-w-md flex-col gap-4 overflow-y-auto">
-      <div>
-        <h3 class="text-lg font-semibold text-gray-900">{{ $t('pos.orderComplete.title') }}</h3>
-        <p class="text-sm text-gray-500">{{ order.orderNumber }} · {{ order.customerName }}</p>
-        <p class="mt-1 text-sm font-medium text-gray-900">{{ $t('pos.orderComplete.total', { total: order.total }) }}</p>
-        <p v-if="client" class="text-sm text-gray-600">
-          {{ $t('pos.orderComplete.clientBalance', { name: client.name, balance: client.balance }) }}
+  <PosModal
+    v-else
+    :title="$t('pos.orderComplete.title')"
+    :subtitle="`${order.orderNumber} · ${order.customerName}`"
+    @close="emit('close')"
+  >
+    <div class="flex flex-col gap-5">
+      <div class="rounded-2xl bg-pos-sunken p-4">
+        <p class="text-[12px] font-medium text-pos-muted">{{ $t('pos.register.total') }}</p>
+        <p class="mt-0.5 text-[26px] leading-tight font-semibold tracking-[-0.02em] text-pos-ink pos-num">{{ formatMoney(order.total) }}</p>
+        <p v-if="client" class="mt-1 text-[13px] text-pos-muted pos-num">
+          {{ $t('pos.orderComplete.clientBalance', { name: client.name, balance: formatMoney(client.balance) }) }}
         </p>
       </div>
 
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium text-gray-700">{{ $t('pos.orderComplete.paymentRecovery') }}</label>
-        <select
-          :value="checkoutMode"
-          class="input"
-          @change="onModeChange(($event.target as HTMLSelectElement).value as 'full' | 'partial' | 'payLater')"
-        >
-          <option value="full">{{ $t('pos.orderComplete.modeFull') }}</option>
-          <option value="partial">{{ $t('pos.orderComplete.modePartial') }}</option>
-          <option v-if="auth.isManager" value="payLater">{{ $t('pos.orderComplete.modePayLater') }}</option>
-        </select>
+        <span class="pos-label">{{ $t('pos.orderComplete.paymentRecovery') }}</span>
+        <div class="pos-segmented" role="group" :aria-label="$t('pos.orderComplete.paymentRecovery')">
+          <button type="button" class="pos-segment" :aria-pressed="checkoutMode === 'full'" @click="onModeChange('full')">{{ $t('pos.checkout.full') }}</button>
+          <button type="button" class="pos-segment" :aria-pressed="checkoutMode === 'partial'" @click="onModeChange('partial')">{{ $t('pos.checkout.partial') }}</button>
+          <button v-if="auth.isManager" type="button" class="pos-segment" :aria-pressed="checkoutMode === 'payLater'" @click="onModeChange('payLater')">{{ $t('pos.checkout.later') }}</button>
+        </div>
       </div>
 
-      <div v-if="checkoutMode === 'partial'">
-        <label class="mb-1 block text-sm font-medium text-gray-700">{{ $t('pos.orderComplete.amountCollected') }}</label>
-        <input v-model.number="amountPaid" type="number" min="0" :max="total" step="0.01" class="input" />
+      <div v-if="checkoutMode === 'partial'" class="flex flex-col gap-2">
+        <label for="pos-order-collected" class="pos-label">{{ $t('pos.orderComplete.amountCollected') }}</label>
+        <div class="relative">
+          <input
+            id="pos-order-collected"
+            v-model.number="amountPaid"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            :max="total"
+            step="0.01"
+            class="pos-input h-14 pe-16 text-[24px] font-semibold pos-num"
+          />
+          <span class="pointer-events-none absolute end-4 top-1/2 -translate-y-1/2 text-[14px] font-medium text-pos-muted">{{ $t('common.currency') }}</span>
+        </div>
       </div>
 
-      <p v-if="amountOnCredit > 0" class="text-sm text-amber-700">
-        {{ $t('pos.orderComplete.onCredit', { amount: amountOnCredit.toFixed(2) }) }}
+      <p v-if="amountOnCredit > 0" class="pos-notice bg-pos-warn-bg text-pos-warn">
+        <Info class="mt-px h-4 w-4 shrink-0" />
+        {{ $t('pos.orderComplete.onCredit', { amount: formatMoney(amountOnCredit) }) }}
       </p>
 
-      <select v-model="paymentMethod" class="input">
-        <option value="CASH">{{ $t('common.paymentMethod.CASH') }}</option>
-        <option value="CARD">{{ $t('common.paymentMethod.CARD') }}</option>
-      </select>
-
-      <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
-
-      <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <button type="button" class="btn-secondary" @click="emit('close')">{{ $t('common.cancel') }}</button>
-        <button type="button" class="btn-primary" :disabled="loading" @click="handleComplete">
-          {{ loading ? $t('pos.orderComplete.saving') : $t('pos.orderComplete.submit') }}
-        </button>
+      <div class="flex flex-col gap-2">
+        <span class="pos-label">{{ $t('pos.paymentModal.paymentMethod') }}</span>
+        <div class="pos-segmented" role="group" :aria-label="$t('pos.paymentModal.paymentMethod')">
+          <button
+            v-for="method in methods"
+            :key="method.id"
+            type="button"
+            class="pos-segment min-h-10"
+            :aria-pressed="paymentMethod === method.id"
+            @click="paymentMethod = method.id"
+          >
+            <component :is="method.icon" class="h-4 w-4" />
+            {{ $t(`common.paymentMethod.${method.id}`) }}
+          </button>
+        </div>
       </div>
+
+      <p v-if="error" class="pos-notice bg-pos-err-bg text-pos-err" role="alert">
+        <AlertCircle class="mt-px h-4 w-4 shrink-0" />
+        {{ error }}
+      </p>
     </div>
 
-    <PayLaterConfirm
-      v-if="showManagerConfirm && client"
-      :client="client"
-      :total="total"
-      :amount-paid="amountPaid"
-      :amount-on-credit="amountOnCredit"
-      :limit-override="pendingOverride"
-      @close="showManagerConfirm = false"
-      @confirm="submitComplete"
-    />
-  </div>
+    <template #footer>
+      <button type="button" class="pos-btn-ghost" @click="emit('close')">{{ $t('common.cancel') }}</button>
+      <button type="button" class="pos-btn-primary" data-autofocus :disabled="loading" @click="handleComplete">
+        {{ loading ? $t('pos.orderComplete.saving') : $t('pos.orderComplete.submit') }}
+      </button>
+    </template>
+  </PosModal>
+
+  <PayLaterConfirm
+    v-if="showManagerConfirm && client"
+    :client="client"
+    :total="total"
+    :amount-paid="amountPaid"
+    :amount-on-credit="amountOnCredit"
+    :limit-override="pendingOverride"
+    @close="showManagerConfirm = false"
+    @confirm="submitComplete"
+  />
 </template>
