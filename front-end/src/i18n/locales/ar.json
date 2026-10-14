@@ -503,6 +503,16 @@
       "removed": "تم حذف الصورة"
     },
     "variant": {
+      "colorAndSize": "اللون / المقاس",
+      "noColor": "بدون لون",
+      "searchPlaceholder": "ابحث عن لون أو مقاس…",
+      "clearSearch": "مسح البحث",
+      "expandAll": "توسيع الكل",
+      "collapseAll": "طي الكل",
+      "toggleColor": "إظهار أو إخفاء مقاسات {color}",
+      "sizesCount": "{n} مقاس | {n} مقاسات",
+      "colorsSummary": "{n} لون · {sizes} متغيرات | {n} ألوان · {sizes} متغيرات",
+      "noMatch": "لا يوجد متغير يطابق «{q}».",
       "color": "اللون",
       "colorPlaceholder": "أخضر",
       "size": "المقاس",

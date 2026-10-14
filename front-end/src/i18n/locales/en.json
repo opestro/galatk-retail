@@ -503,6 +503,16 @@
       "removed": "Photo removed"
     },
     "variant": {
+      "colorAndSize": "Color / Size",
+      "noColor": "No color",
+      "searchPlaceholder": "Search color or size…",
+      "clearSearch": "Clear search",
+      "expandAll": "Expand all",
+      "collapseAll": "Collapse all",
+      "toggleColor": "Show or hide sizes for {color}",
+      "sizesCount": "{n} size | {n} sizes",
+      "colorsSummary": "{n} color · {sizes} variants | {n} colors · {sizes} variants",
+      "noMatch": "No variant matches “{q}”.",
       "color": "Color",
       "colorPlaceholder": "Vert",
       "size": "Size",

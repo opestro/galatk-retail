@@ -503,6 +503,16 @@
       "removed": "Photo supprimée"
     },
     "variant": {
+      "colorAndSize": "Couleur / Taille",
+      "noColor": "Sans couleur",
+      "searchPlaceholder": "Rechercher une couleur ou une taille…",
+      "clearSearch": "Effacer la recherche",
+      "expandAll": "Tout déplier",
+      "collapseAll": "Tout replier",
+      "toggleColor": "Afficher ou masquer les tailles de {color}",
+      "sizesCount": "{n} taille | {n} tailles",
+      "colorsSummary": "{n} couleur · {sizes} variantes | {n} couleurs · {sizes} variantes",
+      "noMatch": "Aucune variante ne correspond à « {q} ».",
       "color": "Couleur",
       "colorPlaceholder": "Vert",
       "size": "Taille",
