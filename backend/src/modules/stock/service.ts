@@ -21,7 +21,7 @@ export async function listShopStock(staff: AuthenticatedStaff, shopId: string) {
 
   return prisma.shopStock.findMany({
     where: { shopId },
-    include: { product: true },
+    include: { product: { include: { family: { select: { id: true, name: true } } } } },
     orderBy: { product: { name: 'asc' } },
   })
 }

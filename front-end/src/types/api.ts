@@ -234,7 +234,14 @@ export interface ShopStockItem {
   shopId: string
   productId: string
   quantity: number
-  product: { id: string; name: string; sellPrice: string }
+  product: {
+    id: string
+    name: string
+    sellPrice: string
+    familyId?: string | null
+    familyName?: string
+    attributes?: Record<string, string>
+  }
 }
 
 export interface PosProduct {

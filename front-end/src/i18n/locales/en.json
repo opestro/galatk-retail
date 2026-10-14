@@ -660,12 +660,16 @@
       "empty": "No shops yet."
     },
     "stock": {
+      "toggleProduct": "Show or hide colors for {name}",
+      "colorsCount": "{n} color | {n} colors",
+      "outCount": "{n} out",
+      "lowCount": "{n} low",
       "title": "Stock overview",
       "colProduct": "Product",
       "colPrice": "Price",
       "colQuantity": "Quantity",
       "subtitle": "{n} products · {units} units on hand",
-      "searchPlaceholder": "Search products…",
+      "searchPlaceholder": "Search product, color or size — or combine them…",
       "low": "Low",
       "out": "Out of stock",
       "empty": "Nothing matches this view."

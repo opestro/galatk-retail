@@ -201,19 +201,19 @@ function patchStock(id: string, value: string) {
           </tr>
 
           <template v-if="expanded.has(group.key)">
-            <tr v-for="variant in group.variants" :key="variant.id" class="variant-size-row" :class="variantInStock(variant) ? '' : 'opacity-70'">
-              <td class="bg-[#fcfcfb] ps-6">
+            <tr v-for="variant in group.variants" :key="variant.id" class="variant-size-row bg-[#fcfcfb]" :class="variantInStock(variant) ? '' : 'opacity-70'">
+              <td class="ps-6">
                 <div class="flex flex-wrap items-center gap-1.5 ps-[26px]">
                   <span class="text-pos-ink-2">{{ attr(variant, 'size') }}</span>
                   <span v-if="variant.galatkProductRef" class="pos-badge-neutral h-5 px-2 text-[11px]">{{ t('admin.variant.factoryBadge') }}</span>
                   <span v-if="!variantInStock(variant)" class="pos-badge-err h-5 px-2 text-[11px]">{{ t('admin.variant.unavailable') }}</span>
                 </div>
               </td>
-              <td v-for="key in extraKeys" :key="`${variant.id}-${key}`" class="bg-[#fcfcfb] text-pos-ink-2">{{ attr(variant, key) }}</td>
-              <td class="pos-cell-num bg-[#fcfcfb] text-pos-muted">{{ formatMoney(variant.unitCost) }}</td>
-              <td class="pos-cell-num bg-[#fcfcfb] font-medium text-pos-ink">{{ formatMoney(variant.sellPrice) }}</td>
-              <td class="pos-cell-num bg-[#fcfcfb] text-pos-ink-2">{{ formatMarginPercent(variant.sellPrice, variant.unitCost) }}</td>
-              <td class="bg-[#fcfcfb]">
+              <td v-for="key in extraKeys" :key="`${variant.id}-${key}`" class="text-pos-ink-2">{{ attr(variant, key) }}</td>
+              <td class="pos-cell-num text-pos-muted">{{ formatMoney(variant.unitCost) }}</td>
+              <td class="pos-cell-num font-medium text-pos-ink">{{ formatMoney(variant.sellPrice) }}</td>
+              <td class="pos-cell-num text-pos-ink-2">{{ formatMarginPercent(variant.sellPrice, variant.unitCost) }}</td>
+              <td>
                 <div v-if="canManage && stockDraft" class="relative w-24">
                   <input
                     :value="stockDraft[variant.id]"
@@ -233,15 +233,15 @@ function patchStock(id: string, value: string) {
                 </div>
                 <span v-else class="pos-num">{{ formatCount(variant.shopQuantity ?? 0) }}</span>
               </td>
-              <td class="bg-[#fcfcfb] text-center">
+              <td class="text-center">
                 <Check v-if="variant.availableOnline" class="mx-auto h-4 w-4 text-pos-ok" :aria-label="t('common.yes')" />
                 <Minus v-else class="mx-auto h-4 w-4 text-pos-faint" :aria-label="t('common.no')" />
               </td>
-              <td class="bg-[#fcfcfb] text-center">
+              <td class="text-center">
                 <Check v-if="variant.isActive" class="mx-auto h-4 w-4 text-pos-ok" :aria-label="t('common.yes')" />
                 <Minus v-else class="mx-auto h-4 w-4 text-pos-faint" :aria-label="t('common.no')" />
               </td>
-              <td v-if="canManage" class="pos-cell-actions bg-[#fcfcfb] pe-6">
+              <td v-if="canManage" class="pos-cell-actions pe-6">
                 <div class="flex items-center justify-end gap-1">
                   <button type="button" class="pos-icon-btn h-9 w-9" :aria-label="t('common.edit')" :title="t('common.edit')" @click="emit('edit', variant.id)">
                     <Pencil class="h-4 w-4" />

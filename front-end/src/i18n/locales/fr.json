@@ -660,12 +660,16 @@
       "empty": "Aucun magasin pour le moment."
     },
     "stock": {
+      "toggleProduct": "Afficher ou masquer les couleurs de {name}",
+      "colorsCount": "{n} couleur | {n} couleurs",
+      "outCount": "{n} épuisé(s)",
+      "lowCount": "{n} faible(s)",
       "title": "Aperçu du stock",
       "colProduct": "Produit",
       "colPrice": "Prix",
       "colQuantity": "Quantité",
       "subtitle": "{n} produits · {units} unités en stock",
-      "searchPlaceholder": "Rechercher des produits…",
+      "searchPlaceholder": "Rechercher un produit, une couleur ou une taille — ou les combiner…",
       "low": "Faible",
       "out": "Rupture de stock",
       "empty": "Rien ne correspond à cette vue."

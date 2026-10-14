@@ -660,12 +660,16 @@
       "empty": "لا توجد متاجر بعد."
     },
     "stock": {
+      "toggleProduct": "إظهار أو إخفاء ألوان {name}",
+      "colorsCount": "{n} لون | {n} ألوان",
+      "outCount": "{n} نفد",
+      "lowCount": "{n} منخفض",
       "title": "نظرة عامة على المخزون",
       "colProduct": "المنتج",
       "colPrice": "السعر",
       "colQuantity": "الكمية",
       "subtitle": "{n} منتجات · {units} وحدة متوفرة",
-      "searchPlaceholder": "ابحث عن المنتجات…",
+      "searchPlaceholder": "ابحث عن منتج أو لون أو مقاس — أو اجمع بينها…",
       "low": "منخفض",
       "out": "نفد",
       "empty": "لا شيء يطابق هذا العرض."
