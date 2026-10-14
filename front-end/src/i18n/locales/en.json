@@ -954,7 +954,36 @@
         "saveError": "Could not save delivery prices"
       },
       "subtitle": "Storefront, delivery and shop details",
-      "saveFailed": "Could not save the settings"
+      "saveFailed": "Could not save the settings",
+      "reset": {
+        "tab": "Reset data",
+        "title": "Reset data",
+        "hint": "Choose what to wipe. Owner only. Shop settings, banner and delivery rates are never touched.",
+        "staff": "Staff accounts",
+        "staffHint": "Deletes every staff account except owners. Their past records are reassigned to you.",
+        "stock": "Stock",
+        "stockZero": "Set all quantities to 0",
+        "stockDelete": "Delete all stock",
+        "products": "Products",
+        "productsZero": "Set all prices and costs to 0",
+        "productsDelete": "Delete all products",
+        "keep": "Keep",
+        "orders": "Orders & sales",
+        "ordersHint": "Deletes all online orders and POS sales.",
+        "clients": "Clients",
+        "clientsHint": "Deletes all clients together with their orders and sales.",
+        "credit": "Credit",
+        "creditHint": "Deletes credit, payments and history; all balances return to 0.",
+        "impliedProducts": "Deleting products also deletes stock transfers and stock.",
+        "impliedOrders": "Deleting products also deletes all orders and sales.",
+        "impliedClientOrders": "Orders and sales of deleted clients will be deleted.",
+        "impliedCredit": "All client credit data will be reset too.",
+        "warning": "This permanently deletes data and cannot be undone.",
+        "confirmLabel": "Type {word} to confirm",
+        "submit": "Reset selected data",
+        "done": "Data reset",
+        "failed": "Could not reset data"
+      }
     },
     "network": {
       "title": "Network overview",

@@ -954,7 +954,36 @@
         "saveError": "Impossible d'enregistrer les tarifs de livraison"
       },
       "subtitle": "Boutique en ligne, livraison et informations du magasin",
-      "saveFailed": "Impossible d'enregistrer les paramètres"
+      "saveFailed": "Impossible d'enregistrer les paramètres",
+      "reset": {
+        "tab": "Réinitialiser",
+        "title": "Réinitialiser les données",
+        "hint": "Choisissez ce qu'il faut effacer. Propriétaire uniquement. Les paramètres de la boutique, la bannière et les tarifs de livraison ne sont jamais touchés.",
+        "staff": "Comptes du personnel",
+        "staffHint": "Supprime tous les comptes sauf les propriétaires. Leur historique vous est réattribué.",
+        "stock": "Stock",
+        "stockZero": "Mettre toutes les quantités à 0",
+        "stockDelete": "Supprimer tout le stock",
+        "products": "Produits",
+        "productsZero": "Mettre tous les prix et coûts à 0",
+        "productsDelete": "Supprimer tous les produits",
+        "keep": "Conserver",
+        "orders": "Commandes et ventes",
+        "ordersHint": "Supprime toutes les commandes en ligne et ventes caisse.",
+        "clients": "Clients",
+        "clientsHint": "Supprime tous les clients avec leurs commandes et ventes.",
+        "credit": "Crédit",
+        "creditHint": "Supprime crédits, paiements et historique ; tous les soldes repassent à 0.",
+        "impliedProducts": "Supprimer les produits supprime aussi les transferts et le stock.",
+        "impliedOrders": "Supprimer les produits supprime aussi toutes les commandes et ventes.",
+        "impliedClientOrders": "Les commandes et ventes des clients supprimés seront supprimées.",
+        "impliedCredit": "Toutes les données de crédit seront aussi réinitialisées.",
+        "warning": "Ces données seront supprimées définitivement.",
+        "confirmLabel": "Tapez {word} pour confirmer",
+        "submit": "Réinitialiser la sélection",
+        "done": "Données réinitialisées",
+        "failed": "Échec de la réinitialisation"
+      }
     },
     "network": {
       "title": "Vue d'ensemble du réseau",
