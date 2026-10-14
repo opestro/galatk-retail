@@ -16,6 +16,9 @@ export async function listStock(req: Request, res: Response, next: NextFunction)
           id: s.product.id,
           name: s.product.name,
           sellPrice: s.product.sellPrice.toString(),
+          familyId: s.product.familyId,
+          familyName: s.product.family?.name ?? s.product.category ?? s.product.name,
+          attributes: (s.product.attributes ?? {}) as Record<string, string>,
         },
       })),
     })

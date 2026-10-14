@@ -51,3 +51,25 @@ export async function updateDeliveryRates(
   const { data } = await api.put<{ data: WilayaDeliveryRate[] }>('/settings/delivery-rates', { rates })
   return data.data
 }
+
+export interface ResetSelection {
+  staff: boolean
+  stock: '' | 'delete' | 'zero'
+  products: '' | 'delete' | 'zero'
+  orders: boolean
+  clients: boolean
+  credit: boolean
+}
+
+export async function resetData(
+  selection: ResetSelection,
+  confirmation: string,
+): Promise<Record<string, number>> {
+  const { data } = await api.post<{ data: Record<string, number> }>('/settings/reset', {
+    ...selection,
+    stock: selection.stock || undefined,
+    products: selection.products || undefined,
+    confirmation,
+  })
+  return data.data
+}

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useCustomerAuthStore } from '@/stores/customerAuth'
+import type { StaffPermission } from '@/types/api'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import PosLayout from '@/layouts/PosLayout.vue'
 import StorefrontLayout from '@/layouts/StorefrontLayout.vue'
@@ -39,13 +40,13 @@ const router = createRouter({
     {
       path: '/admin',
       component: AdminLayout,
-      meta: { requiresAuth: true, roles: ['OWNER', 'MANAGER'] },
+      meta: { requiresAuth: true, roles: ['OWNER', 'MANAGER', 'CASHIER'] },
       children: [
         { path: '', name: 'admin-dashboard', component: () => import('@/views/admin/DashboardView.vue') },
         { path: 'shops', name: 'admin-shops', component: () => import('@/views/admin/ShopsView.vue') },
-        { path: 'products', name: 'admin-products', component: () => import('@/views/admin/ProductsView.vue') },
-        { path: 'products/new', name: 'admin-product-create', component: () => import('@/views/admin/ProductCreateView.vue') },
-        { path: 'products/:familyId', name: 'admin-product-detail', component: () => import('@/views/admin/ProductDetailView.vue') },
+        { path: 'products', name: 'admin-products', component: () => import('@/views/admin/ProductsView.vue'), meta: { permission: 'MANAGE_CATALOG' } },
+        { path: 'products/new', name: 'admin-product-create', component: () => import('@/views/admin/ProductCreateView.vue'), meta: { permission: 'MANAGE_CATALOG' } },
+        { path: 'products/:familyId', name: 'admin-product-detail', component: () => import('@/views/admin/ProductDetailView.vue'), meta: { permission: 'MANAGE_CATALOG' } },
         { path: 'stock', name: 'admin-stock', component: () => import('@/views/admin/StockView.vue') },
         { path: 'inbound', name: 'admin-inbound', component: () => import('@/views/admin/InboundTransferView.vue') },
         { path: 'orders', name: 'admin-orders', component: () => import('@/views/admin/OrdersView.vue') },
@@ -149,6 +150,12 @@ router.beforeEach((to) => {
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return '/staff/login'
+  }
+
+  // Cashiers only reach admin pages that declare a permission they were granted.
+  if (auth.staff?.role === 'CASHIER' && to.path.startsWith('/admin')) {
+    const permission = to.matched.at(-1)?.meta.permission as StaffPermission | undefined
+    if (!permission || !auth.can(permission)) return '/pos'
   }
 
   const roles = to.meta.roles as string[] | undefined

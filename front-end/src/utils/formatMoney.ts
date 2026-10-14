@@ -1,5 +1,5 @@
 /** Customer-facing DZD amounts. Backend remains the source of truth. */
-import { numberLocale, translate } from '@/i18n/translate'
+import { displayLocale, numberLocale, translate } from '@/i18n/translate'
 
 export function formatDzd(value: string | number): string {
   const amount = typeof value === 'number' ? value : Number(value)
@@ -17,10 +17,10 @@ export function formatFromPrice(fromPrice: string, hasPriceRange: boolean): stri
 
 /**
  * POS figures: always two decimals with grouping, in the active script.
- * English → "1,250.00", Arabic → "١٬٢٥٠٫٠٠" (Arabic-Indic digits and separators).
+ * English → "1,250.00", French → "1 250,00", Arabic → "١٬٢٥٠٫٠٠" (Arabic-Indic digits and separators).
  */
 function posNumberFormat(): Intl.NumberFormat {
-  const locale = numberLocale() === 'ar-DZ' ? 'ar-DZ-u-nu-arab' : 'en-US'
+  const locale = displayLocale()
   return new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
@@ -36,12 +36,12 @@ export function formatMoney(value: string | number | null | undefined): string {
 
 /** Plain integers (counts, stock) in the active script. */
 export function formatCount(value: number): string {
-  return new Intl.NumberFormat(numberLocale() === 'ar-DZ' ? 'ar-DZ-u-nu-arab' : 'en-US').format(value)
+  return new Intl.NumberFormat(displayLocale()).format(value)
 }
 
 /** Compact table timestamp in the active script: "Oct 2, 7:01 PM" / "٢ أكتوبر، ٧:٠١ م". */
 export function formatDateTime(iso: string): { date: string; time: string } {
-  const locale = numberLocale() === 'ar-DZ' ? 'ar-DZ-u-nu-arab' : 'en-US'
+  const locale = displayLocale()
   const value = new Date(iso)
   return {
     date: value.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }),

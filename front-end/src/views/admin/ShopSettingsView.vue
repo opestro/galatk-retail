@@ -2,7 +2,7 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Image, Store, Truck } from 'lucide-vue-next'
+import { Image, RotateCcw, Store, Truck } from 'lucide-vue-next'
 import { api } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import type { Shop } from '@/types/api'
@@ -10,6 +10,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import { useToast } from '@/composables/useToast'
 import { apiErrorMessage } from '@/services/products'
 import HomeBannerSettings from '@/components/admin/HomeBannerSettings.vue'
+import ResetSettings from '@/components/admin/ResetSettings.vue'
 import DeliveryRatesSettings from '@/components/admin/DeliveryRatesSettings.vue'
 
 /**
@@ -18,7 +19,7 @@ import DeliveryRatesSettings from '@/components/admin/DeliveryRatesSettings.vue'
  * Panels stay mounted (`v-show`) so a delivery-price draft is not discarded
  * when the user switches tabs.
  */
-const SECTIONS = ['banner', 'delivery', 'shop'] as const
+const SECTIONS = ['banner', 'delivery', 'shop', 'reset'] as const
 type SettingsSection = (typeof SECTIONS)[number]
 
 const { t } = useI18n()
@@ -35,6 +36,7 @@ const tabs = computed(() => [
   { id: 'banner' as const, label: t('admin.banner.title'), icon: Image },
   { id: 'delivery' as const, label: t('admin.settings.deliveryRates.title'), icon: Truck },
   { id: 'shop' as const, label: t('admin.settings.selectedShop'), icon: Store },
+  ...(auth.isOwner ? [{ id: 'reset' as const, label: t('admin.settings.reset.tab'), icon: RotateCcw }] : []),
 ])
 
 function isSection(value: unknown): value is SettingsSection {
@@ -134,6 +136,7 @@ watch(() => auth.selectedShopId, loadShop)
     <div :id="`settings-panel-${activeSection}`" role="tabpanel" :aria-labelledby="`settings-tab-${activeSection}`">
       <HomeBannerSettings v-show="activeSection === 'banner'" />
       <DeliveryRatesSettings v-show="activeSection === 'delivery'" />
+      <ResetSettings v-if="auth.isOwner && activeSection === 'reset'" />
 
       <section v-show="activeSection === 'shop'" class="pos-surface flex max-w-2xl flex-col">
         <div class="px-6 pt-6 pb-2">

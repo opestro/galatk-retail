@@ -14,5 +14,6 @@ router.post('/banner-image', SettingsController.uploadBannerImage, SettingsContr
 router.delete('/banner-image/:imageId', SettingsController.removeImage)
 router.get('/delivery-rates', SettingsController.getDeliveryRates)
 router.put('/delivery-rates', SettingsController.updateDeliveryRates)
+router.post('/reset', SettingsController.resetAll)
 
 export default router

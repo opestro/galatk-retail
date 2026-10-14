@@ -20,7 +20,7 @@ const refreshing = ref(false)
 const search = ref('')
 const filter = ref<'all' | 'available' | 'unavailable'>('all')
 
-const canManage = computed(() => auth.isManager)
+const canManage = computed(() => auth.canManageCatalog)
 
 const displayed = computed(() => {
   if (filter.value === 'all') return families.value

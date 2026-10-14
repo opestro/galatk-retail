@@ -464,7 +464,7 @@ async function onSetPrimary(imageId: string) {
             <h2 class="section-title">{{ t('admin.variant.sectionTitle') }}</h2>
             <p class="mt-0.5 text-[12.5px] text-pos-muted">{{ t('admin.variant.stockEditHint') }}</p>
           </div>
-          <button v-if="canManage" type="button" class="pos-btn-soft" @click="openAddVariant">
+          <button v-if="auth.canManageCatalog" type="button" class="pos-btn-soft" @click="openAddVariant">
             <Plus class="h-4 w-4" />
             {{ t('admin.variant.add') }}
           </button>

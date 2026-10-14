@@ -3,6 +3,7 @@ import multer from 'multer'
 import { CustomError } from '../../shared/types/error_type.js'
 import { siteSettingsPresenter } from './presenter.js'
 import * as SettingsService from './service.js'
+import { resetData } from './reset.js'
 
 const imageUpload = multer({
   storage: multer.memoryStorage(),
@@ -88,6 +89,15 @@ export async function updateDeliveryRates(req: Request, res: Response, next: Nex
   try {
     const rates = await SettingsService.updateDeliveryRates({ rates: req.body?.rates })
     res.status(200).json({ data: rates })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function resetAll(req: Request, res: Response, next: NextFunction) {
+  try {
+    const counts = await resetData(req.staff!, req.body ?? {})
+    res.status(200).json({ data: counts })
   } catch (error) {
     next(error)
   }

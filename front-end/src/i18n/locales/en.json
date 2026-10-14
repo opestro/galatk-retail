@@ -503,6 +503,16 @@
       "removed": "Photo removed"
     },
     "variant": {
+      "colorAndSize": "Color / Size",
+      "noColor": "No color",
+      "searchPlaceholder": "Search color or size…",
+      "clearSearch": "Clear search",
+      "expandAll": "Expand all",
+      "collapseAll": "Collapse all",
+      "toggleColor": "Show or hide sizes for {color}",
+      "sizesCount": "{n} size | {n} sizes",
+      "colorsSummary": "{n} color · {sizes} variants | {n} colors · {sizes} variants",
+      "noMatch": "No variant matches “{q}”.",
       "color": "Color",
       "colorPlaceholder": "Vert",
       "size": "Size",
@@ -650,12 +660,16 @@
       "empty": "No shops yet."
     },
     "stock": {
+      "toggleProduct": "Show or hide colors for {name}",
+      "colorsCount": "{n} color | {n} colors",
+      "outCount": "{n} out",
+      "lowCount": "{n} low",
       "title": "Stock overview",
       "colProduct": "Product",
       "colPrice": "Price",
       "colQuantity": "Quantity",
       "subtitle": "{n} products · {units} units on hand",
-      "searchPlaceholder": "Search products…",
+      "searchPlaceholder": "Search product, color or size — or combine them…",
       "low": "Low",
       "out": "Out of stock",
       "empty": "Nothing matches this view."
@@ -894,7 +908,21 @@
         "CASHIER": "Runs the register and online order handoff.",
         "MANAGER": "Manages products, stock, clients and charges.",
         "OWNER": "Full access to every shop and the network view."
-      }
+      },
+      "permissions": {
+        "MANAGE_CATALOG": "Add products & variants",
+        "EDIT_PRICE": "Edit prices at the register",
+        "GIVE_DISCOUNT": "Give discounts"
+      },
+      "perms": "Extra privileges",
+      "permsHint": "Granted on top of the cashier role.",
+      "edit": "Edit",
+      "editTitle": "Edit {name}",
+      "save": "Save changes",
+      "updated": "Team member updated",
+      "updateFailed": "Could not update the team member",
+      "colPerms": "Privileges",
+      "none": "None"
     },
     "settings": {
       "saved": "Settings saved",
@@ -926,7 +954,36 @@
         "saveError": "Could not save delivery prices"
       },
       "subtitle": "Storefront, delivery and shop details",
-      "saveFailed": "Could not save the settings"
+      "saveFailed": "Could not save the settings",
+      "reset": {
+        "tab": "Reset data",
+        "title": "Reset data",
+        "hint": "Choose what to wipe. Owner only. Shop settings, banner and delivery rates are never touched.",
+        "staff": "Staff accounts",
+        "staffHint": "Deletes every staff account except owners. Their past records are reassigned to you.",
+        "stock": "Stock",
+        "stockZero": "Set all quantities to 0",
+        "stockDelete": "Delete all stock",
+        "products": "Products",
+        "productsZero": "Set all prices and costs to 0",
+        "productsDelete": "Delete all products",
+        "keep": "Keep",
+        "orders": "Orders & sales",
+        "ordersHint": "Deletes all online orders and POS sales.",
+        "clients": "Clients",
+        "clientsHint": "Deletes all clients together with their orders and sales.",
+        "credit": "Credit",
+        "creditHint": "Deletes credit, payments and history; all balances return to 0.",
+        "impliedProducts": "Deleting products also deletes stock transfers and stock.",
+        "impliedOrders": "Deleting products also deletes all orders and sales.",
+        "impliedClientOrders": "Orders and sales of deleted clients will be deleted.",
+        "impliedCredit": "All client credit data will be reset too.",
+        "warning": "This permanently deletes data and cannot be undone.",
+        "confirmLabel": "Type {word} to confirm",
+        "submit": "Reset selected data",
+        "done": "Data reset",
+        "failed": "Could not reset data"
+      }
     },
     "network": {
       "title": "Network overview",
@@ -985,7 +1042,8 @@
     },
     "userMenu": {
       "adminPanel": "Admin panel",
-      "logout": "Logout"
+      "logout": "Logout",
+      "catalog": "Catalog"
     },
     "register": {
       "searchVariants": "Search variants…",
@@ -1042,7 +1100,11 @@
       "fromPrice": "From {price}",
       "noResultsTitle": "Nothing matches “{q}”",
       "noProductsTitle": "No products in stock",
-      "viewCart": "View cart"
+      "viewCart": "View cart",
+      "discount": "Discount",
+      "editPrice": "Price for {name}",
+      "eachShort": "each",
+      "resetPrice": "Reset"
     },
     "checkout": {
       "full": "Full",

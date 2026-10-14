@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AlertCircle, Plus, Users } from 'lucide-vue-next'
+import { AlertCircle, Pencil, Plus, Users } from 'lucide-vue-next'
 import { api } from '@/services/api'
 import { apiErrorMessage } from '@/services/products'
-import type { Shop } from '@/types/api'
+import { STAFF_PERMISSIONS, type Shop, type StaffPermission } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import PosModal from '@/components/pos/PosModal.vue'
 import PosEmptyState from '@/components/pos/PosEmptyState.vue'
@@ -17,6 +17,7 @@ interface StaffMember {
   email: string
   name: string
   role: string
+  permissions: StaffPermission[]
   isActive: boolean
   shopAssignments: Array<{ shop: { id: string; name: string } }>
 }
@@ -32,9 +33,11 @@ const loading = ref(true)
 const showForm = ref(false)
 const saving = ref(false)
 const error = ref('')
+const editing = ref<StaffMember | null>(null)
+const editPermissions = ref<StaffPermission[]>([])
 
 function emptyForm() {
-  return { email: '', password: '', name: '', role: 'CASHIER' as string, shopIds: [] as string[] }
+  return { email: '', password: '', name: '', role: 'CASHIER' as string, shopIds: [] as string[], permissions: [] as StaffPermission[] }
 }
 const form = ref(emptyForm())
 
@@ -100,6 +103,28 @@ async function createStaff() {
   }
 }
 
+function openEdit(member: StaffMember) {
+  editing.value = member
+  editPermissions.value = [...member.permissions]
+  error.value = ''
+}
+
+async function savePermissions() {
+  if (!editing.value || saving.value) return
+  saving.value = true
+  error.value = ''
+  try {
+    await api.patch(`/staff/${editing.value.id}`, { permissions: editPermissions.value })
+    editing.value = null
+    toast.success(t('admin.staff.updated'))
+    await load()
+  } catch (e) {
+    error.value = apiErrorMessage(e, t('admin.staff.updateFailed'))
+  } finally {
+    saving.value = false
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -133,7 +158,9 @@ onMounted(load)
               <th scope="col">{{ t('admin.staff.colMember') }}</th>
               <th scope="col">{{ t('admin.staff.colRole') }}</th>
               <th scope="col">{{ t('admin.staff.colShops') }}</th>
+              <th scope="col">{{ t('admin.staff.colPerms') }}</th>
               <th scope="col">{{ t('pos.table.status') }}</th>
+              <th scope="col"><span class="sr-only">{{ t('admin.staff.edit') }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -158,7 +185,25 @@ onMounted(load)
                 </div>
               </td>
               <td>
+                <div v-if="member.role === 'CASHIER'" class="flex flex-wrap gap-1">
+                  <span v-for="perm in member.permissions" :key="perm" class="pos-badge-neutral h-5 px-2 text-[11px]">{{ t(`admin.staff.permissions.${perm}`) }}</span>
+                  <span v-if="!member.permissions.length" class="text-[12.5px] text-pos-muted">{{ t('admin.staff.none') }}</span>
+                </div>
+                <span v-else class="text-[12.5px] text-pos-muted">{{ t('common.emDash') }}</span>
+              </td>
+              <td>
                 <span :class="member.isActive ? 'pos-badge-ok' : 'pos-badge-neutral'"><span class="pos-dot" />{{ member.isActive ? t('common.active') : t('admin.clients.inactive') }}</span>
+              </td>
+              <td class="text-end">
+                <button
+                  v-if="member.role === 'CASHIER'"
+                  type="button"
+                  class="pos-icon-btn"
+                  :aria-label="t('admin.staff.editTitle', { name: member.name })"
+                  @click="openEdit(member)"
+                >
+                  <Pencil class="h-4 w-4" />
+                </button>
               </td>
             </tr>
           </tbody>
@@ -199,6 +244,16 @@ onMounted(load)
           </div>
           <p class="pos-field-hint">{{ t(`admin.staff.roleHint.${form.role}`) }}</p>
         </div>
+        <fieldset v-if="form.role === 'CASHIER'" class="pos-field">
+          <legend class="pos-label mb-1.5">{{ t('admin.staff.perms') }}</legend>
+          <div class="flex flex-col gap-2">
+            <label v-for="perm in STAFF_PERMISSIONS" :key="perm" class="flex cursor-pointer items-center gap-2.5 text-[14px] text-pos-ink">
+              <input v-model="form.permissions" type="checkbox" :value="perm" class="h-4 w-4" />
+              {{ t(`admin.staff.permissions.${perm}`) }}
+            </label>
+          </div>
+          <p class="pos-field-hint">{{ t('admin.staff.permsHint') }}</p>
+        </fieldset>
         <fieldset class="pos-field">
           <legend class="pos-label mb-1.5">{{ t('admin.staff.colShops') }}</legend>
           <div class="flex flex-wrap gap-2">
@@ -213,6 +268,26 @@ onMounted(load)
       <template #footer>
         <button type="button" class="pos-btn-ghost" @click="showForm = false">{{ t('common.cancel') }}</button>
         <button type="submit" form="staff-create-form" class="pos-btn-primary" :disabled="saving">{{ saving ? t('common.saving') : t('admin.staff.add') }}</button>
+      </template>
+    </PosModal>
+
+    <PosModal v-if="editing" :title="t('admin.staff.editTitle', { name: editing.name })" @close="editing = null">
+      <form id="staff-edit-form" class="flex flex-col gap-4" @submit.prevent="savePermissions">
+        <fieldset class="pos-field">
+          <legend class="pos-label mb-1.5">{{ t('admin.staff.perms') }}</legend>
+          <div class="flex flex-col gap-2">
+            <label v-for="perm in STAFF_PERMISSIONS" :key="perm" class="flex cursor-pointer items-center gap-2.5 text-[14px] text-pos-ink">
+              <input v-model="editPermissions" type="checkbox" :value="perm" class="h-4 w-4" />
+              {{ t(`admin.staff.permissions.${perm}`) }}
+            </label>
+          </div>
+          <p class="pos-field-hint">{{ t('admin.staff.permsHint') }}</p>
+        </fieldset>
+        <p v-if="error" class="pos-notice bg-pos-err-bg text-pos-err" role="alert"><AlertCircle class="mt-px h-4 w-4 shrink-0" />{{ error }}</p>
+      </form>
+      <template #footer>
+        <button type="button" class="pos-btn-ghost" @click="editing = null">{{ t('common.cancel') }}</button>
+        <button type="submit" form="staff-edit-form" class="pos-btn-primary" :disabled="saving">{{ saving ? t('common.saving') : t('admin.staff.save') }}</button>
       </template>
     </PosModal>
   </div>

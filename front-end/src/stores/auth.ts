@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api } from '@/services/api'
-import type { LoginResponse, StaffProfile } from '@/types/api'
+import type { LoginResponse, StaffPermission, StaffProfile } from '@/types/api'
 
 const STAFF_KEY = 'auth_staff'
 const TOKEN_KEY = 'auth_token'
@@ -78,6 +78,15 @@ export const useAuthStore = defineStore('auth', () => {
   const isManager = computed(() => staff.value?.role === 'MANAGER' || isOwner.value)
   const isCashier = computed(() => !!staff.value)
 
+  /** Managers and owners hold every permission; cashiers only what an admin granted. */
+  function can(permission: StaffPermission): boolean {
+    if (isManager.value) return true
+    return !!staff.value?.permissions?.includes(permission)
+  }
+  const canManageCatalog = computed(() => can('MANAGE_CATALOG'))
+  const canEditPrice = computed(() => can('EDIT_PRICE'))
+  const canGiveDiscount = computed(() => can('GIVE_DISCOUNT'))
+
   return {
     token,
     staff,
@@ -86,6 +95,10 @@ export const useAuthStore = defineStore('auth', () => {
     isOwner,
     isManager,
     isCashier,
+    can,
+    canManageCatalog,
+    canEditPrice,
+    canGiveDiscount,
     login,
     fetchMe,
     logout,

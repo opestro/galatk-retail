@@ -181,8 +181,16 @@ async function executeCheckout(creditLimitOverride = false) {
   submitting.value = true
   try {
     const body: Record<string, unknown> = {
-      lines: cart.lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+      lines: cart.lines.map((l) => ({
+        productId: l.productId,
+        quantity: l.quantity,
+        // Only sent when overridden; the server re-checks the permission.
+        ...(Number(l.sellPrice) !== Number(l.listPrice) ? { unitPrice: Number(l.sellPrice) } : {}),
+      })),
       paymentMethod: paymentMethod.value,
+    }
+    if (cart.discountAmount > 0) {
+      body.discount = { type: cart.discountType, value: cart.discountValue }
     }
     if (cart.selectedClient) {
       body.clientId = cart.selectedClient.id

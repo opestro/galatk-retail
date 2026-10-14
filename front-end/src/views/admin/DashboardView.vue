@@ -25,7 +25,7 @@ import AdminStat from '@/components/admin/AdminStat.vue'
 import AdminDateRange from '@/components/admin/AdminDateRange.vue'
 import PosEmptyState from '@/components/pos/PosEmptyState.vue'
 import { formatAmount, formatCount } from '@/utils/formatMoney'
-import { numberLocale } from '@/i18n/translate'
+import { displayLocale } from '@/i18n/translate'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -38,7 +38,7 @@ const dateRange = ref({ from: '', to: '' })
 const currency = computed(() => t('common.currency'))
 
 const today = computed(() =>
-  new Date().toLocaleDateString(numberLocale() === 'ar-DZ' ? 'ar-DZ-u-nu-arab' : 'en-US', {
+  new Date().toLocaleDateString(displayLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

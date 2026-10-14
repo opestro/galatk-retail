@@ -113,7 +113,28 @@ defineExpose({ focusClient: () => clientPickerRef.value?.focus() })
                 <X class="h-3.5 w-3.5" />
               </button>
             </div>
-            <p class="text-[12px] text-pos-muted pos-num">{{ $t('pos.register.each', { price: formatMoney(line.sellPrice) }) }}</p>
+            <div v-if="auth.canEditPrice" class="mt-0.5 flex items-center gap-1.5">
+              <label :for="`pos-price-${line.productId}`" class="sr-only">{{ $t('pos.register.editPrice', { name: line.name }) }}</label>
+              <input
+                :id="`pos-price-${line.productId}`"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                :value="line.sellPrice"
+                class="pos-input h-7 w-24 px-2 text-[12.5px] pos-num"
+                @change="cart.setLinePrice(line.productId, Number(($event.target as HTMLInputElement).value))"
+              />
+              <span class="text-[12px] text-pos-muted">{{ $t('pos.register.eachShort') }}</span>
+              <button
+                v-if="Number(line.sellPrice) !== Number(line.listPrice)"
+                type="button"
+                class="text-[12px] text-pos-muted underline"
+                :title="formatMoney(line.listPrice)"
+                @click="cart.setLinePrice(line.productId, Number(line.listPrice))"
+              >{{ $t('pos.register.resetPrice') }}</button>
+            </div>
+            <p v-else class="text-[12px] text-pos-muted pos-num">{{ $t('pos.register.each', { price: formatMoney(line.sellPrice) }) }}</p>
             <div class="mt-2 flex items-center justify-between gap-2">
               <div class="inline-flex items-center rounded-[10px] bg-pos-canvas p-0.5">
                 <button
@@ -211,6 +232,36 @@ defineExpose({ focusClient: () => clientPickerRef.value?.focus() })
           <span>{{ $t('pos.register.creditAmount', { amount: formatMoney(cart.amountOnCredit) }) }}</span>
         </p>
 
+        <div v-if="auth.canGiveDiscount && cart.lines.length" class="flex flex-col gap-2">
+          <span class="pos-label">{{ $t('pos.register.discount') }}</span>
+          <div class="flex items-center gap-2">
+            <div class="pos-segmented shrink-0" role="group" :aria-label="$t('pos.register.discount')">
+              <button
+                v-for="type in (['AMOUNT', 'PERCENT'] as const)"
+                :key="type"
+                type="button"
+                class="pos-segment"
+                :aria-pressed="cart.discountType === type"
+                @click="cart.setDiscount(type, cart.discountValue)"
+              >
+                {{ type === 'AMOUNT' ? $t('common.currency') : '%' }}
+              </button>
+            </div>
+            <input
+              type="number"
+              inputmode="decimal"
+              min="0"
+              :max="cart.discountType === 'PERCENT' ? 100 : cart.subtotal"
+              step="0.01"
+              :value="cart.discountValue || ''"
+              :aria-label="$t('pos.register.discount')"
+              class="pos-input min-w-0 flex-1 pos-num"
+              placeholder="0"
+              @input="cart.setDiscount(cart.discountType, Number(($event.target as HTMLInputElement).value))"
+            />
+          </div>
+        </div>
+
         <div class="flex flex-col gap-2">
           <span class="pos-label">{{ $t('pos.register.paymentMethod') }}</span>
           <div class="pos-segmented" role="group" :aria-label="$t('pos.register.paymentMethod')">
@@ -243,7 +294,11 @@ defineExpose({ focusClient: () => clientPickerRef.value?.focus() })
       <dl class="flex flex-col gap-1.5 text-[13px]">
         <div class="flex items-center justify-between text-pos-muted">
           <dt>{{ $t('pos.register.subtotal') }}</dt>
-          <dd class="pos-num">{{ formatMoney(cart.total) }}</dd>
+          <dd class="pos-num">{{ formatMoney(cart.subtotal) }}</dd>
+        </div>
+        <div v-if="cart.discountAmount > 0" class="flex items-center justify-between text-pos-ok">
+          <dt>{{ $t('pos.register.discount') }}</dt>
+          <dd class="pos-num">−{{ formatMoney(cart.discountAmount) }}</dd>
         </div>
         <div v-if="cart.selectedClient && cart.amountOnCredit > 0" class="flex items-center justify-between text-pos-warn">
           <dt>{{ $t('pos.register.onCredit') }}</dt>

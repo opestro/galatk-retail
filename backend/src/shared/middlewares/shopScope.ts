@@ -1,4 +1,4 @@
-import { StaffRole } from '@prisma/client'
+import { StaffPermission, StaffRole } from '@prisma/client'
 import { CustomError } from '../types/error_type.js'
 
 export interface AuthenticatedStaff {
@@ -6,6 +6,8 @@ export interface AuthenticatedStaff {
   email: string
   name: string
   role: StaffRole
+  /** Extra grants for cashiers; managers/owners implicitly hold every permission. */
+  permissions: StaffPermission[]
   shopIds: string[]
 }
 
@@ -34,5 +36,18 @@ export function requireMinRole(staff: AuthenticatedStaff, minRole: StaffRole): v
 
   if (hierarchy[staff.role] < hierarchy[minRole]) {
     throw new CustomError('ROLE_DENIED', 'Insufficient permissions', 403)
+  }
+}
+
+export function hasPermission(staff: AuthenticatedStaff, permission: StaffPermission): boolean {
+  if (staff.role === StaffRole.OWNER || staff.role === StaffRole.MANAGER) {
+    return true
+  }
+  return staff.permissions.includes(permission)
+}
+
+export function requirePermission(staff: AuthenticatedStaff, permission: StaffPermission): void {
+  if (!hasPermission(staff, permission)) {
+    throw new CustomError('PERMISSION_DENIED', `Missing permission: ${permission}`, 403)
   }
 }

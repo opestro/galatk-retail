@@ -28,6 +28,7 @@ import ShopSelector from '@/components/admin/ShopSelector.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import AdminToasts from '@/components/admin/AdminToasts.vue'
 import { api } from '@/services/api'
+import type { StaffPermission } from '@/types/api'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -43,6 +44,8 @@ interface NavItem {
   label: string
   icon: typeof Store
   roles: string[]
+  /** Cashiers see this item only when granted the permission. */
+  permission?: StaffPermission
   external?: boolean
 }
 
@@ -62,8 +65,8 @@ const navGroups = computed(() => {
       label: t('admin.navGroup.sales'),
       items: [
         // Same JWT session: owners/managers cashier as themselves (sale.cashierId = staff.id).
-        { to: '/pos', label: t('admin.nav.cashier'), icon: ShoppingCart, roles: ['OWNER', 'MANAGER'], external: true },
-        { to: '/admin/orders', label: t('admin.nav.orders'), icon: ClipboardList, roles: ['OWNER', 'MANAGER', 'CASHIER'] },
+        { to: '/pos', label: t('admin.nav.cashier'), icon: ShoppingCart, roles: ['OWNER', 'MANAGER', 'CASHIER'], external: true },
+        { to: '/admin/orders', label: t('admin.nav.orders'), icon: ClipboardList, roles: ['OWNER', 'MANAGER'] },
         { to: '/admin/clients', label: t('admin.nav.clients'), icon: UserCircle, roles: ['OWNER', 'MANAGER'] },
         { to: '/admin/credit/reminders', label: t('admin.nav.creditReminders'), icon: Bell, roles: ['OWNER', 'MANAGER'] },
       ],
@@ -72,7 +75,7 @@ const navGroups = computed(() => {
       id: 'catalog',
       label: t('admin.navGroup.catalog'),
       items: [
-        { to: '/admin/products', label: t('admin.nav.products'), icon: Package, roles: ['OWNER', 'MANAGER'] },
+        { to: '/admin/products', label: t('admin.nav.products'), icon: Package, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'MANAGE_CATALOG' },
         { to: '/admin/stock', label: t('admin.nav.stock'), icon: Boxes, roles: ['OWNER', 'MANAGER'] },
         { to: '/admin/inbound', label: t('admin.nav.inbound'), icon: ArrowDownToLine, roles: ['OWNER', 'MANAGER'] },
       ],
@@ -90,7 +93,9 @@ const navGroups = computed(() => {
   ]
   const role = auth.staff?.role ?? ''
   return groups
-    .map((group) => ({ ...group, items: group.items.filter((item) => item.roles.includes(role)) }))
+    .map((group) => ({ ...group, items: group.items.filter(
+        (item) => item.roles.includes(role) && (role !== 'CASHIER' || !item.permission || auth.can(item.permission)),
+      ) }))
     .filter((group) => group.items.length)
 })
 
