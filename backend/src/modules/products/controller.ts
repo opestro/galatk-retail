@@ -18,6 +18,11 @@ function shopIdFrom(req: Request): string | undefined {
   return value?.trim() || undefined
 }
 
+/** Cashiers with catalog access may add, never overwrite, existing catalog rows. */
+function createOnlyFor(req: Request): boolean {
+  return req.staff?.role === 'CASHIER'
+}
+
 function assertShopQueryAccess(req: Request, shopId?: string) {
   if (!shopId || !req.staff) return
   if (req.staff.role === 'OWNER') return
@@ -67,6 +72,7 @@ export async function createFamily(req: Request, res: Response, next: NextFuncti
       availableOnline,
       variants,
       shopId: resolvedShopId,
+      createOnly: createOnlyFor(req),
     })
     const stock = await ProductsService.stockMapForShop(
       resolvedShopId,
@@ -130,6 +136,7 @@ export async function addVariant(req: Request, res: Response, next: NextFunction
       isActive,
       availableOnline,
       shopId: resolvedShopId,
+      createOnly: createOnlyFor(req),
     })
     const family = await ProductsService.getFamilyById(familyId)
     const stock = await ProductsService.stockMapForShop(
@@ -227,6 +234,7 @@ export async function create(req: Request, res: Response, next: NextFunction) {
       attributes,
       quantity: quantity !== undefined ? Number(quantity) : undefined,
       shopId: resolvedShopId,
+      createOnly: createOnlyFor(req),
     })
 
     res.status(201).json({ data: productPresenter(product) })

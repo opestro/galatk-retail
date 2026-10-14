@@ -43,6 +43,7 @@ export async function login(input: LoginInput) {
       email: staff.email,
       name: staff.name,
       role: staff.role,
+      permissions: staff.permissions,
       shopIds,
     },
   }
@@ -62,6 +63,7 @@ export async function getMe(staffId: string): Promise<StaffProfile> {
     email: staff.email,
     name: staff.name,
     role: staff.role,
+    permissions: staff.permissions,
     shopIds,
   }
 }
@@ -100,6 +102,7 @@ export async function exchangeSsoCode(code: string) {
       email: staff.email,
       name: staff.name,
       role: staff.role,
+      permissions: staff.permissions,
       shopIds,
     },
   }

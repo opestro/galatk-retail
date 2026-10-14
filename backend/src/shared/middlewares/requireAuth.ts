@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from 'express'
 import prisma from '../../resources/database/initDatabase.js'
 import { verifyToken } from '../auth/jwt.js'
 import { CustomError } from '../types/error_type.js'
-import { AuthenticatedStaff } from './shopScope.js'
-import { StaffRole } from '@prisma/client'
+import { AuthenticatedStaff, requirePermission } from './shopScope.js'
+import { StaffPermission, StaffRole } from '@prisma/client'
 
 declare global {
   namespace Express {
@@ -51,6 +51,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       email: staff.email,
       name: staff.name,
       role: staff.role,
+      permissions: staff.permissions,
       shopIds,
     }
 
@@ -61,6 +62,22 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       return
     }
     next(new CustomError('UNAUTHORIZED', 'Invalid token', 401))
+  }
+}
+
+/** Managers/owners always pass; cashiers need the named permission. */
+export function requirePermissionOrManager(permission: StaffPermission) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.staff) {
+      next(new CustomError('UNAUTHORIZED', 'Authentication required', 401))
+      return
+    }
+    try {
+      requirePermission(req.staff, permission)
+      next()
+    } catch (error) {
+      next(error)
+    }
   }
 }
 

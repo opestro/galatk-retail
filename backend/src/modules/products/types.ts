@@ -10,6 +10,7 @@ export interface CreateProductInput {
   attributes?: Record<string, string>
   quantity?: number
   shopId?: string
+  createOnly?: boolean
 }
 
 export interface UpdateProductInput {
@@ -81,6 +82,8 @@ export interface CreateFamilyInput {
   availableOnline?: boolean
   variants?: VariantInput[]
   shopId?: string
+  /** Never modify existing families/variants (cashiers with catalog access). */
+  createOnly?: boolean
 }
 
 export interface UpdateFamilyInput {
@@ -98,4 +101,5 @@ export interface UpsertVariantInput {
   isActive?: boolean
   availableOnline?: boolean
   shopId?: string
+  createOnly?: boolean
 }

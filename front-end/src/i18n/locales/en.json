@@ -894,7 +894,21 @@
         "CASHIER": "Runs the register and online order handoff.",
         "MANAGER": "Manages products, stock, clients and charges.",
         "OWNER": "Full access to every shop and the network view."
-      }
+      },
+      "permissions": {
+        "MANAGE_CATALOG": "Add products & variants",
+        "EDIT_PRICE": "Edit prices at the register",
+        "GIVE_DISCOUNT": "Give discounts"
+      },
+      "perms": "Extra privileges",
+      "permsHint": "Granted on top of the cashier role.",
+      "edit": "Edit",
+      "editTitle": "Edit {name}",
+      "save": "Save changes",
+      "updated": "Team member updated",
+      "updateFailed": "Could not update the team member",
+      "colPerms": "Privileges",
+      "none": "None"
     },
     "settings": {
       "saved": "Settings saved",
@@ -985,7 +999,8 @@
     },
     "userMenu": {
       "adminPanel": "Admin panel",
-      "logout": "Logout"
+      "logout": "Logout",
+      "catalog": "Catalog"
     },
     "register": {
       "searchVariants": "Search variants…",
@@ -1042,7 +1057,11 @@
       "fromPrice": "From {price}",
       "noResultsTitle": "Nothing matches “{q}”",
       "noProductsTitle": "No products in stock",
-      "viewCart": "View cart"
+      "viewCart": "View cart",
+      "discount": "Discount",
+      "editPrice": "Price for {name}",
+      "eachShort": "each",
+      "resetPrice": "Reset"
     },
     "checkout": {
       "full": "Full",

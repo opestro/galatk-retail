@@ -15,10 +15,11 @@ export async function listProducts(req: Request, res: Response, next: NextFuncti
 export async function createSale(req: Request, res: Response, next: NextFunction) {
   try {
     const shopId = String(req.params.shopId)
-    const { lines, paymentMethod, clientId, amountPaid, payLater, creditLimitOverride } = req.body
+    const { lines, discount, paymentMethod, clientId, amountPaid, payLater, creditLimitOverride } = req.body
 
     const sale = await PosService.createSale(req.staff!, shopId, {
       lines,
+      discount,
       paymentMethod: paymentMethod as PaymentMethod,
       clientId,
       amountPaid,

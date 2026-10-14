@@ -1,10 +1,10 @@
 import prisma from '../../resources/database/initDatabase.js'
 import { CustomError } from '../../shared/types/error_type.js'
-import { AuthenticatedStaff, assertShopAccess, requireMinRole } from '../../shared/middlewares/shopScope.js'
+import { AuthenticatedStaff, assertShopAccess, requireMinRole, requirePermission } from '../../shared/middlewares/shopScope.js'
 import { decrementShopStock, restoreShopStock } from '../../shared/stock/stockMutations.js'
 import { assertCanVoidSale } from '../../shared/pos/voidRules.js'
 import { assertCreditWithinLimit } from '../../shared/credit/limitCheck.js'
-import { ClientLedgerEntryType, PaymentMethod, SaleStatus, StaffRole } from '@prisma/client'
+import { ClientLedgerEntryType, PaymentMethod, SaleStatus, StaffPermission, StaffRole } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
 import { withFamily } from '../../shared/products/withFamily.js'
 import { attributesFromUnknown } from '../../shared/products/variantAttributes.js'
@@ -12,10 +12,19 @@ import { attributesFromUnknown } from '../../shared/products/variantAttributes.j
 export interface SaleLineInput {
   productId: string
   quantity: number
+  /** Price override for this line; needs EDIT_PRICE. Defaults to the catalog price. */
+  unitPrice?: string | number
+}
+
+export interface SaleDiscountInput {
+  type: 'AMOUNT' | 'PERCENT'
+  value: string | number
 }
 
 export interface CreateSaleInput {
   lines: SaleLineInput[]
+  /** Reduction on the whole sale; needs GIVE_DISCOUNT. */
+  discount?: SaleDiscountInput | null
   paymentMethod: PaymentMethod
   clientId?: string | null
   amountPaid?: string | number
@@ -66,14 +75,45 @@ export async function createSale(staff: AuthenticatedStaff, shopId: string, inpu
       if (line.quantity <= 0) {
         throw new CustomError('VALIDATION_ERROR', 'Quantity must be positive', 400)
       }
-      return { product, quantity: line.quantity }
+      let unitPrice = product.sellPrice
+      if (line.unitPrice !== undefined && line.unitPrice !== null && line.unitPrice !== '') {
+        const override = new Decimal(line.unitPrice)
+        if (!override.isFinite() || override.lt(0)) {
+          throw new CustomError('VALIDATION_ERROR', 'unitPrice must be a non-negative number', 400)
+        }
+        if (!override.equals(product.sellPrice)) {
+          requirePermission(staff, StaffPermission.EDIT_PRICE)
+          unitPrice = override
+        }
+      }
+      return { product, quantity: line.quantity, unitPrice }
     }),
   )
 
-  const total = products.reduce(
-    (sum, { product, quantity }) => sum.add(product.sellPrice.mul(quantity)),
+  const subtotal = products.reduce(
+    (sum, { unitPrice, quantity }) => sum.add(unitPrice.mul(quantity)),
     new Decimal(0),
   )
+
+  let discountAmount = new Decimal(0)
+  if (input.discount && new Decimal(input.discount.value || 0).gt(0)) {
+    requirePermission(staff, StaffPermission.GIVE_DISCOUNT)
+    const value = new Decimal(input.discount.value)
+    if (input.discount.type === 'PERCENT') {
+      if (value.gt(100)) {
+        throw new CustomError('VALIDATION_ERROR', 'Discount cannot exceed 100%', 400)
+      }
+      discountAmount = subtotal.mul(value).div(100).toDecimalPlaces(2)
+    } else if (input.discount.type === 'AMOUNT') {
+      discountAmount = value.toDecimalPlaces(2)
+    } else {
+      throw new CustomError('VALIDATION_ERROR', 'Discount type must be AMOUNT or PERCENT', 400)
+    }
+    if (discountAmount.gt(subtotal)) {
+      throw new CustomError('VALIDATION_ERROR', 'Discount cannot exceed the sale subtotal', 400)
+    }
+  }
+  const total = subtotal.sub(discountAmount)
 
   let amountPaid: Decimal
   let amountOnCredit: Decimal
@@ -164,19 +204,21 @@ export async function createSale(staff: AuthenticatedStaff, shopId: string, inpu
         shopId,
         cashierId: staff.id,
         paymentMethod: input.paymentMethod,
-        subtotal: total,
+        subtotal,
+        discountAmount,
         total,
         amountPaid,
         amountOnCredit,
         clientId,
         creditApprovedById,
         lines: {
-          create: products.map(({ product, quantity }) => ({
+          create: products.map(({ product, quantity, unitPrice }) => ({
             productId: product.id,
             quantity,
             unitCost: product.unitCost,
-            unitPrice: product.sellPrice,
-            lineTotal: product.sellPrice.mul(quantity),
+            unitPrice,
+            listPrice: unitPrice.equals(product.sellPrice) ? null : product.sellPrice,
+            lineTotal: unitPrice.mul(quantity),
           })),
         },
       },

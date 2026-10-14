@@ -184,6 +184,16 @@ async function createSkuRow(
  * Create or reuse a SKU inside a family. Duplicate attribute combinations update
  * price/cost and inbound the requested quantity instead of inserting a second row.
  */
+function assertNotCreateOnly(input: { createOnly?: boolean }) {
+  if (input.createOnly) {
+    throw new CustomError(
+      'VARIANT_EXISTS',
+      'This variant already exists; only a manager can change it',
+      409,
+    )
+  }
+}
+
 export async function upsertFamilyVariant(
   familyId: string,
   input: UpsertVariantInput,
@@ -205,6 +215,7 @@ export async function upsertFamilyVariant(
     return await prisma.$transaction(async (tx) => {
       const existing = await findSkuByAttributes(tx, family.id, key)
       if (existing) {
+        assertNotCreateOnly(input)
         const updated = await tx.product.update({
           where: { id: existing.id },
           data: {
@@ -249,6 +260,7 @@ export async function upsertFamilyVariant(
         if (!existing) {
           throw error
         }
+        assertNotCreateOnly(input)
         const updated = await tx.product.update({
           where: { id: existing.id },
           data: {
@@ -297,7 +309,10 @@ export async function createFamily(input: CreateFamilyInput) {
 
   const family = await findOrCreateProductFamily(prisma, name, { description: input.description })
 
-  if (input.description !== undefined || input.isActive !== undefined || input.availableOnline !== undefined) {
+  if (
+    !input.createOnly &&
+    (input.description !== undefined || input.isActive !== undefined || input.availableOnline !== undefined)
+  ) {
     await prisma.productFamily.update({
       where: { id: family.id },
       data: {
@@ -317,6 +332,7 @@ export async function createFamily(input: CreateFamilyInput) {
       isActive: variant.isActive,
       availableOnline: variant.availableOnline,
       shopId,
+      createOnly: input.createOnly,
     })
   }
 
@@ -452,6 +468,7 @@ export async function createProduct(input: CreateProductInput) {
       shopId: input.shopId,
       isActive: input.isActive,
       availableOnline: input.availableOnline,
+      createOnly: input.createOnly,
     },
     { description: input.description, galatkProductRef: input.galatkProductRef },
   )

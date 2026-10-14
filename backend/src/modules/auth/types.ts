@@ -1,4 +1,4 @@
-import { StaffRole } from '@prisma/client'
+import { StaffPermission, StaffRole } from '@prisma/client'
 
 export interface LoginInput {
   email: string
@@ -10,6 +10,7 @@ export interface StaffProfile {
   email: string
   name: string
   role: StaffRole
+  permissions: StaffPermission[]
   shopIds: string[]
 }
 

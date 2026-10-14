@@ -894,7 +894,21 @@
         "CASHIER": "يدير الصندوق وتسليم الطلبات عبر الإنترنت.",
         "MANAGER": "يدير المنتجات والمخزون والعملاء والمصاريف.",
         "OWNER": "وصول كامل لكل المتاجر وعرض الشبكة."
-      }
+      },
+      "permissions": {
+        "MANAGE_CATALOG": "إضافة منتجات ومتغيرات",
+        "EDIT_PRICE": "تعديل الأسعار في الصندوق",
+        "GIVE_DISCOUNT": "منح تخفيضات"
+      },
+      "perms": "صلاحيات إضافية",
+      "permsHint": "تُمنح إضافة إلى دور أمين الصندوق.",
+      "edit": "تعديل",
+      "editTitle": "تعديل {name}",
+      "save": "حفظ التغييرات",
+      "updated": "تم تحديث عضو الفريق",
+      "updateFailed": "تعذر تحديث عضو الفريق",
+      "colPerms": "الصلاحيات",
+      "none": "لا شيء"
     },
     "settings": {
       "saved": "تم حفظ الإعدادات",
@@ -985,7 +999,8 @@
     },
     "userMenu": {
       "adminPanel": "لوحة الإدارة",
-      "logout": "تسجيل الخروج"
+      "logout": "تسجيل الخروج",
+      "catalog": "الكتالوج"
     },
     "register": {
       "searchVariants": "ابحث في المتغيرات…",
@@ -1042,7 +1057,11 @@
       "fromPrice": "ابتداءً من {price}",
       "noResultsTitle": "لا نتائج لـ «{q}»",
       "noProductsTitle": "لا توجد منتجات في المخزون",
-      "viewCart": "عرض السلة"
+      "viewCart": "عرض السلة",
+      "discount": "تخفيض",
+      "editPrice": "سعر {name}",
+      "eachShort": "للوحدة",
+      "resetPrice": "إعادة تعيين"
     },
     "checkout": {
       "full": "كامل",

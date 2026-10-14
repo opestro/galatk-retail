@@ -5,7 +5,10 @@ import type { Client, PosProduct } from '@/types/api'
 export interface CartLine {
   productId: string
   name: string
+  /** Effective unit price (catalog price unless a permitted cashier overrode it). */
   sellPrice: string
+  /** Catalog price, kept so an override can be reverted and flagged. */
+  listPrice: string
   quantity: number
   /** Display-only details captured when the line is added. */
   variantLabel?: string | null
@@ -13,6 +16,8 @@ export interface CartLine {
   /** Units on hand when added; caps the stepper. */
   stock?: number
 }
+
+export type DiscountType = 'AMOUNT' | 'PERCENT'
 
 export type CheckoutMode = 'full' | 'partial' | 'payLater'
 
@@ -22,9 +27,21 @@ export const usePosCartStore = defineStore('posCart', () => {
   const amountPaid = ref(0)
   const checkoutMode = ref<CheckoutMode>('full')
 
-  const total = computed(() =>
+  const discountType = ref<DiscountType>('AMOUNT')
+  const discountValue = ref(0)
+
+  const subtotal = computed(() =>
     lines.value.reduce((sum, l) => sum + Number(l.sellPrice) * l.quantity, 0),
   )
+
+  const discountAmount = computed(() => {
+    const value = Number(discountValue.value) || 0
+    if (value <= 0) return 0
+    const raw = discountType.value === 'PERCENT' ? (subtotal.value * Math.min(value, 100)) / 100 : value
+    return Math.min(Math.round(raw * 100) / 100, subtotal.value)
+  })
+
+  const total = computed(() => subtotal.value - discountAmount.value)
 
   const itemCount = computed(() => lines.value.reduce((sum, l) => sum + l.quantity, 0))
 
@@ -54,6 +71,7 @@ export const usePosCartStore = defineStore('posCart', () => {
         productId: product.productId,
         name: product.name,
         sellPrice: product.sellPrice,
+        listPrice: product.sellPrice,
         quantity: Math.min(qty, product.quantity),
         variantLabel: product.variantLabel ?? null,
         imageUrl: product.imageUrl ?? null,
@@ -71,6 +89,16 @@ export const usePosCartStore = defineStore('posCart', () => {
     if (line) {
       line.quantity = Math.min(line.stock ?? Infinity, Math.max(1, quantity))
     }
+  }
+
+  function setLinePrice(productId: string, price: number) {
+    const line = lines.value.find((l) => l.productId === productId)
+    if (line && Number.isFinite(price) && price >= 0) line.sellPrice = String(price)
+  }
+
+  function setDiscount(type: DiscountType, value: number) {
+    discountType.value = type
+    discountValue.value = Number.isFinite(value) && value > 0 ? value : 0
   }
 
   function quantityOf(productId: string): number {
@@ -110,6 +138,8 @@ export const usePosCartStore = defineStore('posCart', () => {
 
   function clear() {
     lines.value = []
+    discountType.value = 'AMOUNT'
+    discountValue.value = 0
     selectedClient.value = null
     amountPaid.value = 0
     checkoutMode.value = 'full'
@@ -120,6 +150,10 @@ export const usePosCartStore = defineStore('posCart', () => {
     selectedClient,
     amountPaid,
     checkoutMode,
+    discountType,
+    discountValue,
+    subtotal,
+    discountAmount,
     total,
     itemCount,
     amountOnCredit,
@@ -128,6 +162,8 @@ export const usePosCartStore = defineStore('posCart', () => {
     addProduct,
     addProductQty,
     updateQuantity,
+    setLinePrice,
+    setDiscount,
     quantityOf,
     removeLine,
     selectClient,

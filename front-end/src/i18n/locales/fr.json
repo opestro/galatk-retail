@@ -894,7 +894,21 @@
         "CASHIER": "Gère la caisse et la remise des commandes en ligne.",
         "MANAGER": "Gère les produits, le stock, les clients et les charges.",
         "OWNER": "Accès complet à tous les magasins et à la vue réseau."
-      }
+      },
+      "permissions": {
+        "MANAGE_CATALOG": "Ajouter des produits et variantes",
+        "EDIT_PRICE": "Modifier les prix en caisse",
+        "GIVE_DISCOUNT": "Accorder des remises"
+      },
+      "perms": "Privilèges supplémentaires",
+      "permsHint": "Accordés en plus du rôle de caissier.",
+      "edit": "Modifier",
+      "editTitle": "Modifier {name}",
+      "save": "Enregistrer",
+      "updated": "Membre mis à jour",
+      "updateFailed": "Impossible de mettre à jour le membre",
+      "colPerms": "Privilèges",
+      "none": "Aucun"
     },
     "settings": {
       "saved": "Paramètres enregistrés",
@@ -985,7 +999,8 @@
     },
     "userMenu": {
       "adminPanel": "Administration",
-      "logout": "Déconnexion"
+      "logout": "Déconnexion",
+      "catalog": "Catalogue"
     },
     "register": {
       "searchVariants": "Rechercher des variantes…",
@@ -1042,7 +1057,11 @@
       "fromPrice": "À partir de {price}",
       "noResultsTitle": "Aucun résultat pour « {q} »",
       "noProductsTitle": "Aucun produit en stock",
-      "viewCart": "Voir le panier"
+      "viewCart": "Voir le panier",
+      "discount": "Remise",
+      "editPrice": "Prix de {name}",
+      "eachShort": "l'unité",
+      "resetPrice": "Réinitialiser"
     },
     "checkout": {
       "full": "Totalité",

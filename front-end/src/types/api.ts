@@ -1,10 +1,16 @@
 export type StaffRole = 'OWNER' | 'MANAGER' | 'CASHIER'
 
+export type StaffPermission = 'MANAGE_CATALOG' | 'EDIT_PRICE' | 'GIVE_DISCOUNT'
+
+export const STAFF_PERMISSIONS: StaffPermission[] = ['MANAGE_CATALOG', 'EDIT_PRICE', 'GIVE_DISCOUNT']
+
 export interface StaffProfile {
   id: string
   email: string
   name: string
   role: StaffRole
+  /** Extra grants for cashiers; owners and managers implicitly have all. */
+  permissions?: StaffPermission[]
   shopIds: string[]
 }
 
@@ -247,6 +253,8 @@ export interface Sale {
   id: string
   status: string
   paymentMethod: string
+  subtotal?: string
+  discountAmount?: string
   total: string
   amountPaid?: string
   amountOnCredit?: string
@@ -258,6 +266,7 @@ export interface Sale {
     productId: string
     quantity: number
     unitPrice: string
+    listPrice?: string | null
     lineTotal: string
     product: { name: string }
   }>
