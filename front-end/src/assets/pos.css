@@ -23,16 +23,26 @@
   --color-pos-err-bg: #fee2e2;
   --color-pos-err: #b91c1c;
 
+  /* Brand accent — indigo. 600 carries white text at 6.3:1; 500 is for glows and tints only. */
+  --color-pos-accent: #4f46e5;
+  --color-pos-accent-hover: #4338ca;
+  --color-pos-accent-glow: #6366f1;
+  --color-pos-accent-soft: #eef2ff;   /* tinted wells, price pills */
+  --color-pos-accent-ink: #4338ca;    /* accent text on white / soft */
+
   --font-pos: "Inter", "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-pos-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
   --ease-pos: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-pos-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* slight overshoot ≈ a soft spring */
 }
 
 :root {
-  --pos-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
-  --pos-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.05), 0 12px 28px rgba(0, 0, 0, 0.07);
-  --pos-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 32px 64px rgba(0, 0, 0, 0.12);
+  /* Each layer starts with a 1px slate hairline so cards read as crisp, not floating blurs. */
+  --pos-shadow-sm: 0 0 0 1px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.03);
+  --pos-shadow-md: 0 0 0 1px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.06), 0 12px 28px rgba(15, 23, 42, 0.08);
+  --pos-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.1), 0 32px 64px rgba(15, 23, 42, 0.14);
+  --pos-glow-accent: 0 6px 20px -4px rgba(99, 102, 241, 0.55);
 }
 
 @layer base {
@@ -41,18 +51,22 @@
     font-size: 14px;
     line-height: 1.5;
     background-color: var(--color-pos-canvas);
+    background-image:
+      radial-gradient(60rem 28rem at 100% -10%, rgba(99, 102, 241, 0.07), transparent 70%),
+      radial-gradient(40rem 24rem at 0% 110%, rgba(16, 185, 129, 0.05), transparent 70%);
+    background-attachment: fixed;
     color: var(--color-pos-ink-2);
     font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
   }
 
   .pos :focus-visible {
-    outline: 2px solid var(--color-pos-ink);
+    outline: 2px solid var(--color-pos-accent-glow);
     outline-offset: 2px;
   }
 
   .pos ::selection {
-    background: #e5e7eb;
+    background: #e0e7ff;
     color: var(--color-pos-ink);
   }
 
@@ -89,12 +103,24 @@
     box-shadow: var(--pos-shadow-sm) !important;
   }
 
+  /* Opt-in hover elevation for interactive cards; hover-capable pointers only, transform + shadow. */
+  .pos-lift {
+    transition: transform 0.2s var(--ease-pos), box-shadow 0.2s var(--ease-pos);
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .pos-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--pos-shadow-md) !important;
+    }
+  }
+
   .pos-page {
     @apply mx-auto flex w-full max-w-7xl flex-col gap-6;
   }
 
   .pos-page-title {
-    @apply text-[22px] font-semibold tracking-[-0.01em] text-pos-ink;
+    @apply text-[24px] font-bold tracking-[-0.02em] text-pos-ink;
   }
 
   .pos-page-sub {
@@ -111,7 +137,11 @@
 
   /* ---- Inputs ---- */
   .pos-input {
-    @apply h-11 w-full rounded-xl border border-pos-line bg-white px-3.5 text-[14px] text-pos-ink transition-[border-color,background-color] duration-200 ease-[var(--ease-pos)] placeholder:text-pos-faint hover:border-[#dcdcdc] focus:border-pos-ink focus:outline-none;
+    @apply h-11 w-full rounded-xl border border-pos-line bg-white px-3.5 text-[14px] text-pos-ink transition-[border-color,background-color] duration-200 ease-[var(--ease-pos)] placeholder:text-pos-faint hover:border-[#dcdcdc] focus:border-pos-accent-glow focus:outline-none;
+  }
+
+  .pos-input:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
   }
 
   .pos-input:focus-visible {
@@ -136,11 +166,34 @@
 
   /* ---- Buttons ---- */
   .pos-btn-primary {
-    @apply pos-btn bg-pos-espresso text-white hover:bg-[#2a2a2e];
+    @apply pos-btn bg-pos-accent text-white hover:bg-pos-accent-hover;
   }
 
   .pos-btn-primary:not(:disabled):hover {
-    box-shadow: 0 4px 14px rgba(17, 24, 39, 0.22) !important;
+    box-shadow: var(--pos-glow-accent) !important;
+  }
+
+  /* Hero action ("Complete sale"): gradient, glow, tactile press. */
+  .pos-btn-cta {
+    @apply pos-btn relative overflow-hidden text-white;
+    background-image: linear-gradient(135deg, #6366f1 0%, #4f46e5 55%, #4338ca 100%);
+    box-shadow: 0 2px 0 rgba(67, 56, 202, 0.35), 0 8px 18px -6px rgba(79, 70, 229, 0.5) !important;
+  }
+
+  .pos-btn-cta:not(:disabled):hover {
+    background-image: linear-gradient(135deg, #7578f5 0%, #5b53ea 55%, #4f46e5 100%);
+    box-shadow: 0 2px 0 rgba(67, 56, 202, 0.35), var(--pos-glow-accent) !important;
+  }
+
+  .pos-btn-cta:not(:disabled):active {
+    transform: translateY(1px) scale(0.98);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0), 0 4px 10px -4px rgba(79, 70, 229, 0.5) !important;
+  }
+
+  .pos-btn-cta:disabled {
+    background-image: none;
+    @apply bg-pos-faint;
+    box-shadow: none !important;
   }
 
   .pos-btn-ghost {
@@ -148,7 +201,7 @@
   }
 
   .pos-btn-soft {
-    @apply pos-btn bg-white text-pos-ink-2 hover:bg-pos-sunken;
+    @apply pos-btn bg-white text-pos-ink-2 hover:bg-pos-accent-soft hover:text-pos-accent-ink;
     box-shadow: inset 0 0 0 1px var(--color-pos-line) !important;
   }
 
@@ -161,7 +214,7 @@
   }
 
   .pos-icon-btn {
-    @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-pos-muted transition-colors duration-150 hover:bg-black/[0.05] hover:text-pos-ink;
+    @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-pos-muted transition-[background-color,color,transform] duration-150 hover:bg-pos-accent-soft hover:text-pos-accent-ink active:scale-90;
   }
 
   /* ---- Navigation pills ---- */
@@ -174,7 +227,7 @@
   }
 
   .pos-nav-pill[aria-current='page'] {
-    @apply bg-white text-pos-ink;
+    @apply bg-white text-pos-accent-ink;
     box-shadow: var(--pos-shadow-sm) !important;
   }
 
@@ -190,8 +243,28 @@
   .pos-segment[aria-pressed='true'],
   .pos-segment[aria-checked='true'],
   .pos-segment[aria-selected='true'] {
-    @apply bg-white text-pos-ink;
+    @apply bg-white text-pos-accent-ink;
     box-shadow: var(--pos-shadow-sm) !important;
+  }
+
+  /* Payment method toggle: active option is a vibrant fill with a lifted shadow. */
+  .pos-method {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white text-[14px] font-medium text-pos-ink-2 transition-[background-color,color,transform] duration-150 ease-[var(--ease-pos)] select-none hover:bg-pos-accent-soft;
+    box-shadow: inset 0 0 0 1px var(--color-pos-line) !important;
+  }
+
+  .pos-method:active {
+    transform: scale(0.97);
+  }
+
+  .pos-method[aria-pressed='true'] {
+    @apply text-white;
+    background-image: linear-gradient(135deg, #6366f1, #4f46e5);
+    box-shadow: 0 6px 16px -6px rgba(79, 70, 229, 0.65) !important;
+  }
+
+  .pos-method[aria-pressed='true'] svg {
+    animation: pos-icon-pop 0.4s var(--ease-pos-spring);
   }
 
   /* ---- Keyboard hints ---- */
@@ -211,24 +284,55 @@
   }
 
   .pos-chip[aria-pressed='true'] {
-    @apply bg-pos-espresso text-white hover:bg-pos-espresso;
+    @apply bg-pos-accent text-white hover:bg-pos-accent;
     box-shadow: none !important;
   }
 
   .pos-badge-ok {
-    @apply pos-badge bg-pos-ok-bg text-pos-ok;
+    @apply pos-badge bg-emerald-50 text-emerald-700;
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.22) !important;
   }
 
   .pos-badge-warn {
-    @apply pos-badge bg-pos-warn-bg text-pos-warn;
+    @apply pos-badge bg-amber-50 text-amber-700;
+    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.28) !important;
   }
 
   .pos-badge-err {
-    @apply pos-badge bg-pos-err-bg text-pos-err;
+    @apply pos-badge bg-rose-50 text-rose-700;
+    box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.22) !important;
+  }
+
+  .pos-badge-info {
+    @apply pos-badge bg-indigo-50 text-indigo-700;
+    box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.22) !important;
+  }
+
+  .pos-badge-credit {
+    @apply pos-badge bg-purple-50 text-purple-700;
+    box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.22) !important;
   }
 
   .pos-badge-neutral {
-    @apply pos-badge bg-pos-canvas text-pos-ink-2;
+    @apply pos-badge bg-slate-100 text-slate-700;
+    box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.18) !important;
+  }
+
+  .pos-badge-brand {
+    @apply pos-badge text-white;
+    background-image: linear-gradient(135deg, #6366f1, #4f46e5);
+    box-shadow: 0 2px 8px -2px rgba(79, 70, 229, 0.55) !important;
+  }
+
+  /* Brand mark: gradient tile with a soft glow. */
+  .pos-logo {
+    @apply flex shrink-0 items-center justify-center font-semibold text-white;
+    background-image: linear-gradient(135deg, #818cf8 0%, #6366f1 45%, #4338ca 100%);
+    box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  }
+
+  .pos-avatar {
+    @apply flex shrink-0 items-center justify-center rounded-full text-[12px] font-semibold;
   }
 
   .pos-dot {
@@ -246,13 +350,18 @@
     box-shadow: var(--pos-shadow-sm) !important;
   }
 
-  .pos-tile:hover,
   .pos-tile[data-highlight='true'] {
     box-shadow: var(--pos-shadow-md) !important;
   }
 
+  @media (hover: hover) {
+    .pos-tile:not(:disabled):hover {
+      box-shadow: var(--pos-shadow-lg) !important;
+    }
+  }
+
   .pos-tile[data-highlight='true'] {
-    outline: 2px solid var(--color-pos-ink);
+    outline: 2px solid var(--color-pos-accent-glow);
     outline-offset: 2px;
   }
 
@@ -260,14 +369,43 @@
     @apply cursor-not-allowed opacity-55;
   }
 
-  @media (prefers-reduced-motion: no-preference) {
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
     .pos-tile:not(:disabled):hover {
-      transform: translateY(-2px);
+      transform: translateY(-4px);
     }
+  }
 
+  @media (prefers-reduced-motion: no-preference) {
     .pos-tile:not(:disabled):active {
-      transform: translateY(0) scale(0.985);
+      transform: scale(0.95);
+      transition-duration: 0.08s;
     }
+  }
+
+  /* Stock pills: tinted fill, hairline ring, faint glow under the dot. */
+  .pos-pill-ok {
+    @apply pos-badge bg-emerald-50 text-emerald-700;
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.25), 0 2px 8px -2px rgba(16, 185, 129, 0.35) !important;
+  }
+
+  .pos-pill-low {
+    @apply pos-badge bg-amber-50 text-amber-700;
+    box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3), 0 2px 8px -2px rgba(245, 158, 11, 0.4) !important;
+  }
+
+  .pos-pill-out {
+    @apply pos-badge bg-rose-50 text-rose-700;
+    box-shadow: inset 0 0 0 1px rgba(244, 63, 94, 0.25) !important;
+  }
+
+  .pos-pill-ok .pos-dot,
+  .pos-pill-low .pos-dot {
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 20%, transparent) !important;
+  }
+
+  .pos-price {
+    @apply inline-flex items-baseline self-start rounded-lg bg-pos-accent-soft px-2 py-0.5 text-[15px] font-bold text-pos-accent-ink;
+    font-variant-numeric: tabular-nums;
   }
 
   /* ---- Tables ---- */
@@ -276,7 +414,7 @@
   }
 
   .pos-table thead th {
-    @apply sticky top-0 z-[1] bg-white px-4 py-3 text-start text-[12px] font-medium whitespace-nowrap text-pos-muted;
+    @apply sticky top-0 z-[1] bg-slate-50 px-4 py-3 text-start text-[12px] font-semibold whitespace-nowrap text-slate-500;
     border-bottom: 1px solid var(--color-pos-line);
   }
 
@@ -294,7 +432,15 @@
   }
 
   .pos-table tbody tr:hover td {
-    @apply bg-pos-sunken;
+    @apply bg-pos-accent-soft/60;
+  }
+
+  .pos-table tbody tr:hover td:first-child {
+    box-shadow: inset 3px 0 0 var(--color-pos-accent-glow) !important;
+  }
+
+  html[dir='rtl'] .pos-table tbody tr:hover td:first-child {
+    box-shadow: inset -3px 0 0 var(--color-pos-accent-glow) !important;
   }
 
   .pos-table :where(th, td).pos-cell-num {
@@ -313,7 +459,7 @@
   }
 
   .pos-menu-item {
-    @apply flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 text-start text-[13.5px] text-pos-ink-2 transition-colors duration-150 hover:bg-pos-canvas focus-visible:bg-pos-canvas;
+    @apply flex min-h-10 w-full items-center gap-2.5 rounded-lg px-3 text-start text-[13.5px] text-pos-ink-2 transition-colors duration-150 hover:bg-pos-accent-soft hover:text-pos-accent-ink focus-visible:bg-pos-accent-soft;
   }
 
   .pos-menu-item-danger {
@@ -329,13 +475,28 @@
   }
 
   .pos-dialog {
-    @apply flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white sm:rounded-2xl;
+    @apply relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white sm:rounded-2xl;
     box-shadow: var(--pos-shadow-lg) !important;
+  }
+
+  .pos-dialog::before {
+    content: '';
+    @apply pointer-events-none absolute inset-x-0 top-0 z-[1] h-[3px];
+    background-image: linear-gradient(90deg, #6366f1, #a855f7, #10b981);
   }
 
   /* ---- Admin building blocks ---- */
   .pos-section-label {
-    @apply text-[12px] font-medium tracking-[0.01em] text-pos-muted;
+    @apply flex items-center gap-2 text-[12px] font-semibold tracking-[0.04em] text-slate-500 uppercase;
+  }
+
+  .pos-section-label::before {
+    content: '';
+    @apply h-3.5 w-1 rounded-full bg-pos-accent-glow;
+  }
+
+  html[dir='rtl'] .pos-section-label {
+    @apply tracking-normal normal-case;
   }
 
   .pos-field {
@@ -359,7 +520,7 @@
   }
 
   .pos-switch[aria-checked='true'] {
-    @apply bg-pos-espresso;
+    @apply bg-pos-accent;
   }
 
   .pos-switch::after {
@@ -384,13 +545,34 @@
     @apply flex min-h-9 items-center gap-3 rounded-[10px] px-3 text-[13.5px] font-medium text-pos-muted transition-[background-color,color] duration-150 hover:bg-black/[0.04] hover:text-pos-ink;
   }
 
+  .pos-side-link {
+    @apply relative z-[1];
+  }
+
+  /* The white pill is drawn by the sliding `.pos-side-indicator`, not by the link itself. */
   .pos-side-link[aria-current='page'] {
-    @apply bg-white text-pos-ink;
+    @apply text-pos-accent-ink;
+  }
+
+  .pos-side-link[aria-current='page'] > svg:first-child {
+    @apply text-pos-accent;
+  }
+
+  .pos-side-indicator {
+    @apply pointer-events-none absolute start-0 end-0 top-0 rounded-[10px] bg-white;
     box-shadow: var(--pos-shadow-sm) !important;
+    transition: transform 0.35s var(--ease-pos-spring), height 0.25s var(--ease-pos), opacity 0.2s;
+    will-change: transform;
+  }
+
+  .pos-side-indicator::before {
+    content: '';
+    @apply absolute start-0 top-2 bottom-2 w-[3px] rounded-full bg-pos-accent-glow;
   }
 
   .pos-toast {
-    @apply pointer-events-auto flex min-w-64 max-w-sm items-start gap-2.5 rounded-xl bg-pos-espresso px-4 py-3 text-[13.5px] text-white;
+    @apply pointer-events-auto flex min-w-64 max-w-sm items-start gap-2.5 rounded-xl bg-slate-900 px-4 py-3 text-[13.5px] text-white;
+    border-inline-start: 4px solid var(--color-pos-accent-glow);
     box-shadow: var(--pos-shadow-lg) !important;
   }
 
@@ -438,7 +620,7 @@
 
   .pos input[type='checkbox'],
   .pos input[type='radio'] {
-    accent-color: var(--color-pos-espresso);
+    accent-color: var(--color-pos-accent);
   }
 
   .pos input[type='date'].input,
@@ -458,7 +640,7 @@
   }
 
   .pos .btn-primary {
-    @apply pos-btn bg-pos-espresso text-white hover:bg-[#2a2a2e] active:bg-pos-espresso;
+    @apply pos-btn bg-pos-accent text-white hover:bg-pos-accent-hover active:bg-pos-accent;
   }
 
   .pos .btn-secondary {
@@ -479,7 +661,7 @@
   }
 
   .pos .page-title {
-    @apply text-[22px] font-semibold tracking-[-0.01em] text-pos-ink;
+    @apply text-[24px] font-bold tracking-[-0.02em] text-pos-ink;
   }
 
   .pos .section-title {
@@ -492,7 +674,7 @@
   }
 
   .pos .list-row {
-    @apply transition-colors duration-150 hover:bg-pos-sunken;
+    @apply transition-colors duration-150 hover:bg-pos-accent-soft/60;
   }
 
   .pos .skeleton {
@@ -533,7 +715,22 @@ html[dir='rtl'] .pos .pos-page-title {
   100% { transform: scale(1); }
 }
 
+@keyframes pos-icon-pop {
+  0% { transform: scale(0.6) rotate(-12deg); }
+  60% { transform: scale(1.2) rotate(4deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes pos-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  .pos-float {
+    animation: pos-float 3.2s ease-in-out infinite;
+  }
+
   .pos-rise {
     animation: pos-rise 0.32s var(--ease-pos) both;
     animation-delay: calc(var(--i, 0) * 30ms);

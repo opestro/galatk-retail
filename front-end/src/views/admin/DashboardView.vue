@@ -100,11 +100,12 @@ watch(() => auth.selectedShopId, load)
         <div v-for="i in 3" :key="i" class="pos-skeleton h-[92px] rounded-2xl" />
       </div>
       <div v-else-if="summary" class="grid gap-4 sm:grid-cols-3">
-        <AdminStat :icon="ShoppingBag" :label="t('admin.dashboard.todaySales')" :value="formatCount(summary.todaySalesCount)" />
-        <AdminStat :icon="CircleDollarSign" :label="t('admin.dashboard.todayRevenue')" :value="formatAmount(summary.todayRevenue)" :unit="currency" />
+        <AdminStat :icon="ShoppingBag" tone="ok" :index="0" :label="t('admin.dashboard.todaySales')" :value="formatCount(summary.todaySalesCount)" />
+        <AdminStat :icon="CircleDollarSign" tone="ok" :index="1" :label="t('admin.dashboard.todayRevenue')" :value="formatAmount(summary.todayRevenue)" :unit="currency" />
         <AdminStat
           :icon="AlertTriangle"
-          :tone="summary.lowStock.length ? 'warn' : 'neutral'"
+          :index="2"
+          :tone="outOfStock ? 'err' : summary.lowStock.length ? 'warn' : 'neutral'"
           :label="t('admin.dashboard.lowStockItems')"
           :value="formatCount(summary.lowStock.length)"
           :hint="outOfStock ? t('admin.dashboard.outOfStockHint', { n: formatCount(outOfStock) }) : ''"
@@ -125,11 +126,12 @@ watch(() => auth.selectedShopId, load)
 
       <div v-else-if="financial" class="flex flex-col gap-4 transition-opacity duration-200" :class="financialLoading ? 'opacity-60' : ''" :aria-busy="financialLoading">
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <AdminStat :icon="TrendingUp" :label="t('admin.dashboard.grossRevenue')" :value="formatAmount(financial.grossRevenue)" :unit="currency" />
-          <AdminStat :icon="Boxes" :label="t('admin.dashboard.costOfGoods')" :value="formatAmount(financial.costOfGoodsSold)" :unit="currency" />
+          <AdminStat :icon="TrendingUp" tone="ok" :index="0" :label="t('admin.dashboard.grossRevenue')" :value="formatAmount(financial.grossRevenue)" :unit="currency" />
+          <AdminStat :icon="Boxes" tone="expense" :index="1" :label="t('admin.dashboard.costOfGoods')" :value="formatAmount(financial.costOfGoodsSold)" :unit="currency" />
           <AdminStat
             :icon="Scale"
             tone="ok"
+            :index="2"
             :label="t('admin.dashboard.grossProfit')"
             :value="formatAmount(financial.grossProfit)"
             :unit="currency"
@@ -137,7 +139,8 @@ watch(() => auth.selectedShopId, load)
           />
           <AdminStat
             :icon="HandCoins"
-            :tone="Number(financial.outstandingCredit) > 0 ? 'warn' : 'neutral'"
+            :index="3"
+            :tone="Number(financial.outstandingCredit) > 0 ? 'credit' : 'neutral'"
             :label="t('admin.dashboard.outstandingCredit')"
             :value="formatAmount(financial.outstandingCredit)"
             :unit="currency"
@@ -146,10 +149,10 @@ watch(() => auth.selectedShopId, load)
 
         <h2 class="pos-section-label mt-2">{{ t('admin.dashboard.cashFlow') }}</h2>
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <AdminStat :icon="Banknote" :label="t('admin.dashboard.posCollected')" :value="formatAmount(financial.posCollected)" :unit="currency" />
-          <AdminStat :icon="Wallet" :label="t('admin.dashboard.clientPayments')" :value="formatAmount(financial.clientPaymentsReceived)" :unit="currency" />
-          <AdminStat :icon="PackageCheck" :label="t('admin.dashboard.totalCashIn')" :value="formatAmount(financial.totalCashIn)" :unit="currency" />
-          <AdminStat :icon="Receipt" :label="t('admin.dashboard.totalCharges')" :value="formatAmount(financial.totalCharges)" :unit="currency" />
+          <AdminStat :icon="Banknote" tone="cash" :index="0" :label="t('admin.dashboard.posCollected')" :value="formatAmount(financial.posCollected)" :unit="currency" />
+          <AdminStat :icon="Wallet" tone="cash" :index="1" :label="t('admin.dashboard.clientPayments')" :value="formatAmount(financial.clientPaymentsReceived)" :unit="currency" />
+          <AdminStat :icon="PackageCheck" tone="ok" :index="2" :label="t('admin.dashboard.totalCashIn')" :value="formatAmount(financial.totalCashIn)" :unit="currency" />
+          <AdminStat :icon="Receipt" tone="expense" :index="3" :label="t('admin.dashboard.totalCharges')" :value="formatAmount(financial.totalCharges)" :unit="currency" />
         </div>
       </div>
     </section>
@@ -176,7 +179,7 @@ watch(() => auth.selectedShopId, load)
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in summary.lowStock" :key="item.productId">
+            <tr v-for="(item, i) in summary.lowStock" :key="item.productId" class="pos-rise" :style="{ '--i': Math.min(i, 10) }">
               <td class="font-medium text-pos-ink">{{ item.productName }}</td>
               <td class="pos-cell-num">
                 <span :class="item.quantity <= 0 ? 'pos-badge-err' : 'pos-badge-warn'">

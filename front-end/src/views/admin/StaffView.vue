@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { avatarTone } from '@/utils/avatarTone'
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlertCircle, Pencil, Plus, Users } from 'lucide-vue-next'
@@ -48,8 +49,8 @@ function roleLabel(role: string) {
 }
 
 const ROLE_TONES: Record<string, string> = {
-  OWNER: 'pos-badge bg-pos-espresso text-white',
-  MANAGER: 'pos-badge-warn',
+  OWNER: 'pos-badge-brand',
+  MANAGER: 'pos-badge-info',
   CASHIER: 'pos-badge-neutral',
 }
 
@@ -167,7 +168,7 @@ onMounted(load)
             <tr v-for="member in staff" :key="member.id">
               <td>
                 <div class="flex items-center gap-3">
-                  <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pos-canvas text-[12px] font-semibold text-pos-ink-2">{{ initials(member.name) }}</span>
+                  <span class="pos-avatar h-9 w-9" :class="avatarTone(member.name)">{{ initials(member.name) }}</span>
                   <div class="min-w-0">
                     <span class="block font-medium whitespace-nowrap text-pos-ink">
                       {{ member.name }}
@@ -259,7 +260,7 @@ onMounted(load)
           <div class="flex flex-wrap gap-2">
             <label v-for="shop in shops" :key="shop.id" class="cursor-pointer">
               <input v-model="form.shopIds" type="checkbox" :value="shop.id" class="peer sr-only" />
-              <span class="pos-chip peer-checked:bg-pos-espresso peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-pos-ink">{{ shop.name }}</span>
+              <span class="pos-chip peer-checked:bg-pos-accent peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-pos-accent-glow">{{ shop.name }}</span>
             </label>
           </div>
         </fieldset>

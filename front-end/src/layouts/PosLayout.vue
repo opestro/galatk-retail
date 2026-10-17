@@ -120,7 +120,7 @@ provide('posRegisterApi', registerApi)
     >
       <!-- Brand -->
       <RouterLink to="/pos" class="hidden shrink-0 items-center gap-2.5 rounded-lg sm:flex" :aria-label="$t('pos.brand')">
-        <span class="flex h-8 w-8 items-center justify-center rounded-[10px] bg-pos-espresso text-[14px] font-semibold text-white">G</span>
+        <span class="pos-logo h-8 w-8 rounded-[10px] text-[14px]">G</span>
         <span class="hidden text-[15px] font-semibold tracking-[-0.01em] text-pos-ink xl:inline">{{ $t('pos.brand') }}</span>
       </RouterLink>
 
@@ -207,7 +207,7 @@ provide('posRegisterApi', registerApi)
             aria-haspopup="menu"
             @click="userMenuOpen = !userMenuOpen"
           >
-            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-pos-canvas text-[12px] font-semibold text-pos-ink">{{ initials }}</span>
+            <span class="pos-avatar h-8 w-8 bg-indigo-100 text-indigo-700">{{ initials }}</span>
             <span class="hidden max-w-[9rem] truncate text-[13px] font-medium text-pos-ink xl:inline">{{ staffName }}</span>
           </button>
           <div v-if="userMenuOpen" class="fixed inset-0 z-40" @click="userMenuOpen = false" />

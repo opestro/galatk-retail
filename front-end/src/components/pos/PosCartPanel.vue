@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Banknote, CreditCard, Minus, Plus, ShoppingBag, Trash2, X, AlertCircle, Info, Shirt } from 'lucide-vue-next'
+import { Banknote, CreditCard, Minus, Plus, Trash2, X, AlertCircle, Info, Shirt } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { usePosCartStore, type CheckoutMode } from '@/stores/posCart'
 import { mediaUrl } from '@/services/products'
 import { formatAmount, formatCount, formatMoney } from '@/utils/formatMoney'
 import { isTouchDevice, shortcutLabel } from '@/utils/platform'
 import ClientPicker from '@/components/pos/ClientPicker.vue'
-import PosEmptyState from '@/components/pos/PosEmptyState.vue'
+import PosCartEmpty from '@/components/pos/PosCartEmpty.vue'
 import type { Client } from '@/types/api'
 
 /**
@@ -164,19 +164,13 @@ defineExpose({ focusClient: () => clientPickerRef.value?.focus() })
         </li>
       </TransitionGroup>
 
-      <PosEmptyState
-        v-else
-        :icon="ShoppingBag"
-        :title="$t('pos.register.emptyCartTitle')"
-        :body="$t('pos.register.emptyCartBody')"
-        compact
-      />
+      <PosCartEmpty v-else :title="$t('pos.register.emptyCartTitle')" :body="$t('pos.register.emptyCartBody')" />
 
       <!-- Client & payment -->
       <div class="flex flex-col gap-5 border-t border-pos-line py-5">
         <div
           class="rounded-2xl transition-[box-shadow,padding] duration-200"
-          :class="awaitingClient ? 'p-3 outline-2 outline-pos-ink' : ''"
+          :class="awaitingClient ? 'p-3 outline-2 outline-pos-accent-glow' : ''"
         >
           <ClientPicker
             ref="clientPickerRef"
@@ -264,12 +258,12 @@ defineExpose({ focusClient: () => clientPickerRef.value?.focus() })
 
         <div class="flex flex-col gap-2">
           <span class="pos-label">{{ $t('pos.register.paymentMethod') }}</span>
-          <div class="pos-segmented" role="group" :aria-label="$t('pos.register.paymentMethod')">
+          <div class="grid grid-cols-2 gap-2" role="group" :aria-label="$t('pos.register.paymentMethod')">
             <button
               v-for="method in methods"
               :key="method.id"
               type="button"
-              class="pos-segment min-h-10"
+              class="pos-method"
               :aria-pressed="paymentMethod === method.id"
               @click="paymentMethod = method.id"
             >
@@ -316,7 +310,7 @@ defineExpose({ focusClient: () => clientPickerRef.value?.focus() })
       <button
         type="button"
         :disabled="!cart.lines.length || busy"
-        class="pos-btn-primary mt-4 h-14 w-full rounded-2xl text-[15px]"
+        class="pos-btn-cta mt-4 h-14 w-full rounded-2xl text-[15px] font-semibold"
         @click="emit('completeSale')"
       >
         <span v-if="busy" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />

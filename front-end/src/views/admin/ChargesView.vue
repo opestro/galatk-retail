@@ -221,7 +221,7 @@ watch(() => auth.selectedShopId, load)
               :key="cat.value"
               type="button"
               class="flex min-h-11 items-center gap-2 rounded-xl px-3 text-[13.5px] transition-colors"
-              :class="form.category === cat.value ? 'bg-pos-espresso text-white' : 'bg-pos-canvas text-pos-ink-2 hover:bg-[#eceef1]'"
+              :class="form.category === cat.value ? 'bg-pos-accent text-white shadow-md' : 'bg-pos-canvas text-pos-ink-2 hover:bg-pos-accent-soft'"
               :aria-pressed="form.category === cat.value"
               @click="form.category = cat.value"
             >

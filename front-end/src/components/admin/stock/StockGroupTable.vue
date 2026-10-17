@@ -168,7 +168,7 @@ function patchDraft(id: string, value: string) {
           <td class="ps-5">
             <button
               type="button"
-              class="flex w-full items-center gap-2.5 rounded-lg text-start focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pos-ink"
+              class="flex w-full items-center gap-2.5 rounded-lg text-start focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pos-accent-glow"
               :aria-expanded="expanded.has(family.key)"
               :aria-label="t('admin.stock.toggleProduct', { name: family.name })"
               @click.stop="toggle(family.key)"
@@ -198,7 +198,7 @@ function patchDraft(id: string, value: string) {
               <td class="ps-5">
                 <button
                   type="button"
-                  class="flex w-full items-center gap-2.5 rounded-lg ps-6 text-start focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pos-ink"
+                  class="flex w-full items-center gap-2.5 rounded-lg ps-6 text-start focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pos-accent-glow"
                   :aria-expanded="expanded.has(color.key)"
                   :aria-label="t('admin.variant.toggleColor', { color: color.label })"
                   @click.stop="toggle(color.key)"

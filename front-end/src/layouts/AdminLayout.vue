@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -121,6 +121,29 @@ function isActive(path: string) {
   return route.path.startsWith(path)
 }
 
+/**
+ * Sliding active-nav pill (the Vue stand-in for Framer's `layoutId`): one element
+ * measured against the current `aria-current` link and moved with a transform.
+ */
+const navEl = ref<HTMLElement | null>(null)
+const indicator = ref<{ y: number; h: number } | null>(null)
+
+function measureIndicator() {
+  const active = navEl.value?.querySelector<HTMLElement>('[aria-current="page"]')
+  indicator.value = active ? { y: active.offsetTop, h: active.offsetHeight } : null
+}
+
+let resizeObserver: ResizeObserver | undefined
+onMounted(() => {
+  measureIndicator()
+  if (navEl.value && 'ResizeObserver' in window) {
+    resizeObserver = new ResizeObserver(measureIndicator)
+    resizeObserver.observe(navEl.value)
+  }
+})
+onBeforeUnmount(() => resizeObserver?.disconnect())
+watch([() => route.path, navGroups], () => nextTick(measureIndicator))
+
 function handleLogout() {
   accountMenuOpen.value = false
   auth.logout()
@@ -163,7 +186,7 @@ watch(() => route.path, () => {
         <Menu class="h-5 w-5" />
       </button>
       <RouterLink to="/admin" class="flex items-center gap-2">
-        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-pos-espresso text-[13px] font-semibold text-white">G</span>
+        <span class="pos-logo h-7 w-7 rounded-lg text-[13px]">G</span>
         <span class="text-[15px] font-semibold text-pos-ink">{{ t('admin.brand.name') }}</span>
       </RouterLink>
       <div class="ms-auto">
@@ -185,7 +208,7 @@ watch(() => route.path, () => {
     >
       <div class="flex items-center justify-between gap-2 px-5 pt-5 pb-3">
         <RouterLink to="/admin" class="flex min-w-0 items-center gap-2.5 rounded-lg">
-          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-pos-espresso text-[14px] font-semibold text-white">G</span>
+          <span class="pos-logo h-8 w-8 rounded-[10px] text-[14px]">G</span>
           <span class="truncate text-[15px] font-semibold tracking-[-0.01em] text-pos-ink">{{ t('admin.brand.name') }}</span>
         </RouterLink>
         <button type="button" class="pos-icon-btn lg:hidden" :aria-label="t('admin.a11y.closeMenu')" @click="menuOpen = false">
@@ -197,7 +220,12 @@ watch(() => route.path, () => {
         <ShopSelector />
       </div>
 
-      <nav class="flex-1 overflow-y-auto px-3 pb-4" :aria-label="t('admin.a11y.mainNav')">
+      <nav ref="navEl" class="relative flex-1 overflow-y-auto px-3 pb-4" :aria-label="t('admin.a11y.mainNav')">
+        <span
+          class="pos-side-indicator mx-3"
+          :style="indicator ? { transform: `translateY(${indicator.y}px)`, height: `${indicator.h}px` } : { opacity: 0 }"
+          aria-hidden="true"
+        />
         <div v-for="group in navGroups" :key="group.id" class="mt-3 first:mt-1">
           <p class="px-3 pb-1 text-[11.5px] font-medium text-pos-muted">{{ group.label }}</p>
           <ul class="flex flex-col gap-0.5">
@@ -228,7 +256,7 @@ watch(() => route.path, () => {
             aria-haspopup="menu"
             @click="accountMenuOpen = !accountMenuOpen"
           >
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[12px] font-semibold text-pos-ink" style="box-shadow: var(--pos-shadow-sm) !important">{{ initials }}</span>
+            <span class="pos-avatar h-9 w-9 bg-indigo-100 text-indigo-700">{{ initials }}</span>
             <span class="min-w-0 flex-1">
               <span class="block truncate text-[13.5px] font-medium text-pos-ink">{{ staffName }}</span>
               <span class="block truncate text-[12px] text-pos-muted">{{ roleLabel(auth.staff?.role) }}</span>

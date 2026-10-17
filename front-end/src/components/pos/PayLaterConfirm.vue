@@ -39,7 +39,7 @@ const override = ref(false)
       <label v-if="limitOverride" class="pos-notice cursor-pointer items-center bg-pos-warn-bg text-pos-warn">
         <AlertTriangle class="h-4 w-4 shrink-0" />
         <span class="flex-1">{{ $t('pos.payLater.managerOverride') }}</span>
-        <input v-model="override" type="checkbox" class="h-5 w-5 accent-pos-espresso" />
+        <input v-model="override" type="checkbox" class="h-5 w-5 accent-pos-accent" />
       </label>
     </div>
     <template #footer>

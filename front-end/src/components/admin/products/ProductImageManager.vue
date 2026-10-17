@@ -130,7 +130,7 @@ function onDrop(event: DragEvent) {
       v-if="!props.disabled || props.uploading"
       type="button"
       class="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-8 text-[13px] transition-colors duration-200"
-      :class="dragging ? 'border-pos-ink bg-pos-sunken' : 'border-[#d9d9d9] hover:border-pos-faint hover:bg-pos-sunken/60'"
+      :class="dragging ? 'border-pos-accent-glow bg-pos-accent-soft' : 'border-[#d9d9d9] hover:border-pos-faint hover:bg-pos-sunken/60'"
       :disabled="props.disabled"
       @click="inputRef?.click()"
       @dragenter.prevent="dragging = true"
@@ -144,7 +144,7 @@ function onDrop(event: DragEvent) {
       <span class="font-medium text-pos-ink">{{ props.uploading ? t('common.uploading') : t('admin.productImages.add') }}</span>
       <span class="text-[12px] text-pos-muted">{{ t('admin.productImages.dropHint') }}</span>
       <span v-if="props.uploading && props.uploadPercent != null" class="mt-1 h-1 w-32 overflow-hidden rounded-full bg-pos-line">
-        <span class="block h-full rounded-full bg-pos-espresso transition-[width] duration-200" :style="{ width: `${props.uploadPercent}%` }" />
+        <span class="block h-full rounded-full bg-pos-accent transition-[width] duration-200" :style="{ width: `${props.uploadPercent}%` }" />
       </span>
     </button>
     <p v-else-if="!props.images.length" class="rounded-2xl bg-pos-sunken px-4 py-8 text-center text-[13px] text-pos-muted">

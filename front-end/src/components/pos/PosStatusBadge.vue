@@ -10,9 +10,9 @@ const props = defineProps<{
 const TONES: Record<string, string> = {
   COMPLETED: 'pos-badge-ok',
   PAID: 'pos-badge-ok',
-  PLACED: 'pos-badge-warn',
+  PLACED: 'pos-badge-info',
   PARTIAL: 'pos-badge-warn',
-  CREDIT: 'pos-badge-warn',
+  CREDIT: 'pos-badge-credit',
   CANCELLED: 'pos-badge-err',
 }
 
