@@ -167,7 +167,7 @@ function patchStock(id: string, value: string) {
             <td class="ps-6">
               <button
                 type="button"
-                class="flex w-full items-center gap-2.5 rounded-lg text-start focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pos-ink"
+                class="flex w-full items-center gap-2.5 rounded-lg text-start focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pos-accent-glow"
                 :aria-expanded="expanded.has(group.key)"
                 :aria-label="t('admin.variant.toggleColor', { color: group.label })"
                 @click.stop="toggle(group.key)"

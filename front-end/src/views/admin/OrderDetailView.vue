@@ -435,7 +435,7 @@ watch(() => [auth.selectedShopId, orderId.value], load)
           <section class="pos-surface flex flex-col gap-4 p-5">
             <h2 class="section-title">{{ t('admin.orderDetail.customer') }}</h2>
             <div class="flex items-center gap-3">
-              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pos-canvas text-pos-muted">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
                 <UserRound class="h-[18px] w-[18px]" />
               </span>
               <div class="min-w-0">

@@ -50,12 +50,13 @@ onMounted(load)
       <div v-for="i in 4" :key="i" class="pos-skeleton h-[92px] rounded-2xl" />
     </div>
     <div v-else-if="financial?.totals" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <AdminStat :icon="TrendingUp" :label="t('admin.network.grossRevenue')" :value="formatAmount(financial.totals.grossRevenue)" :unit="t('common.currency')" />
-      <AdminStat :icon="Scale" tone="ok" :label="t('admin.network.grossProfit')" :value="formatAmount(financial.totals.grossProfit)" :unit="t('common.currency')" />
-      <AdminStat :icon="PackageCheck" :label="t('admin.network.totalCashIn')" :value="formatAmount(financial.totals.totalCashIn)" :unit="t('common.currency')" />
+      <AdminStat :icon="TrendingUp" tone="ok" :index="0" :label="t('admin.network.grossRevenue')" :value="formatAmount(financial.totals.grossRevenue)" :unit="t('common.currency')" />
+      <AdminStat :icon="Scale" tone="ok" :index="1" :label="t('admin.network.grossProfit')" :value="formatAmount(financial.totals.grossProfit)" :unit="t('common.currency')" />
+      <AdminStat :icon="PackageCheck" tone="cash" :index="2" :label="t('admin.network.totalCashIn')" :value="formatAmount(financial.totals.totalCashIn)" :unit="t('common.currency')" />
       <AdminStat
         :icon="HandCoins"
-        :tone="Number(financial.totals.outstandingCredit) > 0 ? 'warn' : 'neutral'"
+        :index="3"
+        :tone="Number(financial.totals.outstandingCredit) > 0 ? 'credit' : 'neutral'"
         :label="t('admin.network.outstandingCredit')"
         :value="formatAmount(financial.totals.outstandingCredit)"
         :unit="t('common.currency')"
@@ -84,7 +85,7 @@ onMounted(load)
               <tr v-for="shop in financial.shops" :key="shop.shopId">
                 <td class="whitespace-nowrap">
                   <span class="flex items-center gap-2.5">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-pos-canvas text-pos-muted"><Store class="h-4 w-4" /></span>
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600"><Store class="h-4 w-4" /></span>
                     <span>
                       <span class="block font-medium text-pos-ink">{{ shop.shopName }}</span>
                       <span class="block text-[12px] text-pos-muted" dir="ltr">/{{ shops.find((s) => s.shopId === shop.shopId)?.shopSlug }}</span>
@@ -96,7 +97,7 @@ onMounted(load)
                 <td class="pos-cell-num font-medium text-pos-ok">{{ formatMoney(shop.grossProfit) }}</td>
                 <td class="pos-cell-num">{{ formatMoney(shop.posCollected) }}</td>
                 <td class="pos-cell-num">{{ formatMoney(shop.clientPaymentsReceived) }}</td>
-                <td class="pos-cell-num" :class="Number(shop.outstandingCredit) > 0 ? 'text-pos-warn' : ''">{{ formatMoney(shop.outstandingCredit) }}</td>
+                <td class="pos-cell-num" :class="Number(shop.outstandingCredit) > 0 ? 'text-purple-700' : ''">{{ formatMoney(shop.outstandingCredit) }}</td>
                 <td class="pos-cell-num">{{ formatMoney(shop.totalCharges) }}</td>
               </tr>
             </tbody>

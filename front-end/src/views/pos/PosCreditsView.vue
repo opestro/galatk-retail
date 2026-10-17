@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { avatarTone } from '@/utils/avatarTone'
 import { ref, onMounted, watch, computed, inject } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { getCreditDashboard, getClient } from '@/services/clientApi'
@@ -113,8 +114,8 @@ watch(() => auth.selectedShopId, loadCredits)
 
     <!-- Summary -->
     <div class="grid gap-4 sm:grid-cols-2">
-      <div class="pos-surface flex items-center gap-4 p-5">
-        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-pos-warn-bg text-pos-warn"><Wallet class="h-5 w-5" /></span>
+      <div class="pos-surface pos-lift pos-rise flex items-center gap-4 p-5">
+        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 text-purple-600 ring-1 ring-purple-200/60"><Wallet class="h-5 w-5" /></span>
         <div>
           <p class="text-[12px] font-medium text-pos-muted">{{ $t('pos.credits.totalOwedLabel') }}</p>
           <p class="text-[24px] leading-tight font-semibold tracking-[-0.02em] text-pos-ink pos-num">
@@ -122,8 +123,8 @@ watch(() => auth.selectedShopId, loadCredits)
           </p>
         </div>
       </div>
-      <div class="pos-surface flex items-center gap-4 p-5">
-        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-pos-canvas text-pos-ink-2"><HandCoins class="h-5 w-5" /></span>
+      <div class="pos-surface pos-lift pos-rise flex items-center gap-4 p-5" style="--i: 1">
+        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200/60"><HandCoins class="h-5 w-5" /></span>
         <div>
           <p class="text-[12px] font-medium text-pos-muted">{{ $t('pos.credits.debtorsLabel') }}</p>
           <p class="text-[24px] leading-tight font-semibold tracking-[-0.02em] text-pos-ink pos-num">{{ formatCount(entries.length) }}</p>
@@ -157,7 +158,7 @@ watch(() => auth.selectedShopId, loadCredits)
             <tr v-for="entry in filtered" :key="entry.clientId">
               <td>
                 <div class="flex items-center gap-3">
-                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-pos-canvas text-[11.5px] font-semibold text-pos-ink-2">{{ initials(displayName(entry)) }}</span>
+                  <span class="pos-avatar h-8 w-8" :class="avatarTone(displayName(entry))">{{ initials(displayName(entry)) }}</span>
                   <div class="min-w-0">
                     <span class="block font-medium whitespace-nowrap text-pos-ink">{{ displayName(entry) }}</span>
                     <span v-if="entry.email" class="block truncate text-[12px] text-pos-muted">{{ entry.email }}</span>
