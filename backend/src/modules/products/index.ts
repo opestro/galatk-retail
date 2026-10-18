@@ -18,6 +18,7 @@ router.get('/families', catalogAccess, ProductsController.listFamilies)
 router.post('/families', catalogAccess, ProductsController.createFamily)
 router.get('/families/:familyId', catalogAccess, ProductsController.getFamily)
 router.patch('/families/:familyId', managersOnly, ProductsController.updateFamily)
+router.delete('/families/:familyId', managersOnly, ProductsController.removeFamily)
 router.post('/families/:familyId/variants', catalogAccess, ProductsController.addVariant)
 router.post(
   '/families/:familyId/images',

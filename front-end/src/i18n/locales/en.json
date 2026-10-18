@@ -554,7 +554,14 @@
       "deleteTitle": "Delete variant",
       "stockEditHint": "Edit stock inline — changes save when you leave the field.",
       "stockFor": "Stock for {name}",
-      "noSize": "No size"
+      "noSize": "No size",
+      "deleteAll": "Delete all",
+      "deleteColor": "Delete this color",
+      "deleteAllTitle": "Delete all variants?",
+      "deleteColorTitle": "Delete {color}?",
+      "confirmDeleteMany": "This deletes {n} variant. Variants already used in sales, orders or transfers can't be deleted and will be kept. | This deletes {n} variants. Variants already used in sales, orders or transfers can't be deleted and will be kept.",
+      "bulkDeleted": "{n} variant deleted | {n} variants deleted",
+      "bulkPartial": "{removed} deleted, {kept} kept because they are used in sales, orders or transfers."
     },
     "product": {
       "name": "Product name",
@@ -614,7 +621,11 @@
       "emptySearch": "Try a different name or SKU.",
       "filterAll": "All",
       "filterLabel": "Filter",
-      "inactive": "Inactive"
+      "inactive": "Inactive",
+      "deleteTitle": "Delete \"{name}\"?",
+      "confirmDelete": "This permanently deletes the product with all its variants, stock and images. Products that already have sales, orders or transfers can't be deleted — mark them inactive instead.",
+      "deleted": "Product deleted",
+      "deleteError": "Could not delete this product"
     },
     "dashboard": {
       "title": "Dashboard",

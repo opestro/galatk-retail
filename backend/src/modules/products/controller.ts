@@ -188,6 +188,15 @@ export async function removeImage(req: Request, res: Response, next: NextFunctio
   }
 }
 
+export async function removeFamily(req: Request, res: Response, next: NextFunction) {
+  try {
+    await ProductsService.deleteFamily(String(req.params.familyId))
+    res.status(204).send()
+  } catch (error) {
+    next(error)
+  }
+}
+
 export async function setPrimaryImage(req: Request, res: Response, next: NextFunction) {
   try {
     const familyId = String(req.params.familyId)

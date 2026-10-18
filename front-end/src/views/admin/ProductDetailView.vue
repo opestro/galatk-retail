@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { AlertCircle, Plus } from 'lucide-vue-next'
+import { AlertCircle, Plus, Trash2 } from 'lucide-vue-next'
 import type { Product, ProductFamily } from '@/types/api'
 import {
   addFamilyVariant,
   apiErrorMessage,
   deleteFamilyImage,
   deleteProduct,
+  deleteProductFamily,
   familyInStock,
   getProductFamily,
   setPrimaryFamilyImage,
@@ -41,6 +42,7 @@ import {
 
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 const toast = useToast()
 
@@ -96,6 +98,8 @@ const modalMode = ref<'add' | 'edit' | null>(null)
 const editingId = ref<string | null>(null)
 const confirmDeleteId = ref<string | null>(null)
 const confirmImageId = ref<string | null>(null)
+const confirmFamily = ref(false)
+const confirmMany = ref<{ ids: string[]; label: string } | null>(null)
 const modalDraft = ref<VariantDraft>(emptyVariantDraft())
 
 function applyFamily(next: ProductFamily) {
@@ -346,6 +350,43 @@ async function confirmDelete() {
   }
 }
 
+async function confirmDeleteFamily() {
+  if (!family.value) return
+  variantBusy.value = true
+  error.value = ''
+  try {
+    await deleteProductFamily(family.value.id)
+    allowLeave.value = true
+    toast.success(t('admin.products.deleted'))
+    await router.push({ name: 'admin-products' })
+  } catch (e) {
+    error.value = apiErrorMessage(e, t('admin.products.deleteError'))
+    confirmFamily.value = false
+  } finally {
+    variantBusy.value = false
+  }
+}
+
+async function confirmDeleteMany() {
+  const pending = confirmMany.value
+  if (!pending || !family.value) return
+  variantBusy.value = true
+  error.value = ''
+  // One by one: variants used in sales/orders are refused by the API and simply stay.
+  const results = await Promise.allSettled(pending.ids.map((id) => deleteProduct(id)))
+  const kept = results.filter((r) => r.status === 'rejected').length
+  const removed = results.length - kept
+  try {
+    applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
+  } catch {
+    // Stale list until the next reload; the message below still reports the outcome.
+  }
+  if (kept) error.value = t('admin.variant.bulkPartial', { removed: formatCount(removed), kept: formatCount(kept) })
+  else toast.success(t('admin.variant.bulkDeleted', { n: formatCount(removed) }, removed))
+  confirmMany.value = null
+  variantBusy.value = false
+}
+
 async function onUpload(files: File[]) {
   if (!family.value) return
   uploading.value = true
@@ -431,6 +472,10 @@ async function onSetPrimary(imageId: string) {
               {{ productUnavailable ? t('admin.product.statusUnavailable') : t('admin.product.statusAvailable') }}
             </span>
             <span v-if="isDirty" class="pos-badge-warn">{{ t('admin.product.unsaved') }}</span>
+            <button v-if="canManage" type="button" class="pos-btn-ghost text-pos-err" @click="confirmFamily = true">
+              <Trash2 class="h-4 w-4" />
+              {{ t('common.delete') }}
+            </button>
             <button
               v-if="canManage"
               type="button"
@@ -499,6 +544,7 @@ async function onSetPrimary(imageId: string) {
           @save-stock="saveStock"
           @edit="startEdit"
           @delete="confirmDeleteId = $event"
+          @delete-many="confirmMany = $event"
         />
       </template>
 
@@ -544,6 +590,28 @@ async function onSetPrimary(imageId: string) {
       :busy="variantBusy"
       @close="confirmDeleteId = null"
       @confirm="confirmDelete"
+    />
+
+    <AdminConfirm
+      v-if="confirmFamily && family"
+      :title="t('admin.products.deleteTitle', { name: family.name })"
+      :body="t('admin.products.confirmDelete')"
+      :confirm-label="t('common.delete')"
+      danger
+      :busy="variantBusy"
+      @close="confirmFamily = false"
+      @confirm="confirmDeleteFamily"
+    />
+
+    <AdminConfirm
+      v-if="confirmMany"
+      :title="confirmMany.label ? t('admin.variant.deleteColorTitle', { color: confirmMany.label }) : t('admin.variant.deleteAllTitle')"
+      :body="t('admin.variant.confirmDeleteMany', { n: formatCount(confirmMany.ids.length) }, confirmMany.ids.length)"
+      :confirm-label="t('common.delete')"
+      danger
+      :busy="variantBusy"
+      @close="confirmMany = null"
+      @confirm="confirmDeleteMany"
     />
 
     <AdminConfirm

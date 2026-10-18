@@ -2,11 +2,14 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ChevronRight, Package, Plus, Search, Shirt } from 'lucide-vue-next'
+import { AlertCircle, ChevronRight, Package, Plus, Search, Shirt, Trash2 } from 'lucide-vue-next'
 import type { ProductFamily } from '@/types/api'
-import { listProductFamilies, mediaUrl, familyInStock } from '@/services/products'
+import { apiErrorMessage, deleteProductFamily, listProductFamilies, mediaUrl, familyInStock } from '@/services/products'
 import { useAuthStore } from '@/stores/auth'
 import PageHeader from '@/components/ui/PageHeader.vue'
+import PosRowMenu from '@/components/pos/PosRowMenu.vue'
+import AdminConfirm from '@/components/admin/AdminConfirm.vue'
+import { useToast } from '@/composables/useToast'
 import PosEmptyState from '@/components/pos/PosEmptyState.vue'
 import { formatCount, formatMoney } from '@/utils/formatMoney'
 
@@ -20,7 +23,12 @@ const refreshing = ref(false)
 const search = ref('')
 const filter = ref<'all' | 'available' | 'unavailable'>('all')
 
+const toast = useToast()
 const canManage = computed(() => auth.canManageCatalog)
+const canDelete = computed(() => auth.isManager)
+const toDelete = ref<ProductFamily | null>(null)
+const deleting = ref(false)
+const error = ref('')
 
 const displayed = computed(() => {
   if (filter.value === 'all') return families.value
@@ -56,6 +64,23 @@ function priceOf(family: ProductFamily): string {
   return min === max ? formatMoney(min) : `${formatMoney(min)} – ${formatMoney(max)}`
 }
 
+async function confirmDelete() {
+  const family = toDelete.value
+  if (!family) return
+  deleting.value = true
+  error.value = ''
+  try {
+    await deleteProductFamily(family.id)
+    families.value = families.value.filter((f) => f.id !== family.id)
+    toast.success(t('admin.products.deleted'))
+  } catch (e) {
+    error.value = apiErrorMessage(e, t('admin.products.deleteError'))
+  } finally {
+    deleting.value = false
+    toDelete.value = null
+  }
+}
+
 function openProduct(family: ProductFamily) {
   void router.push({ name: 'admin-product-detail', params: { familyId: family.id } })
 }
@@ -86,6 +111,11 @@ watch(() => auth.selectedShopId, loadProducts)
         </RouterLink>
       </template>
     </PageHeader>
+
+    <p v-if="error" class="pos-notice bg-pos-err-bg text-pos-err" role="alert">
+      <AlertCircle class="mt-px h-4 w-4 shrink-0" />
+      {{ error }}
+    </p>
 
     <div class="flex flex-wrap items-center gap-3">
       <div class="relative min-w-0 flex-1 sm:max-w-md">
@@ -165,8 +195,16 @@ watch(() => auth.selectedShopId, loadProducts)
                 <span v-else-if="familyInStock(family)" class="pos-badge-ok"><span class="pos-dot" />{{ t('admin.product.statusAvailable') }}</span>
                 <span v-else class="pos-badge-err"><span class="pos-dot" />{{ t('admin.products.unavailable') }}</span>
               </td>
-              <td class="pos-cell-actions">
-                <ChevronRight class="ms-auto h-4 w-4 text-pos-faint rtl:rotate-180" aria-hidden="true" />
+              <td class="pos-cell-actions" @click.stop>
+                <div class="flex items-center justify-end gap-1">
+                  <PosRowMenu v-if="canDelete" :label="t('pos.table.moreActions')">
+                    <button type="button" role="menuitem" class="pos-menu-item pos-menu-item-danger" @click="toDelete = family">
+                      <Trash2 class="h-4 w-4" />
+                      {{ t('common.delete') }}
+                    </button>
+                  </PosRowMenu>
+                  <ChevronRight class="h-4 w-4 text-pos-faint rtl:rotate-180" aria-hidden="true" />
+                </div>
               </td>
             </tr>
           </tbody>
@@ -185,5 +223,16 @@ watch(() => auth.selectedShopId, loadProducts)
         </RouterLink>
       </PosEmptyState>
     </div>
+
+    <AdminConfirm
+      v-if="toDelete"
+      :title="t('admin.products.deleteTitle', { name: toDelete.name })"
+      :body="t('admin.products.confirmDelete')"
+      :confirm-label="t('common.delete')"
+      danger
+      :busy="deleting"
+      @close="toDelete = null"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>

@@ -554,7 +554,14 @@
       "deleteTitle": "Supprimer la variante",
       "stockEditHint": "Modifiez le stock directement — les changements sont enregistrés quand vous quittez le champ.",
       "stockFor": "Stock de {name}",
-      "noSize": "Sans taille"
+      "noSize": "Sans taille",
+      "deleteAll": "Tout supprimer",
+      "deleteColor": "Supprimer cette couleur",
+      "deleteAllTitle": "Supprimer toutes les variantes ?",
+      "deleteColorTitle": "Supprimer {color} ?",
+      "confirmDeleteMany": "Cela supprime {n} variante. Les variantes déjà utilisées dans des ventes, commandes ou transferts ne peuvent pas être supprimées et seront conservées. | Cela supprime {n} variantes. Les variantes déjà utilisées dans des ventes, commandes ou transferts ne peuvent pas être supprimées et seront conservées.",
+      "bulkDeleted": "{n} variante supprimée | {n} variantes supprimées",
+      "bulkPartial": "{removed} supprimées, {kept} conservées car utilisées dans des ventes, commandes ou transferts."
     },
     "product": {
       "name": "Nom du produit",
@@ -614,7 +621,11 @@
       "emptySearch": "Essayez un autre nom ou SKU.",
       "filterAll": "Tous",
       "filterLabel": "Filtrer",
-      "inactive": "Inactif"
+      "inactive": "Inactif",
+      "deleteTitle": "Supprimer « {name} » ?",
+      "confirmDelete": "Cela supprime définitivement le produit avec toutes ses variantes, son stock et ses images. Un produit déjà utilisé dans des ventes, commandes ou transferts ne peut pas être supprimé — désactivez-le plutôt.",
+      "deleted": "Produit supprimé",
+      "deleteError": "Impossible de supprimer ce produit"
     },
     "dashboard": {
       "title": "Tableau de bord",

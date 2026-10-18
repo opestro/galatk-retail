@@ -116,6 +116,10 @@ export async function updateProductFamily(
   return data.data
 }
 
+export async function deleteProductFamily(familyId: string): Promise<void> {
+  await api.delete(`/products/families/${familyId}`)
+}
+
 export async function addFamilyVariant(
   familyId: string,
   input: VariantPayload & { shopId?: string },

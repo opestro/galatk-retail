@@ -23,6 +23,7 @@ const emit = defineEmits<{
   'save-stock': [variant: Product]
   edit: [variantId: string]
   delete: [variantId: string]
+  'delete-many': [payload: { ids: string[]; label: string }]
 }>()
 
 interface ColorGroup {
@@ -111,6 +112,18 @@ function attr(variant: Product, key: string): string {
   return variant.attributes?.[key] || t('common.emDash')
 }
 
+/** Every variant of a color, even those hidden by the current search. */
+function deleteColor(group: ColorGroup) {
+  const ids = props.variants
+    .filter((v) => (v.attributes?.color ?? '').trim().toLowerCase() === group.key)
+    .map((v) => v.id)
+  emit('delete-many', { ids, label: group.label })
+}
+
+function deleteAll() {
+  emit('delete-many', { ids: props.variants.map((v) => v.id), label: '' })
+}
+
 function patchStock(id: string, value: string) {
   emit('update:stockDraft', { ...(props.stockDraft ?? {}), [id]: value })
 }
@@ -139,6 +152,10 @@ function patchStock(id: string, value: string) {
           <X class="h-4 w-4" />
         </button>
       </div>
+      <button v-if="canManage" type="button" class="pos-btn-ghost pos-btn-sm text-pos-err" @click="deleteAll">
+        <Trash2 class="h-4 w-4" />
+        {{ t('admin.variant.deleteAll') }}
+      </button>
       <button v-if="groups.length > 1" type="button" class="pos-btn-ghost pos-btn-sm" @click="toggleAll">
         <component :is="allOpen ? ChevronsDownUp : ChevronsUpDown" class="h-4 w-4" />
         {{ allOpen ? t('admin.variant.collapseAll') : t('admin.variant.expandAll') }}
@@ -198,7 +215,16 @@ function patchStock(id: string, value: string) {
               <Minus v-else-if="group.active === 0" class="mx-auto h-4 w-4 text-pos-faint" :aria-label="t('common.no')" />
               <span v-else class="pos-num text-[12.5px] text-pos-muted">{{ group.active }}/{{ group.variants.length }}</span>
             </td>
-            <td v-if="canManage" class="pos-cell-actions pe-6" />
+            <td v-if="canManage" class="pos-cell-actions pe-6" @click.stop>
+              <div class="flex items-center justify-end">
+                <PosRowMenu :label="t('pos.table.moreActions')">
+                  <button type="button" role="menuitem" class="pos-menu-item pos-menu-item-danger" @click="deleteColor(group)">
+                    <Trash2 class="h-4 w-4" />
+                    {{ t('admin.variant.deleteColor') }}
+                  </button>
+                </PosRowMenu>
+              </div>
+            </td>
           </tr>
 
           <template v-if="expanded.has(group.key)">
