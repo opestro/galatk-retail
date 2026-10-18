@@ -29,6 +29,7 @@ export function clientPresenter(client: Client): ClientResponse {
     phone: client.phone,
     email: client.email,
     address: client.address,
+    wilaya: client.wilaya,
     notes: client.notes,
     creditLimit: client.creditLimit?.toString() ?? null,
     balance: client.balance.toString(),

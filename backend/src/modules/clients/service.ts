@@ -3,6 +3,10 @@ import { CustomError } from '../../shared/types/error_type.js'
 import { AuthenticatedStaff, assertShopAccess, requirePermission } from '../../shared/middlewares/shopScope.js'
 import { CreateClientInput, UpdateClientInput } from './types.js'
 import { Decimal } from '@prisma/client/runtime/library'
+import { canonicalWilaya } from '../../shared/geo/algeriaWilayas.js'
+import { hashPassword } from '../../shared/auth/password.js'
+import { normalizeEmail } from '../../shared/validation/email.js'
+import { MIN_CUSTOMER_PASSWORD_LENGTH } from '../account/constants.js'
 import { Prisma, StaffRole, StaffPermission } from '@prisma/client'
 
 const LEDGER_PREVIEW_LIMIT = 10
@@ -40,6 +44,13 @@ export async function listClients(
   })
 }
 
+function parseWilaya(value: string | null | undefined): string | null {
+  if (!value?.trim()) return null
+  const wilaya = canonicalWilaya(value)
+  if (!wilaya) throw new CustomError('VALIDATION_ERROR', 'Please choose a valid wilaya', 400)
+  return wilaya
+}
+
 export async function createClient(
   staff: AuthenticatedStaff,
   shopId: string,
@@ -54,13 +65,49 @@ export async function createClient(
 
   const name = input.name.trim()
   const phone = input.phone.trim()
+  const rawEmail = input.email?.trim() || null
+  const password = input.password?.trim() ?? ''
+  const wilaya = parseWilaya(input.wilaya)
+
+  // An optional password also opens the shopper's store account (email + password login).
+  let accountEmail: string | null = null
+  let passwordHash: string | null = null
+  if (password) {
+    accountEmail = normalizeEmail(rawEmail)
+    if (!accountEmail) {
+      throw new CustomError('VALIDATION_ERROR', 'A valid email is required to create a login account', 400)
+    }
+    if (password.length < MIN_CUSTOMER_PASSWORD_LENGTH) {
+      throw new CustomError(
+        'VALIDATION_ERROR',
+        `Password must be at least ${MIN_CUSTOMER_PASSWORD_LENGTH} characters`,
+        400,
+      )
+    }
+    passwordHash = await hashPassword(password)
+  }
 
   try {
-    const customer = await prisma.customer.upsert({
-      where: { phone },
-      update: {},
-      create: { name, phone, email: input.email?.trim() ?? null },
-    })
+    const existing = await prisma.customer.findUnique({ where: { phone } })
+    if (passwordHash) {
+      if (existing?.passwordHash) {
+        throw new CustomError('ACCOUNT_EXISTS', 'This phone number already has a login account', 409)
+      }
+      const emailOwner = await prisma.customer.findUnique({ where: { email: accountEmail! } })
+      if (emailOwner && emailOwner.id !== existing?.id) {
+        throw new CustomError('ACCOUNT_EXISTS', 'This email is already used by another account', 409)
+      }
+    }
+    const customer = existing
+      ? passwordHash
+        ? await prisma.customer.update({
+            where: { id: existing.id },
+            data: { email: accountEmail, passwordHash },
+          })
+        : existing
+      : await prisma.customer.create({
+          data: { name, phone, email: accountEmail ?? rawEmail, passwordHash },
+        })
 
     return await prisma.client.create({
       data: {
@@ -70,6 +117,7 @@ export async function createClient(
         phone,
         email: input.email?.trim() ?? null,
         address: input.address?.trim() ?? null,
+        wilaya,
         notes: input.notes?.trim() ?? null,
         creditLimit:
           input.creditLimit !== undefined && input.creditLimit !== null
@@ -128,6 +176,7 @@ export async function updateClient(
         phone: input.phone?.trim(),
         email: input.email !== undefined ? (input.email?.trim() ?? null) : undefined,
         address: input.address !== undefined ? (input.address?.trim() ?? null) : undefined,
+        wilaya: input.wilaya !== undefined ? parseWilaya(input.wilaya) : undefined,
         notes: input.notes !== undefined ? (input.notes?.trim() ?? null) : undefined,
         creditLimit:
           input.creditLimit !== undefined

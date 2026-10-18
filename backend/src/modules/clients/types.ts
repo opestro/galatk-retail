@@ -3,8 +3,11 @@ export interface CreateClientInput {
   phone: string
   email?: string | null
   address?: string | null
+  wilaya?: string | null
   notes?: string | null
   creditLimit?: string | number | null
+  /** When set (with an email), also creates the shopper's store login account. */
+  password?: string | null
 }
 
 export interface UpdateClientInput {
@@ -12,6 +15,7 @@ export interface UpdateClientInput {
   phone?: string
   email?: string | null
   address?: string | null
+  wilaya?: string | null
   notes?: string | null
   creditLimit?: string | number | null
   isActive?: boolean
@@ -24,6 +28,7 @@ export interface ClientResponse {
   phone: string
   email: string | null
   address: string | null
+  wilaya: string | null
   notes: string | null
   creditLimit: string | null
   balance: string

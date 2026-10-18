@@ -126,6 +126,7 @@ export interface Client {
   phone: string
   email: string | null
   address: string | null
+  wilaya: string | null
   notes: string | null
   creditLimit: string | null
   balance: string
