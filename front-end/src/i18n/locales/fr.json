@@ -561,7 +561,9 @@
       "deleteColorTitle": "Supprimer {color} ?",
       "confirmDeleteMany": "Cela supprime {n} variante. Les variantes déjà utilisées dans des ventes, commandes ou transferts ne peuvent pas être supprimées et seront conservées. | Cela supprime {n} variantes. Les variantes déjà utilisées dans des ventes, commandes ou transferts ne peuvent pas être supprimées et seront conservées.",
       "bulkDeleted": "{n} variante supprimée | {n} variantes supprimées",
-      "bulkPartial": "{removed} supprimées, {kept} conservées car utilisées dans des ventes, commandes ou transferts."
+      "bulkPartial": "{removed} supprimées, {kept} conservées car utilisées dans des ventes, commandes ou transferts.",
+      "deleteSize": "Supprimer une taille…",
+      "deleteSizeTitle": "Supprimer la taille {size} ?"
     },
     "product": {
       "name": "Nom du produit",

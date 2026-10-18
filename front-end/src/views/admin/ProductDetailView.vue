@@ -99,7 +99,7 @@ const editingId = ref<string | null>(null)
 const confirmDeleteId = ref<string | null>(null)
 const confirmImageId = ref<string | null>(null)
 const confirmFamily = ref(false)
-const confirmMany = ref<{ ids: string[]; label: string } | null>(null)
+const confirmMany = ref<{ ids: string[]; label: string; kind?: 'size' } | null>(null)
 const modalDraft = ref<VariantDraft>(emptyVariantDraft())
 
 function applyFamily(next: ProductFamily) {
@@ -605,7 +605,13 @@ async function onSetPrimary(imageId: string) {
 
     <AdminConfirm
       v-if="confirmMany"
-      :title="confirmMany.label ? t('admin.variant.deleteColorTitle', { color: confirmMany.label }) : t('admin.variant.deleteAllTitle')"
+      :title="
+        confirmMany.kind === 'size'
+          ? t('admin.variant.deleteSizeTitle', { size: confirmMany.label })
+          : confirmMany.label
+            ? t('admin.variant.deleteColorTitle', { color: confirmMany.label })
+            : t('admin.variant.deleteAllTitle')
+      "
       :body="t('admin.variant.confirmDeleteMany', { n: formatCount(confirmMany.ids.length) }, confirmMany.ids.length)"
       :confirm-label="t('common.delete')"
       danger

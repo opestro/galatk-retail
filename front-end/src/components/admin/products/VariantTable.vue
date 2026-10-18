@@ -23,7 +23,7 @@ const emit = defineEmits<{
   'save-stock': [variant: Product]
   edit: [variantId: string]
   delete: [variantId: string]
-  'delete-many': [payload: { ids: string[]; label: string }]
+  'delete-many': [payload: { ids: string[]; label: string; kind?: 'size' }]
 }>()
 
 interface ColorGroup {
@@ -120,6 +120,26 @@ function deleteColor(group: ColorGroup) {
   emit('delete-many', { ids, label: group.label })
 }
 
+const sizes = computed(() => {
+  const unique = new Map<string, string>()
+  for (const v of props.variants) {
+    const size = (v.attributes?.size ?? '').trim()
+    if (size) unique.set(size.toLowerCase(), size)
+  }
+  return [...unique.values()].sort(compareSizes)
+})
+
+function deleteSize(event: Event) {
+  const select = event.target as HTMLSelectElement
+  const size = select.value
+  select.value = ''
+  if (!size) return
+  const ids = props.variants
+    .filter((v) => (v.attributes?.size ?? '').trim().toLowerCase() === size.toLowerCase())
+    .map((v) => v.id)
+  emit('delete-many', { ids, label: size, kind: 'size' })
+}
+
 function deleteAll() {
   emit('delete-many', { ids: props.variants.map((v) => v.id), label: '' })
 }
@@ -152,6 +172,15 @@ function patchStock(id: string, value: string) {
           <X class="h-4 w-4" />
         </button>
       </div>
+      <select
+        v-if="canManage && sizes.length"
+        class="pos-input h-9 w-auto text-[13px] text-pos-err"
+        :aria-label="t('admin.variant.deleteSize')"
+        @change="deleteSize"
+      >
+        <option value="">{{ t('admin.variant.deleteSize') }}</option>
+        <option v-for="size in sizes" :key="size" :value="size">{{ size }}</option>
+      </select>
       <button v-if="canManage" type="button" class="pos-btn-ghost pos-btn-sm text-pos-err" @click="deleteAll">
         <Trash2 class="h-4 w-4" />
         {{ t('admin.variant.deleteAll') }}

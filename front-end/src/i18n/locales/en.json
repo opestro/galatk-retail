@@ -561,7 +561,9 @@
       "deleteColorTitle": "Delete {color}?",
       "confirmDeleteMany": "This deletes {n} variant. Variants already used in sales, orders or transfers can't be deleted and will be kept. | This deletes {n} variants. Variants already used in sales, orders or transfers can't be deleted and will be kept.",
       "bulkDeleted": "{n} variant deleted | {n} variants deleted",
-      "bulkPartial": "{removed} deleted, {kept} kept because they are used in sales, orders or transfers."
+      "bulkPartial": "{removed} deleted, {kept} kept because they are used in sales, orders or transfers.",
+      "deleteSize": "Delete a size…",
+      "deleteSizeTitle": "Delete size {size}?"
     },
     "product": {
       "name": "Product name",
