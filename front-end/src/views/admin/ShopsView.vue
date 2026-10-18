@@ -84,11 +84,11 @@ onMounted(loadShops)
       <article
         v-for="(shop, index) in shops"
         :key="shop.id"
-        class="pos-surface pos-rise flex flex-col gap-4 p-5"
+        class="pos-surface pos-lift pos-rise flex flex-col gap-4 p-5"
         :style="{ '--i': index }"
       >
         <div class="flex items-start gap-3">
-          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos-canvas text-pos-ink-2">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200/60">
             <Store class="h-[18px] w-[18px]" />
           </span>
           <div class="min-w-0 flex-1">

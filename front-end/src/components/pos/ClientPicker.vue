@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { avatarTone } from '@/utils/avatarTone'
 import { ref, watch, useId } from 'vue'
 import { Search, UserRound, X } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
@@ -107,7 +108,7 @@ defineExpose({
     </label>
 
     <div v-if="props.modelValue" class="flex items-center gap-3 rounded-xl bg-pos-sunken p-2.5 ps-3">
-      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pos-espresso text-[12px] font-semibold text-white">
+      <span class="pos-avatar h-9 w-9" :class="avatarTone(props.modelValue.name)">
         {{ initials(props.modelValue.name) }}
       </span>
       <div class="min-w-0 flex-1">

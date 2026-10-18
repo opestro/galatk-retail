@@ -1072,6 +1072,7 @@
       "errorCreditLimit": "Limite de crédit dépassée — l'approbation d'un gérant est requise",
       "successTitle": "Vente terminée",
       "successMessage": "Total {total} — {paid} encaissé.",
+      "outOfStock": "Rupture de stock",
       "lowStock": "Plus que {n}",
       "stock": "{n} en stock",
       "inCart": "{n} dans le panier",

@@ -1072,6 +1072,7 @@
       "errorCreditLimit": "Credit limit exceeded — manager approval required",
       "successTitle": "Sale completed",
       "successMessage": "Total {total} — {paid} collected.",
+      "outOfStock": "Out of stock",
       "lowStock": "Only {n} left",
       "stock": "{n} in stock",
       "inCart": "{n} in cart",

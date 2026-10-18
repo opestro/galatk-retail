@@ -1072,6 +1072,7 @@
       "errorCreditLimit": "تم تجاوز حد الآجل — يلزم موافقة المدير",
       "successTitle": "اكتملت عملية البيع",
       "successMessage": "الإجمالي {total} — تم تحصيل {paid}.",
+      "outOfStock": "غير متوفر",
       "lowStock": "متبقٍ {n} فقط",
       "stock": "{n} في المخزون",
       "inCart": "{n} في السلة",

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { avatarTone } from '@/utils/avatarTone'
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -159,7 +160,7 @@ watch(() => auth.selectedShopId, load)
             <tr v-for="client in clients" :key="client.id" class="pos-row-link" @click="router.push(`/admin/clients/${client.id}`)">
               <td>
                 <div class="flex items-center gap-3">
-                  <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-pos-canvas text-[12px] font-semibold text-pos-ink-2">{{ initials(client.name) }}</span>
+                  <span class="pos-avatar h-9 w-9" :class="avatarTone(client.name)">{{ initials(client.name) }}</span>
                   <div class="min-w-0">
                     <RouterLink :to="`/admin/clients/${client.id}`" class="block font-medium whitespace-nowrap text-pos-ink hover:underline" @click.stop>
                       {{ client.name }}
@@ -177,7 +178,7 @@ watch(() => auth.selectedShopId, load)
                   <span class="h-1 w-full overflow-hidden rounded-full bg-pos-canvas" role="meter" :aria-valuenow="limitUsage(client)" aria-valuemin="0" aria-valuemax="100" :aria-label="t('admin.clients.limitUsed')">
                     <span
                       class="block h-full rounded-full"
-                      :class="limitUsage(client) >= 90 ? 'bg-pos-err' : limitUsage(client) >= 60 ? 'bg-[#d97706]' : 'bg-pos-espresso'"
+                      :class="limitUsage(client) >= 90 ? 'bg-pos-err' : limitUsage(client) >= 60 ? 'bg-amber-500' : 'bg-emerald-500'"
                       :style="{ width: `${limitUsage(client)}%` }"
                     />
                   </span>
