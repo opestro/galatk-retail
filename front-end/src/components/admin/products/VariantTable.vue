@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Product } from '@/types/api'
-import { formatMarginPercent, variantInStock } from '@/services/products'
+import { compareSizes, formatMarginPercent, variantInStock } from '@/services/products'
 import { PRIMARY_ATTRIBUTE_KEYS } from './variantDraft'
 import { Check, ChevronDown, ChevronsDownUp, ChevronsUpDown, Minus, Pencil, Search, SearchX, Trash2, Layers, X } from 'lucide-vue-next'
 import PosRowMenu from '@/components/pos/PosRowMenu.vue'
@@ -68,7 +68,8 @@ const groups = computed<ColorGroup[]>(() => {
     if (list) list.push(variant)
     else byColor.set(key, [variant])
   }
-  return [...byColor.entries()].map(([key, variants]) => {
+  return [...byColor.entries()].map(([key, unsorted]) => {
+    const variants = [...unsorted].sort((a, b) => compareSizes(a.attributes?.size, b.attributes?.size))
     const costs = variants.map((v) => Number(v.unitCost))
     const prices = variants.map((v) => Number(v.sellPrice))
     return {

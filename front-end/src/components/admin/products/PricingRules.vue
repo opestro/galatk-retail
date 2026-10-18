@@ -3,7 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AlertTriangle, Tags } from 'lucide-vue-next'
 import type { Product } from '@/types/api'
-import { formatMoney, formatCount } from '@/utils/formatMoney'
+import { compareSizes } from '@/services/products'
+import { formatCount } from '@/utils/formatMoney'
 
 type Rule = 'all' | 'size' | 'color'
 
@@ -40,7 +41,7 @@ function groupBy(attribute: 'size' | 'color', emptyLabel: string): Group[] {
   return [...map.values()]
 }
 
-const sizeGroups = computed(() => groupBy('size', t('admin.variant.noSize')))
+const sizeGroups = computed(() => groupBy('size', t('admin.variant.noSize')).sort((a, b) => compareSizes(a.key, b.key)))
 const colorGroups = computed(() => groupBy('color', t('admin.variant.noColor')))
 
 /** Number-type inputs hand back numbers (or ''), so accept both. Empty/invalid -> null. */
