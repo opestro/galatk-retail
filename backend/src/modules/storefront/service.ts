@@ -1,6 +1,6 @@
 import prisma from '../../resources/database/initDatabase.js'
 import { CustomError } from '../../shared/types/error_type.js'
-import { AuthenticatedStaff, assertShopAccess, requireMinRole } from '../../shared/middlewares/shopScope.js'
+import { AuthenticatedStaff, assertShopAccess, requirePermission } from '../../shared/middlewares/shopScope.js'
 import { decrementShopStock, restoreShopStock } from '../../shared/stock/stockMutations.js'
 import { findOrCreateClientFromOnlineOrder } from '../../shared/clients/upsertFromOnline.js'
 import { assertCreditWithinLimit } from '../../shared/credit/limitCheck.js'
@@ -16,6 +16,7 @@ import {
   PaymentMethod,
   Prisma,
   StaffRole,
+  StaffPermission,
 } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library' // money totals on checkout / complete
 import { withFamily } from '../../shared/products/withFamily.js'
@@ -312,6 +313,7 @@ export async function listOrders(
   filters?: { status?: OrderStatus; search?: string; wilaya?: string },
 ) {
   assertShopAccess(staff, shopId)
+  requirePermission(staff, StaffPermission.ORDER_VIEW)
 
   const where: Prisma.OnlineOrderWhereInput = {
     shopId,
@@ -341,6 +343,7 @@ export async function listOrders(
 
 export async function getOrderById(staff: AuthenticatedStaff, shopId: string, orderId: string) {
   assertShopAccess(staff, shopId)
+  requirePermission(staff, StaffPermission.ORDER_VIEW)
 
   const order = await prisma.onlineOrder.findFirst({
     where: { id: orderId, shopId },
@@ -361,6 +364,7 @@ export async function updateOrderStatus(
   status: OrderStatus,
 ) {
   assertShopAccess(staff, shopId)
+  requirePermission(staff, StaffPermission.ORDER_PROCESS)
   const order = await getOrderById(staff, shopId, orderId)
 
   if (status === OrderStatus.COMPLETED) {
@@ -393,6 +397,7 @@ export async function completeOnlineOrder(
   input: CompleteOnlineOrderInput,
 ) {
   assertShopAccess(staff, shopId)
+  requirePermission(staff, StaffPermission.ORDER_PROCESS)
   const order = await getOrderById(staff, shopId, orderId)
 
   if (order.fulfillmentSale || order.status === OrderStatus.COMPLETED) {
@@ -420,7 +425,7 @@ export async function completeOnlineOrder(
   let creditApprovedById: string | null = null
 
   if (input.payLater) {
-    requireMinRole(staff, StaffRole.MANAGER)
+    requirePermission(staff, StaffPermission.SALE_PAY_LATER)
     creditApprovedById = staff.id
   }
 
@@ -437,7 +442,7 @@ export async function completeOnlineOrder(
   if (amountOnCredit.gt(0)) {
     const override = input.creditLimitOverride ?? false
     if (override) {
-      requireMinRole(staff, StaffRole.MANAGER)
+      requirePermission(staff, StaffPermission.SALE_PAY_LATER)
       creditApprovedById = staff.id
     }
     assertCreditWithinLimit(
@@ -519,7 +524,7 @@ export async function cancelOrder(
   reason?: string,
 ) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.ORDER_CANCEL)
 
   const order = await getOrderById(staff, shopId, orderId)
 
@@ -570,7 +575,7 @@ export async function addOrderLine(
   input: { productId?: string; quantity?: number },
 ) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.ORDER_EDIT)
 
   const quantity = Number.parseInt(String(input.quantity ?? 1), 10)
   if (!Number.isInteger(quantity) || quantity < 1) {
@@ -627,7 +632,7 @@ export async function removeOrderLine(
   lineId: string,
 ) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.ORDER_EDIT)
 
   const order = await getOrderById(staff, shopId, orderId)
   assertOrderLinesEditable(order.status, Boolean(order.fulfillmentSale))

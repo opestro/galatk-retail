@@ -66,7 +66,7 @@ const terminal = computed(() =>
 )
 
 const canEditLines = computed(
-  () => Boolean(order.value) && auth.isManager && !terminal.value,
+  () => Boolean(order.value) && auth.can('ORDER_EDIT') && !terminal.value,
 )
 
 /** In-stock POS SKUs the manager can add to an open order. */
@@ -121,7 +121,7 @@ async function load() {
     order.value = loaded
     draftStatus.value = loaded.status
     shop.value = shopRes?.data.data ?? null
-    if (auth.isManager) {
+    if (auth.can('ORDER_EDIT')) {
       try {
         const { data } = await api.get<{ data: PosProduct[] }>(`/shops/${shopId}/pos/products`)
         catalog.value = data.data
@@ -151,7 +151,7 @@ async function saveStatus() {
   }
 
   if (next === 'CANCELLED') {
-    if (!auth.isManager) {
+    if (!auth.can('ORDER_CANCEL')) {
       actionError.value = t('admin.orderDetail.cancelManagerOnly')
       draftStatus.value = order.value.status
       return

@@ -23,6 +23,7 @@ import {
   Network,
   ChevronsUpDown,
   ArrowUpRight,
+  ShieldCheck,
 } from 'lucide-vue-next'
 import ShopSelector from '@/components/admin/ShopSelector.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
@@ -44,7 +45,7 @@ interface NavItem {
   label: string
   icon: typeof Store
   roles: string[]
-  /** Cashiers see this item only when granted the permission. */
+  /** Hidden unless the person's role holds this permission. */
   permission?: StaffPermission
   external?: boolean
 }
@@ -56,7 +57,7 @@ const navGroups = computed(() => {
       id: 'overview',
       label: t('admin.navGroup.overview'),
       items: [
-        { to: '/admin', label: t('admin.nav.dashboard'), icon: LayoutDashboard, roles: ['OWNER', 'MANAGER'] },
+        { to: '/admin', label: t('admin.nav.dashboard'), icon: LayoutDashboard, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'DASHBOARD_VIEW' },
         { to: '/admin/network', label: t('admin.nav.network'), icon: Network, roles: ['OWNER'] },
       ],
     },
@@ -66,35 +67,36 @@ const navGroups = computed(() => {
       items: [
         // Same JWT session: owners/managers cashier as themselves (sale.cashierId = staff.id).
         { to: '/pos', label: t('admin.nav.cashier'), icon: ShoppingCart, roles: ['OWNER', 'MANAGER', 'CASHIER'], external: true },
-        { to: '/admin/orders', label: t('admin.nav.orders'), icon: ClipboardList, roles: ['OWNER', 'MANAGER'] },
-        { to: '/admin/clients', label: t('admin.nav.clients'), icon: UserCircle, roles: ['OWNER', 'MANAGER'] },
-        { to: '/admin/credit/reminders', label: t('admin.nav.creditReminders'), icon: Bell, roles: ['OWNER', 'MANAGER'] },
+        { to: '/admin/orders', label: t('admin.nav.orders'), icon: ClipboardList, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'ORDER_VIEW' },
+        { to: '/admin/clients', label: t('admin.nav.clients'), icon: UserCircle, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'CLIENT_VIEW' },
+        { to: '/admin/credit/reminders', label: t('admin.nav.creditReminders'), icon: Bell, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'CREDIT_MANAGE' },
       ],
     },
     {
       id: 'catalog',
       label: t('admin.navGroup.catalog'),
       items: [
-        { to: '/admin/products', label: t('admin.nav.products'), icon: Package, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'MANAGE_CATALOG' },
-        { to: '/admin/stock', label: t('admin.nav.stock'), icon: Boxes, roles: ['OWNER', 'MANAGER'] },
-        { to: '/admin/inbound', label: t('admin.nav.inbound'), icon: ArrowDownToLine, roles: ['OWNER', 'MANAGER'] },
+        { to: '/admin/products', label: t('admin.nav.products'), icon: Package, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'PRODUCT_VIEW' },
+        { to: '/admin/stock', label: t('admin.nav.stock'), icon: Boxes, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'STOCK_VIEW' },
+        { to: '/admin/inbound', label: t('admin.nav.inbound'), icon: ArrowDownToLine, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'INBOUND_VIEW' },
       ],
     },
     {
       id: 'operations',
       label: t('admin.navGroup.operations'),
       items: [
-        { to: '/admin/charges', label: t('admin.nav.charges'), icon: Receipt, roles: ['OWNER', 'MANAGER'] },
-        { to: '/admin/shops', label: t('admin.nav.shops'), icon: Store, roles: ['OWNER', 'MANAGER'] },
-        { to: '/admin/staff', label: t('admin.nav.staff'), icon: Users, roles: ['OWNER', 'MANAGER'] },
-        { to: '/admin/settings', label: t('admin.nav.settings'), icon: Settings, roles: ['OWNER', 'MANAGER'] },
+        { to: '/admin/charges', label: t('admin.nav.charges'), icon: Receipt, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'CHARGES_VIEW' },
+        { to: '/admin/shops', label: t('admin.nav.shops'), icon: Store, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'SHOPS_MANAGE' },
+        { to: '/admin/staff', label: t('admin.nav.staff'), icon: Users, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'STAFF_MANAGE' },
+        { to: '/admin/roles', label: t('admin.nav.roles'), icon: ShieldCheck, roles: ['OWNER'] },
+        { to: '/admin/settings', label: t('admin.nav.settings'), icon: Settings, roles: ['OWNER', 'MANAGER', 'CASHIER'], permission: 'SETTINGS_MANAGE' },
       ],
     },
   ]
   const role = auth.staff?.role ?? ''
   return groups
     .map((group) => ({ ...group, items: group.items.filter(
-        (item) => item.roles.includes(role) && (role !== 'CASHIER' || !item.permission || auth.can(item.permission)),
+        (item) => item.roles.includes(role) && (!item.permission || auth.can(item.permission)),
       ) }))
     .filter((group) => group.items.length)
 })

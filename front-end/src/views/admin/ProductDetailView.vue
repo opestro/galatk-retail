@@ -47,7 +47,10 @@ const auth = useAuthStore()
 const toast = useToast()
 
 const familyId = computed(() => String(route.params.familyId))
-const canManage = computed(() => auth.isManager)
+const canManage = computed(() => auth.can('PRODUCT_EDIT'))
+const canPrice = computed(() => auth.can('PRODUCT_EDIT_PRICE'))
+const canDelete = computed(() => auth.can('PRODUCT_DELETE'))
+const canStock = computed(() => auth.can('STOCK_ADJUST'))
 
 const family = ref<ProductFamily | null>(null)
 const loading = ref(true)
@@ -174,7 +177,7 @@ async function saveProduct() {
 }
 
 async function saveStock(variant: Product) {
-  if (!canManage.value) return
+  if (!canStock.value) return
   const shopId = auth.selectedShopId
   if (!shopId) {
     error.value = t('admin.product.selectShopForStockChange')
@@ -290,16 +293,17 @@ async function saveEdit() {
   variantBusy.value = true
   variantError.value = ''
   try {
+    const current = family.value.variants.find((v) => v.id === editingId.value)
     await updateProduct(editingId.value, {
       attributes: attrs,
       unitCost,
-      sellPrice,
+      // Only send the price when it changed, so editing other fields doesn't need the price permission.
+      ...(Number(current?.sellPrice) !== sellPrice ? { sellPrice } : {}),
       availableOnline: modalDraft.value.availableOnline,
       isActive: modalDraft.value.isActive,
     })
     const qty = Number(modalDraft.value.quantity)
-    const current = family.value.variants.find((v) => v.id === editingId.value)
-    if (Number.isInteger(qty) && qty >= 0 && qty !== (current?.shopQuantity ?? 0)) {
+    if (canStock.value && Number.isInteger(qty) && qty >= 0 && qty !== (current?.shopQuantity ?? 0)) {
       if (!auth.selectedShopId) {
         variantError.value = t('admin.product.selectShopForStockChange')
         variantBusy.value = false
@@ -472,7 +476,7 @@ async function onSetPrimary(imageId: string) {
               {{ productUnavailable ? t('admin.product.statusUnavailable') : t('admin.product.statusAvailable') }}
             </span>
             <span v-if="isDirty" class="pos-badge-warn">{{ t('admin.product.unsaved') }}</span>
-            <button v-if="canManage" type="button" class="pos-btn-ghost text-pos-err" @click="confirmFamily = true">
+            <button v-if="canDelete" type="button" class="pos-btn-ghost text-pos-err" @click="confirmFamily = true">
               <Trash2 class="h-4 w-4" />
               {{ t('common.delete') }}
             </button>
@@ -521,7 +525,7 @@ async function onSetPrimary(imageId: string) {
       </template>
 
       <template #variants>
-        <template v-if="canManage && family.variants.length">
+        <template v-if="canPrice && family.variants.length">
           <PricingRules :variants="family.variants" :busy="variantBusy" @apply="applyPrices" />
           <hr class="border-pos-line" />
         </template>
@@ -530,7 +534,7 @@ async function onSetPrimary(imageId: string) {
             <h2 class="section-title">{{ t('admin.variant.sectionTitle') }}</h2>
             <p class="mt-0.5 text-[12.5px] text-pos-muted">{{ t('admin.variant.stockEditHint') }}</p>
           </div>
-          <button v-if="auth.canManageCatalog" type="button" class="pos-btn-soft" @click="openAddVariant">
+          <button v-if="auth.can('PRODUCT_CREATE')" type="button" class="pos-btn-soft" @click="openAddVariant">
             <Plus class="h-4 w-4" />
             {{ t('admin.variant.add') }}
           </button>
@@ -538,6 +542,8 @@ async function onSetPrimary(imageId: string) {
         <VariantTable
           :variants="family.variants"
           :can-manage="canManage"
+          :can-delete="canDelete"
+          :can-stock="canStock"
           :stock-draft="stockDraft"
           :stock-state="stockState"
           @update:stock-draft="stockDraft = $event"

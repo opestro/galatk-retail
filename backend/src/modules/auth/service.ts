@@ -5,6 +5,7 @@ import { consumeSsoHandoff, createSsoHandoff } from '../../shared/auth/ssoHandof
 import { CustomError } from '../../shared/types/error_type.js'
 import { LoginInput, StaffProfile } from './types.js'
 import { StaffRole } from '@prisma/client'
+import { effectivePermissions, GROUP_PERMISSIONS_SELECT } from '../../shared/auth/permissions.js'
 
 async function resolveShopIds(staffId: string, role: StaffRole): Promise<string[]> {
   if (role === StaffRole.OWNER) {
@@ -22,6 +23,7 @@ async function resolveShopIds(staffId: string, role: StaffRole): Promise<string[
 export async function login(input: LoginInput) {
   const staff = await prisma.staffUser.findUnique({
     where: { email: input.email.toLowerCase() },
+    include: GROUP_PERMISSIONS_SELECT,
   })
 
   if (!staff || !staff.isActive) {
@@ -43,14 +45,14 @@ export async function login(input: LoginInput) {
       email: staff.email,
       name: staff.name,
       role: staff.role,
-      permissions: staff.permissions,
+      permissions: await effectivePermissions(staff.role, staff.permissions, staff.groups),
       shopIds,
     },
   }
 }
 
 export async function getMe(staffId: string): Promise<StaffProfile> {
-  const staff = await prisma.staffUser.findUnique({ where: { id: staffId } })
+  const staff = await prisma.staffUser.findUnique({ where: { id: staffId }, include: GROUP_PERMISSIONS_SELECT })
 
   if (!staff || !staff.isActive) {
     throw new CustomError('UNAUTHORIZED', 'Staff not found', 401)
@@ -63,7 +65,7 @@ export async function getMe(staffId: string): Promise<StaffProfile> {
     email: staff.email,
     name: staff.name,
     role: staff.role,
-    permissions: staff.permissions,
+    permissions: await effectivePermissions(staff.role, staff.permissions, staff.groups),
     shopIds,
   }
 }
@@ -75,7 +77,7 @@ export async function issueSsoCode(emailRaw: string) {
     throw new CustomError('VALIDATION_ERROR', 'Email is required', 400)
   }
 
-  const staff = await prisma.staffUser.findUnique({ where: { email } })
+  const staff = await prisma.staffUser.findUnique({ where: { email }, include: GROUP_PERMISSIONS_SELECT })
   if (!staff || !staff.isActive) {
     throw new CustomError('NOT_FOUND', 'No active staff account for this email', 404)
   }
@@ -86,7 +88,7 @@ export async function issueSsoCode(emailRaw: string) {
 /** Exchange SSO code for a normal staff session (same shape as login). */
 export async function exchangeSsoCode(code: string) {
   const email = await consumeSsoHandoff(code)
-  const staff = await prisma.staffUser.findUnique({ where: { email } })
+  const staff = await prisma.staffUser.findUnique({ where: { email }, include: GROUP_PERMISSIONS_SELECT })
 
   if (!staff || !staff.isActive) {
     throw new CustomError('UNAUTHORIZED', 'Staff not found', 401)
@@ -102,7 +104,7 @@ export async function exchangeSsoCode(code: string) {
       email: staff.email,
       name: staff.name,
       role: staff.role,
-      permissions: staff.permissions,
+      permissions: await effectivePermissions(staff.role, staff.permissions, staff.groups),
       shopIds,
     },
   }

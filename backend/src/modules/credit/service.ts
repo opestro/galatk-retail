@@ -1,6 +1,6 @@
 import prisma from '../../resources/database/initDatabase.js'
 import { CustomError } from '../../shared/types/error_type.js'
-import { AuthenticatedStaff, assertShopAccess, requireMinRole } from '../../shared/middlewares/shopScope.js'
+import { AuthenticatedStaff, assertShopAccess, requirePermission } from '../../shared/middlewares/shopScope.js'
 import { allocateFifo } from '../../shared/credit/fifoAllocator.js'
 import { assertPaymentWithinBalance } from '../../shared/credit/limitCheck.js'
 import { getClientForStaff } from '../clients/service.js'
@@ -17,6 +17,7 @@ import {
   PaymentMethod,
   Prisma,
   StaffRole,
+  StaffPermission,
 } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
 
@@ -143,7 +144,7 @@ export async function voidPayment(
   reason?: string,
 ) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.CREDIT_MANAGE)
   await getClientForStaff(staff, clientId)
 
   const payment = await prisma.clientPayment.findFirst({
@@ -224,7 +225,7 @@ export async function getCreditDashboard(staff: AuthenticatedStaff, shopId: stri
 
 export async function getCreditReminders(staff: AuthenticatedStaff, shopId: string) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.CREDIT_MANAGE)
 
   const shop = await prisma.shop.findUnique({ where: { id: shopId } })
   if (!shop) {
@@ -258,7 +259,7 @@ export async function logReminderContact(
   clientId: string,
   input: LogReminderContactInput,
 ) {
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.CREDIT_MANAGE)
   await getClientForStaff(staff, clientId)
 
   return prisma.creditReminderContact.create({
@@ -276,7 +277,7 @@ export async function createAdjustment(
   clientId: string,
   input: CreateAdjustmentInput,
 ) {
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.CREDIT_MANAGE)
   const client = await getClientForStaff(staff, clientId)
 
   const amount = new Decimal(input.amount)

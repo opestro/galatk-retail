@@ -13,7 +13,11 @@ const { t } = useI18n()
 
 const props = defineProps<{
   variants: Product[]
+  /** Edit variant details. */
   canManage?: boolean
+  canDelete?: boolean
+  /** Change stock quantities inline. */
+  canStock?: boolean
   stockDraft?: Record<string, string>
   stockState?: Record<string, 'idle' | 'saving' | 'error'>
 }>()
@@ -173,7 +177,7 @@ function patchStock(id: string, value: string) {
         </button>
       </div>
       <select
-        v-if="canManage && sizes.length"
+        v-if="canDelete && sizes.length"
         class="pos-input h-9 w-auto text-[13px] text-pos-err"
         :aria-label="t('admin.variant.deleteSize')"
         @change="deleteSize"
@@ -181,7 +185,7 @@ function patchStock(id: string, value: string) {
         <option value="">{{ t('admin.variant.deleteSize') }}</option>
         <option v-for="size in sizes" :key="size" :value="size">{{ size }}</option>
       </select>
-      <button v-if="canManage" type="button" class="pos-btn-ghost pos-btn-sm text-pos-err" @click="deleteAll">
+      <button v-if="canDelete" type="button" class="pos-btn-ghost pos-btn-sm text-pos-err" @click="deleteAll">
         <Trash2 class="h-4 w-4" />
         {{ t('admin.variant.deleteAll') }}
       </button>
@@ -206,7 +210,7 @@ function patchStock(id: string, value: string) {
             <th scope="col">{{ t('admin.variant.stock') }}</th>
             <th scope="col" class="text-center">{{ t('admin.variant.online') }}</th>
             <th scope="col" class="text-center">{{ t('admin.variant.active') }}</th>
-            <th v-if="canManage" scope="col" class="pos-cell-actions pe-6"><span class="sr-only">{{ t('common.actions') }}</span></th>
+            <th v-if="canManage || canDelete" scope="col" class="pos-cell-actions pe-6"><span class="sr-only">{{ t('common.actions') }}</span></th>
           </tr>
         </thead>
         <tbody v-for="group in groups" :key="group.key">
@@ -244,8 +248,8 @@ function patchStock(id: string, value: string) {
               <Minus v-else-if="group.active === 0" class="mx-auto h-4 w-4 text-pos-faint" :aria-label="t('common.no')" />
               <span v-else class="pos-num text-[12.5px] text-pos-muted">{{ group.active }}/{{ group.variants.length }}</span>
             </td>
-            <td v-if="canManage" class="pos-cell-actions pe-6" @click.stop>
-              <div class="flex items-center justify-end">
+            <td v-if="canManage || canDelete" class="pos-cell-actions pe-6" @click.stop>
+              <div v-if="canDelete" class="flex items-center justify-end">
                 <PosRowMenu :label="t('pos.table.moreActions')">
                   <button type="button" role="menuitem" class="pos-menu-item pos-menu-item-danger" @click="deleteColor(group)">
                     <Trash2 class="h-4 w-4" />
@@ -270,7 +274,7 @@ function patchStock(id: string, value: string) {
               <td class="pos-cell-num font-medium text-pos-ink">{{ formatMoney(variant.sellPrice) }}</td>
               <td class="pos-cell-num text-pos-ink-2">{{ formatMarginPercent(variant.sellPrice, variant.unitCost) }}</td>
               <td>
-                <div v-if="canManage && stockDraft" class="relative w-24">
+                <div v-if="canStock && stockDraft" class="relative w-24">
                   <input
                     :value="stockDraft[variant.id]"
                     type="number"
@@ -297,18 +301,20 @@ function patchStock(id: string, value: string) {
                 <Check v-if="variant.isActive" class="mx-auto h-4 w-4 text-pos-ok" :aria-label="t('common.yes')" />
                 <Minus v-else class="mx-auto h-4 w-4 text-pos-faint" :aria-label="t('common.no')" />
               </td>
-              <td v-if="canManage" class="pos-cell-actions pe-6">
+              <td v-if="canManage || canDelete" class="pos-cell-actions pe-6">
                 <div class="flex items-center justify-end gap-1">
-                  <button type="button" class="pos-icon-btn h-9 w-9" :aria-label="t('common.edit')" :title="t('common.edit')" @click="emit('edit', variant.id)">
+                  <button v-if="canManage" type="button" class="pos-icon-btn h-9 w-9" :aria-label="t('common.edit')" :title="t('common.edit')" @click="emit('edit', variant.id)">
                     <Pencil class="h-4 w-4" />
                   </button>
                   <PosRowMenu :label="t('pos.table.moreActions')">
-                    <button type="button" role="menuitem" class="pos-menu-item" @click="emit('edit', variant.id)">
-                      <Pencil class="h-4 w-4 text-pos-muted" />
-                      {{ t('common.edit') }}
-                    </button>
-                    <div class="my-1 h-px bg-pos-line" role="separator" />
-                    <button type="button" role="menuitem" class="pos-menu-item pos-menu-item-danger" @click="emit('delete', variant.id)">
+                    <template v-if="canManage">
+                      <button type="button" role="menuitem" class="pos-menu-item" @click="emit('edit', variant.id)">
+                        <Pencil class="h-4 w-4 text-pos-muted" />
+                        {{ t('common.edit') }}
+                      </button>
+                      <div v-if="canDelete" class="my-1 h-px bg-pos-line" role="separator" />
+                    </template>
+                    <button v-if="canDelete" type="button" role="menuitem" class="pos-menu-item pos-menu-item-danger" @click="emit('delete', variant.id)">
                       <Trash2 class="h-4 w-4" />
                       {{ t('common.delete') }}
                     </button>

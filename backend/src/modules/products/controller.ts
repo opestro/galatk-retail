@@ -3,6 +3,8 @@ import multer from 'multer'
 import * as ProductsService from './service.js'
 import { familyPresenter, imagePresenter, productPresenter } from './presenter.js'
 import { CustomError } from '../../shared/types/error_type.js'
+import { StaffPermission } from '@prisma/client'
+import { hasPermission, requirePermission } from '../../shared/middlewares/shopScope.js'
 
 const imageUpload = multer({
   storage: multer.memoryStorage(),
@@ -18,9 +20,9 @@ function shopIdFrom(req: Request): string | undefined {
   return value?.trim() || undefined
 }
 
-/** Cashiers with catalog access may add, never overwrite, existing catalog rows. */
+/** Without PRODUCT_EDIT, staff may add catalog rows but never overwrite existing ones. */
 function createOnlyFor(req: Request): boolean {
-  return req.staff?.role === 'CASHIER'
+  return !req.staff || !hasPermission(req.staff, StaffPermission.PRODUCT_EDIT)
 }
 
 function assertShopQueryAccess(req: Request, shopId?: string) {
@@ -257,6 +259,20 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
     const productId = String(req.params.productId)
     const product = await ProductsService.getProductById(productId)
     res.status(200).json({ data: productPresenter(product) })
+  } catch (error) {
+    next(error)
+  }
+}
+
+/** Changing only the price needs PRODUCT_EDIT_PRICE; any other field needs PRODUCT_EDIT. */
+export function guardUpdate(req: Request, _res: Response, next: NextFunction) {
+  try {
+    if (!req.staff) throw new CustomError('UNAUTHORIZED', 'Authentication required', 401)
+    const body = (req.body ?? {}) as Record<string, unknown>
+    const otherFields = Object.keys(body).filter((key) => key !== 'sellPrice' && body[key] !== undefined)
+    if (otherFields.length) requirePermission(req.staff, StaffPermission.PRODUCT_EDIT)
+    if (body.sellPrice !== undefined) requirePermission(req.staff, StaffPermission.PRODUCT_EDIT_PRICE)
+    next()
   } catch (error) {
     next(error)
   }

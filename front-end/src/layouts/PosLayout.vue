@@ -219,24 +219,14 @@ provide('posRegisterApi', registerApi)
               </div>
               <div class="my-1 h-px bg-pos-line" />
               <RouterLink
-                v-if="auth.isManager"
-                to="/admin"
+                v-if="auth.adminHome"
+                :to="auth.adminHome"
                 class="pos-menu-item"
                 role="menuitem"
                 @click="userMenuOpen = false"
               >
                 <Settings class="h-4 w-4 text-pos-muted" />
                 {{ $t('pos.userMenu.adminPanel') }}
-              </RouterLink>
-              <RouterLink
-                v-if="!auth.isManager && auth.canManageCatalog"
-                to="/admin/products"
-                class="pos-menu-item"
-                role="menuitem"
-                @click="userMenuOpen = false"
-              >
-                <Package class="h-4 w-4 text-pos-muted" />
-                {{ $t('pos.userMenu.catalog') }}
               </RouterLink>
               <button type="button" class="pos-menu-item" role="menuitem" @click="handleLogout">
                 <LogOut class="h-4 w-4 text-pos-muted rtl:rotate-180" />

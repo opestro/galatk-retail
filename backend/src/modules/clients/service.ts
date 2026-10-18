@@ -1,9 +1,9 @@
 import prisma from '../../resources/database/initDatabase.js'
 import { CustomError } from '../../shared/types/error_type.js'
-import { AuthenticatedStaff, assertShopAccess, requireMinRole } from '../../shared/middlewares/shopScope.js'
+import { AuthenticatedStaff, assertShopAccess, requirePermission } from '../../shared/middlewares/shopScope.js'
 import { CreateClientInput, UpdateClientInput } from './types.js'
 import { Decimal } from '@prisma/client/runtime/library'
-import { Prisma, StaffRole } from '@prisma/client'
+import { Prisma, StaffRole, StaffPermission } from '@prisma/client'
 
 const LEDGER_PREVIEW_LIMIT = 10
 
@@ -46,7 +46,7 @@ export async function createClient(
   input: CreateClientInput,
 ) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.CLIENT_EDIT)
 
   if (!input.name?.trim() || !input.phone?.trim()) {
     throw new CustomError('VALIDATION_ERROR', 'Name and phone are required', 400)
@@ -117,7 +117,7 @@ export async function updateClient(
   clientId: string,
   input: UpdateClientInput,
 ) {
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.CLIENT_EDIT)
   const client = await getClientForStaff(staff, clientId)
 
   try {
@@ -151,7 +151,7 @@ export async function deactivateClient(staff: AuthenticatedStaff, clientId: stri
 }
 
 export async function deleteClient(staff: AuthenticatedStaff, clientId: string) {
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.CLIENT_EDIT)
   const client = await getClientForStaff(staff, clientId)
 
   if (client.balance.gt(0)) {
@@ -166,7 +166,7 @@ export async function deleteClient(staff: AuthenticatedStaff, clientId: string) 
 }
 
 export async function getClientLedger(staff: AuthenticatedStaff, clientId: string) {
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.CLIENT_VIEW)
   await getClientForStaff(staff, clientId)
 
   return prisma.clientLedgerEntry.findMany({

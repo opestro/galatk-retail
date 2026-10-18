@@ -1,4 +1,4 @@
-import { SaleStatus, StaffRole } from '@prisma/client'
+import { SaleStatus } from '@prisma/client'
 import { CustomError } from '../types/error_type.js'
 
 export function isSameCalendarDay(date: Date): boolean {
@@ -11,7 +11,7 @@ export function isSameCalendarDay(date: Date): boolean {
 }
 
 export function assertCanVoidSale(
-  staffRole: StaffRole,
+  canVoidAny: boolean,
   staffId: string,
   sale: { cashierId: string; status: SaleStatus; createdAt: Date },
 ): void {
@@ -19,7 +19,8 @@ export function assertCanVoidSale(
     throw new CustomError('ALREADY_VOIDED', 'Sale is already voided', 400)
   }
 
-  if (staffRole === StaffRole.CASHIER) {
+  // Without SALE_VOID_ANY a staff member may only void their own same-day sales.
+  if (!canVoidAny) {
     if (sale.cashierId !== staffId) {
       throw new CustomError('VOID_DENIED', 'Cashiers can only void their own sales', 403)
     }

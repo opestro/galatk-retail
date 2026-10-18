@@ -15,11 +15,34 @@ enum StaffRole {
   CASHIER
 }
 
-/// Extra privileges an owner/manager can grant to a CASHIER (managers and owners have them all).
+/// Fine-grained abilities. Each role (except OWNER, who has all) gets a set the owner edits in the Roles screen.
 enum StaffPermission {
-  MANAGE_CATALOG
-  EDIT_PRICE
-  GIVE_DISCOUNT
+  PRODUCT_VIEW
+  PRODUCT_CREATE
+  PRODUCT_EDIT
+  PRODUCT_EDIT_PRICE
+  PRODUCT_DELETE
+  STOCK_VIEW
+  STOCK_ADJUST
+  INBOUND_VIEW
+  INBOUND_CREATE
+  ORDER_VIEW
+  ORDER_PROCESS
+  ORDER_EDIT
+  ORDER_CANCEL
+  SALE_EDIT_PRICE
+  SALE_DISCOUNT
+  SALE_PAY_LATER
+  SALE_VOID_ANY
+  CLIENT_VIEW
+  CLIENT_EDIT
+  CREDIT_MANAGE
+  CHARGES_VIEW
+  CHARGES_MANAGE
+  DASHBOARD_VIEW
+  STAFF_MANAGE
+  SETTINGS_MANAGE
+  SHOPS_MANAGE
 }
 
 enum PaymentMethod {
@@ -107,6 +130,24 @@ model Shop {
   shopCharges      ShopCharge[]
 }
 
+/// Permissions granted to every staff member of a role. Missing row = built-in default.
+model RolePermissionSet {
+  role        StaffRole         @id
+  permissions StaffPermission[] @default([])
+  updatedAt   DateTime          @updatedAt
+}
+
+/// Custom, owner-defined group (like a Discord role). Members get its permissions on top of their base role.
+model StaffGroup {
+  id          String            @id @default(uuid())
+  name        String            @unique
+  permissions StaffPermission[] @default([])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  members StaffUser[]
+}
+
 model StaffUser {
   id           String    @id @default(uuid())
   email        String    @unique
@@ -114,6 +155,7 @@ model StaffUser {
   name         String
   role         StaffRole
   permissions  StaffPermission[] @default([])
+  groups       StaffGroup[]
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt

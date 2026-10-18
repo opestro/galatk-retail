@@ -117,7 +117,7 @@ watch(() => auth.selectedShopId, load)
       :subtitle="loading ? '' : t('admin.clients.subtitle', { n: formatCount(clients.length) }, clients.length)"
     >
       <template #actions>
-        <button v-if="auth.isManager" type="button" class="pos-btn-primary" @click="openForm">
+        <button v-if="auth.can('CLIENT_EDIT')" type="button" class="pos-btn-primary" @click="openForm">
           <Plus class="h-4 w-4" />
           {{ t('admin.clients.add') }}
         </button>

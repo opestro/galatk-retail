@@ -225,7 +225,7 @@ function checkout() {
   if (!cart.lines.length) return
   if (cart.selectedClient && (cart.checkoutMode === 'payLater' || cart.checkoutMode === 'partial' || cart.amountOnCredit > 0)) {
     if (cart.creditLimitExceeded) {
-      if (!auth.isManager) {
+      if (!auth.canPayLater) {
         error.value = t('pos.register.errorCreditLimit')
         return
       }

@@ -432,7 +432,8 @@
       "staff": "Personnel",
       "settings": "Paramètres",
       "network": "Réseau",
-      "logout": "Déconnexion"
+      "logout": "Déconnexion",
+      "roles": "Rôles"
     },
     "a11y": {
       "openMenu": "Ouvrir le menu",
@@ -936,7 +937,11 @@
       "updated": "Membre mis à jour",
       "updateFailed": "Impossible de mettre à jour le membre",
       "colPerms": "Privilèges",
-      "none": "Aucun"
+      "none": "Aucun",
+      "colGroups": "Groupes",
+      "groups": "Groupes",
+      "groupsHint": "Les permissions des groupes s'ajoutent à celles du rôle.",
+      "editGroups": "Groupes de {name}"
     },
     "settings": {
       "saved": "Paramètres enregistrés",
@@ -1050,6 +1055,148 @@
       "variantCount": "{n} variante | {n} variantes",
       "applied": "Prix mis à jour",
       "applyError": "Certains prix n'ont pas pu être mis à jour"
+    },
+    "roles": {
+      "title": "Rôles et permissions",
+      "subtitle": "Choisissez ce que chaque rôle peut faire. Les changements s'appliquent à tous ceux qui ont ce rôle.",
+      "count": "{n} autorisées",
+      "ownerNote": "Le propriétaire a toujours un accès complet.",
+      "hint": "Que peut faire un(e) {role} ?",
+      "reset": "Rétablir par défaut",
+      "save": "Enregistrer le rôle",
+      "saved": "Rôle mis à jour",
+      "saveError": "Impossible d'enregistrer ce rôle",
+      "loadError": "Impossible de charger les rôles",
+      "group": {
+        "products": "Produits",
+        "stock": "Stock et réceptions",
+        "orders": "Commandes",
+        "sales": "Ventes en caisse",
+        "clients": "Clients et crédit",
+        "finance": "Finances",
+        "admin": "Administration"
+      },
+      "perm": {
+        "PRODUCT_VIEW": {
+          "label": "Voir les produits",
+          "desc": "Consulter la liste et les détails des produits."
+        },
+        "PRODUCT_CREATE": {
+          "label": "Ajouter des produits",
+          "desc": "Créer des produits, des variantes et téléverser des images."
+        },
+        "PRODUCT_EDIT": {
+          "label": "Modifier les produits",
+          "desc": "Changer noms, descriptions, images et détails des variantes."
+        },
+        "PRODUCT_EDIT_PRICE": {
+          "label": "Modifier les prix produits",
+          "desc": "Utiliser le panneau Tarification et changer les prix."
+        },
+        "PRODUCT_DELETE": {
+          "label": "Supprimer des produits",
+          "desc": "Supprimer un produit, une couleur, une taille ou une variante."
+        },
+        "STOCK_VIEW": {
+          "label": "Voir le stock",
+          "desc": "Consulter les niveaux de stock."
+        },
+        "STOCK_ADJUST": {
+          "label": "Ajuster le stock",
+          "desc": "Modifier la quantité d'une variante."
+        },
+        "INBOUND_VIEW": {
+          "label": "Voir les réceptions",
+          "desc": "Consulter les transferts reçus."
+        },
+        "INBOUND_CREATE": {
+          "label": "Enregistrer des réceptions",
+          "desc": "Enregistrer un transfert, ce qui ajoute du stock."
+        },
+        "ORDER_VIEW": {
+          "label": "Voir les commandes",
+          "desc": "Consulter les commandes en ligne."
+        },
+        "ORDER_PROCESS": {
+          "label": "Traiter les commandes",
+          "desc": "Changer le statut et finaliser les commandes."
+        },
+        "ORDER_EDIT": {
+          "label": "Modifier les lignes",
+          "desc": "Ajouter ou retirer des articles d'une commande."
+        },
+        "ORDER_CANCEL": {
+          "label": "Annuler des commandes",
+          "desc": "Annuler une commande en ligne."
+        },
+        "SALE_EDIT_PRICE": {
+          "label": "Modifier le prix en caisse",
+          "desc": "Changer le prix d'une ligne pendant une vente."
+        },
+        "SALE_DISCOUNT": {
+          "label": "Accorder des remises",
+          "desc": "Appliquer une remise à une vente."
+        },
+        "SALE_PAY_LATER": {
+          "label": "Vendre à crédit",
+          "desc": "Ventes à payer plus tard et dépassement de la limite de crédit."
+        },
+        "SALE_VOID_ANY": {
+          "label": "Annuler toute vente",
+          "desc": "Sans cela, le personnel n'annule que ses propres ventes du jour."
+        },
+        "CLIENT_VIEW": {
+          "label": "Voir les clients",
+          "desc": "Consulter les clients, leur historique et leur compte."
+        },
+        "CLIENT_EDIT": {
+          "label": "Modifier les clients",
+          "desc": "Créer, modifier et supprimer des clients."
+        },
+        "CREDIT_MANAGE": {
+          "label": "Gérer le crédit",
+          "desc": "Annuler des paiements, ajuster les soldes et utiliser les relances."
+        },
+        "CHARGES_VIEW": {
+          "label": "Voir les charges",
+          "desc": "Consulter les dépenses de la boutique."
+        },
+        "CHARGES_MANAGE": {
+          "label": "Gérer les charges",
+          "desc": "Créer et annuler des charges."
+        },
+        "DASHBOARD_VIEW": {
+          "label": "Voir le tableau de bord",
+          "desc": "Consulter les ventes et chiffres financiers."
+        },
+        "STAFF_MANAGE": {
+          "label": "Gérer le personnel",
+          "desc": "Ajouter du personnel et changer ses boutiques."
+        },
+        "SETTINGS_MANAGE": {
+          "label": "Gérer les paramètres",
+          "desc": "Bannière du site et tarifs de livraison."
+        },
+        "SHOPS_MANAGE": {
+          "label": "Gérer les boutiques",
+          "desc": "Voir et modifier les boutiques."
+        }
+      },
+      "rolesTitle": "Rôles",
+      "groupsTitle": "Groupes",
+      "newGroup": "Nouveau groupe",
+      "groupName": "Nom du groupe",
+      "groupNamePlaceholder": "ex. Magasinier",
+      "members": "{n} membre | {n} membres",
+      "groupHintNew": "Les membres de ce groupe obtiennent ces permissions en plus de leur rôle.",
+      "groupHint": "{n} membre obtient ces permissions en plus de son rôle. | {n} membres obtiennent ces permissions en plus de leur rôle.",
+      "deleteGroup": "Supprimer le groupe",
+      "deleteTitle": "Supprimer le groupe « {name} » ?",
+      "deleteBody": "{n} membre perdra les permissions de ce groupe. | {n} membres perdront les permissions de ce groupe.",
+      "create": "Créer le groupe",
+      "created": "Groupe créé",
+      "deleted": "Groupe supprimé",
+      "nameRequired": "Donnez un nom au groupe"
     }
   },
   "pos": {

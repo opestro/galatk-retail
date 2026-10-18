@@ -137,7 +137,7 @@ watch(() => auth.selectedShopId, load)
   <div class="page-shell">
     <PageHeader :title="t('admin.charges.title')" :subtitle="t('admin.charges.subtitle')">
       <template #actions>
-        <button v-if="auth.isManager" type="button" class="pos-btn-primary" @click="openForm">
+        <button v-if="auth.can('CHARGES_MANAGE')" type="button" class="pos-btn-primary" @click="openForm">
           <Plus class="h-4 w-4" />
           {{ t('admin.charges.add') }}
         </button>
@@ -176,7 +176,7 @@ watch(() => auth.selectedShopId, load)
               <th scope="col">{{ t('admin.clientProfile.colBy') }}</th>
               <th scope="col" class="pos-cell-num">{{ t('pos.table.amount') }}</th>
               <th scope="col">{{ t('pos.table.status') }}</th>
-              <th v-if="auth.isManager" scope="col" class="pos-cell-actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
+              <th v-if="auth.can('CHARGES_MANAGE')" scope="col" class="pos-cell-actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -196,7 +196,7 @@ watch(() => auth.selectedShopId, load)
                   <span class="pos-dot" />{{ charge.status === 'ACTIVE' ? t('admin.charges.statusActive') : t('admin.charges.statusVoided') }}
                 </span>
               </td>
-              <td v-if="auth.isManager" class="pos-cell-actions">
+              <td v-if="auth.can('CHARGES_MANAGE')" class="pos-cell-actions">
                 <PosRowMenu v-if="charge.status === 'ACTIVE'" :label="t('pos.table.moreActions')">
                   <button type="button" role="menuitem" class="pos-menu-item pos-menu-item-danger" @click="voidTarget = charge">
                     <Ban class="h-4 w-4" />

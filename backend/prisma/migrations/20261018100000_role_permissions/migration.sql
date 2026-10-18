@@ -1,0 +1,37 @@
+-- Rename the three legacy permissions, then add the new ones.
+ALTER TYPE "StaffPermission" RENAME VALUE 'MANAGE_CATALOG' TO 'PRODUCT_VIEW';
+ALTER TYPE "StaffPermission" RENAME VALUE 'EDIT_PRICE' TO 'SALE_EDIT_PRICE';
+ALTER TYPE "StaffPermission" RENAME VALUE 'GIVE_DISCOUNT' TO 'SALE_DISCOUNT';
+
+ALTER TYPE "StaffPermission" ADD VALUE 'PRODUCT_CREATE';
+ALTER TYPE "StaffPermission" ADD VALUE 'PRODUCT_EDIT';
+ALTER TYPE "StaffPermission" ADD VALUE 'PRODUCT_EDIT_PRICE';
+ALTER TYPE "StaffPermission" ADD VALUE 'PRODUCT_DELETE';
+ALTER TYPE "StaffPermission" ADD VALUE 'STOCK_VIEW';
+ALTER TYPE "StaffPermission" ADD VALUE 'STOCK_ADJUST';
+ALTER TYPE "StaffPermission" ADD VALUE 'INBOUND_VIEW';
+ALTER TYPE "StaffPermission" ADD VALUE 'INBOUND_CREATE';
+ALTER TYPE "StaffPermission" ADD VALUE 'ORDER_VIEW';
+ALTER TYPE "StaffPermission" ADD VALUE 'ORDER_PROCESS';
+ALTER TYPE "StaffPermission" ADD VALUE 'ORDER_EDIT';
+ALTER TYPE "StaffPermission" ADD VALUE 'ORDER_CANCEL';
+ALTER TYPE "StaffPermission" ADD VALUE 'SALE_PAY_LATER';
+ALTER TYPE "StaffPermission" ADD VALUE 'SALE_VOID_ANY';
+ALTER TYPE "StaffPermission" ADD VALUE 'CLIENT_VIEW';
+ALTER TYPE "StaffPermission" ADD VALUE 'CLIENT_EDIT';
+ALTER TYPE "StaffPermission" ADD VALUE 'CREDIT_MANAGE';
+ALTER TYPE "StaffPermission" ADD VALUE 'CHARGES_VIEW';
+ALTER TYPE "StaffPermission" ADD VALUE 'CHARGES_MANAGE';
+ALTER TYPE "StaffPermission" ADD VALUE 'DASHBOARD_VIEW';
+ALTER TYPE "StaffPermission" ADD VALUE 'STAFF_MANAGE';
+ALTER TYPE "StaffPermission" ADD VALUE 'SETTINGS_MANAGE';
+ALTER TYPE "StaffPermission" ADD VALUE 'SHOPS_MANAGE';
+
+-- CreateTable
+CREATE TABLE "RolePermissionSet" (
+    "role" "StaffRole" NOT NULL,
+    "permissions" "StaffPermission"[] DEFAULT ARRAY[]::"StaffPermission"[],
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RolePermissionSet_pkey" PRIMARY KEY ("role")
+);

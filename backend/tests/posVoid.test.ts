@@ -24,26 +24,26 @@ describe('assertCanVoidSale', () => {
 
   it('allows cashier to void own same-day sale', () => {
     expect(() =>
-      assertCanVoidSale(StaffRole.CASHIER, 'cashier-1', baseSale),
+      assertCanVoidSale(false, 'cashier-1', baseSale),
     ).not.toThrow()
   })
 
   it('denies cashier voiding another cashiers sale', () => {
     expect(() =>
-      assertCanVoidSale(StaffRole.CASHIER, 'cashier-2', baseSale),
+      assertCanVoidSale(false, 'cashier-2', baseSale),
     ).toThrow(CustomError)
   })
 
   it('allows manager to void any sale', () => {
     const oldSale = { ...baseSale, createdAt: new Date('2020-01-01') }
     expect(() =>
-      assertCanVoidSale(StaffRole.MANAGER, 'manager-1', oldSale),
+      assertCanVoidSale(true, 'manager-1', oldSale),
     ).not.toThrow()
   })
 
   it('allows owner to void a sale they rang up as cashier', () => {
     expect(() =>
-      assertCanVoidSale(StaffRole.OWNER, 'owner-1', {
+      assertCanVoidSale(true, 'owner-1', {
         ...baseSale,
         cashierId: 'owner-1',
       }),
@@ -52,7 +52,7 @@ describe('assertCanVoidSale', () => {
 
   it('rejects already voided sale', () => {
     expect(() =>
-      assertCanVoidSale(StaffRole.OWNER, 'owner-1', {
+      assertCanVoidSale(true, 'owner-1', {
         ...baseSale,
         status: SaleStatus.CANCELLED,
       }),

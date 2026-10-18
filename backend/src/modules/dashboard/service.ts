@@ -1,6 +1,6 @@
 import prisma from '../../resources/database/initDatabase.js'
-import { AuthenticatedStaff, assertShopAccess, requireMinRole } from '../../shared/middlewares/shopScope.js'
-import { ClientPaymentStatus, SaleStatus, ShopChargeStatus, StaffRole } from '@prisma/client'
+import { AuthenticatedStaff, assertShopAccess, requirePermission } from '../../shared/middlewares/shopScope.js'
+import { ClientPaymentStatus, SaleStatus, ShopChargeStatus, StaffRole, StaffPermission } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
 import { CustomError } from '../../shared/types/error_type.js'
 
@@ -33,7 +33,7 @@ export interface NetworkFinancialSummary {
 
 export async function getShopSummary(staff: AuthenticatedStaff, shopId: string) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.DASHBOARD_VIEW)
 
   const todayStart = new Date()
   todayStart.setUTCHours(0, 0, 0, 0)
@@ -158,7 +158,7 @@ export async function getFinancialSummary(
   to?: string,
 ) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.DASHBOARD_VIEW)
   return computeFinancialSummary(shopId, from, to)
 }
 

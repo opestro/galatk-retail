@@ -432,7 +432,8 @@
       "staff": "Staff",
       "settings": "Settings",
       "network": "Network",
-      "logout": "Logout"
+      "logout": "Logout",
+      "roles": "Roles"
     },
     "a11y": {
       "openMenu": "Open menu",
@@ -936,7 +937,11 @@
       "updated": "Team member updated",
       "updateFailed": "Could not update the team member",
       "colPerms": "Privileges",
-      "none": "None"
+      "none": "None",
+      "colGroups": "Groups",
+      "groups": "Groups",
+      "groupsHint": "Group permissions are added to the role's.",
+      "editGroups": "Groups for {name}"
     },
     "settings": {
       "saved": "Settings saved",
@@ -1050,6 +1055,148 @@
       "variantCount": "{n} variant | {n} variants",
       "applied": "Prices updated",
       "applyError": "Some prices could not be updated"
+    },
+    "roles": {
+      "title": "Roles & permissions",
+      "subtitle": "Choose what each role can do. Changes apply to everyone with that role.",
+      "count": "{n} allowed",
+      "ownerNote": "Owners always have full access.",
+      "hint": "What can a {role} do?",
+      "reset": "Reset to default",
+      "save": "Save role",
+      "saved": "Role updated",
+      "saveError": "Could not save this role",
+      "loadError": "Could not load roles",
+      "group": {
+        "products": "Products",
+        "stock": "Stock & inbound",
+        "orders": "Orders",
+        "sales": "Register sales",
+        "clients": "Clients & credit",
+        "finance": "Finance",
+        "admin": "Administration"
+      },
+      "perm": {
+        "PRODUCT_VIEW": {
+          "label": "View products",
+          "desc": "See the product list and details."
+        },
+        "PRODUCT_CREATE": {
+          "label": "Add products",
+          "desc": "Create products, variants and upload images."
+        },
+        "PRODUCT_EDIT": {
+          "label": "Edit products",
+          "desc": "Change names, descriptions, images and variant details."
+        },
+        "PRODUCT_EDIT_PRICE": {
+          "label": "Edit product prices",
+          "desc": "Use the Pricing panel and change variant prices."
+        },
+        "PRODUCT_DELETE": {
+          "label": "Delete products",
+          "desc": "Delete a product, color, size or variant."
+        },
+        "STOCK_VIEW": {
+          "label": "View stock",
+          "desc": "See stock levels."
+        },
+        "STOCK_ADJUST": {
+          "label": "Adjust stock",
+          "desc": "Change a variant's quantity."
+        },
+        "INBOUND_VIEW": {
+          "label": "View inbound transfers",
+          "desc": "See received transfers."
+        },
+        "INBOUND_CREATE": {
+          "label": "Receive inbound transfers",
+          "desc": "Record a transfer, which adds stock."
+        },
+        "ORDER_VIEW": {
+          "label": "View orders",
+          "desc": "See online orders."
+        },
+        "ORDER_PROCESS": {
+          "label": "Process orders",
+          "desc": "Change order status and complete orders."
+        },
+        "ORDER_EDIT": {
+          "label": "Edit order lines",
+          "desc": "Add or remove items on an order."
+        },
+        "ORDER_CANCEL": {
+          "label": "Cancel orders",
+          "desc": "Cancel an online order."
+        },
+        "SALE_EDIT_PRICE": {
+          "label": "Edit price at the register",
+          "desc": "Override a line price during a sale."
+        },
+        "SALE_DISCOUNT": {
+          "label": "Give discounts",
+          "desc": "Apply a discount to a sale."
+        },
+        "SALE_PAY_LATER": {
+          "label": "Sell on credit",
+          "desc": "Pay-later sales and exceeding a client's credit limit."
+        },
+        "SALE_VOID_ANY": {
+          "label": "Void any sale",
+          "desc": "Without this, staff can only void their own same-day sales."
+        },
+        "CLIENT_VIEW": {
+          "label": "View clients",
+          "desc": "See clients, their history and ledger."
+        },
+        "CLIENT_EDIT": {
+          "label": "Edit clients",
+          "desc": "Create, edit and delete clients."
+        },
+        "CREDIT_MANAGE": {
+          "label": "Manage credit",
+          "desc": "Void payments, adjust balances and use reminders."
+        },
+        "CHARGES_VIEW": {
+          "label": "View charges",
+          "desc": "See shop expenses."
+        },
+        "CHARGES_MANAGE": {
+          "label": "Manage charges",
+          "desc": "Create and void charges."
+        },
+        "DASHBOARD_VIEW": {
+          "label": "View dashboard",
+          "desc": "See shop sales and financial figures."
+        },
+        "STAFF_MANAGE": {
+          "label": "Manage staff",
+          "desc": "Add staff and change their shops."
+        },
+        "SETTINGS_MANAGE": {
+          "label": "Manage settings",
+          "desc": "Site banner and delivery rates."
+        },
+        "SHOPS_MANAGE": {
+          "label": "Manage shops",
+          "desc": "See and edit shop details."
+        }
+      },
+      "rolesTitle": "Roles",
+      "groupsTitle": "Groups",
+      "newGroup": "New group",
+      "groupName": "Group name",
+      "groupNamePlaceholder": "e.g. Stock keeper",
+      "members": "{n} member | {n} members",
+      "groupHintNew": "Members of this group get these permissions on top of their role.",
+      "groupHint": "{n} member gets these on top of their role. | {n} members get these on top of their role.",
+      "deleteGroup": "Delete group",
+      "deleteTitle": "Delete group \"{name}\"?",
+      "deleteBody": "{n} member will lose the permissions from this group. | {n} members will lose the permissions from this group.",
+      "create": "Create group",
+      "created": "Group created",
+      "deleted": "Group deleted",
+      "nameRequired": "Give the group a name"
     }
   },
   "pos": {
