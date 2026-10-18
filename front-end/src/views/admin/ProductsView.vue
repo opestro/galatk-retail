@@ -28,6 +28,7 @@ const canManage = computed(() => auth.can('PRODUCT_CREATE'))
 const canDelete = computed(() => auth.can('PRODUCT_DELETE'))
 const toDelete = ref<ProductFamily | null>(null)
 const deleting = ref(false)
+const confirmAll = ref(false)
 const error = ref('')
 
 const displayed = computed(() => {
@@ -81,6 +82,22 @@ async function confirmDelete() {
   }
 }
 
+async function confirmDeleteAll() {
+  const targets = displayed.value.map((f) => f.id)
+  if (!targets.length) return
+  deleting.value = true
+  error.value = ''
+  // One by one: products used in sales/orders are refused by the API and simply stay.
+  const results = await Promise.allSettled(targets.map((id) => deleteProductFamily(id)))
+  const gone = new Set(targets.filter((_, i) => results[i].status === 'fulfilled'))
+  const kept = targets.length - gone.size
+  families.value = families.value.filter((f) => !gone.has(f.id))
+  if (kept) error.value = t('admin.products.bulkPartial', { removed: formatCount(gone.size), kept: formatCount(kept) })
+  else toast.success(t('admin.products.bulkDeleted', { n: formatCount(gone.size) }, gone.size))
+  confirmAll.value = false
+  deleting.value = false
+}
+
 function openProduct(family: ProductFamily) {
   void router.push({ name: 'admin-product-detail', params: { familyId: family.id } })
 }
@@ -105,6 +122,10 @@ watch(() => auth.selectedShopId, loadProducts)
       :subtitle="loading ? '' : t('admin.products.subtitle', { n: formatCount(families.length), available: formatCount(availableCount) }, families.length)"
     >
       <template #actions>
+        <button v-if="canDelete && displayed.length" type="button" class="pos-btn-ghost text-pos-err" @click="confirmAll = true">
+          <Trash2 class="h-4 w-4" />
+          {{ t('admin.products.deleteAll') }}
+        </button>
         <RouterLink v-if="canManage" :to="{ name: 'admin-product-create' }" class="pos-btn-primary">
           <Plus class="h-4 w-4" />
           {{ t('admin.products.add') }}
@@ -233,6 +254,17 @@ watch(() => auth.selectedShopId, loadProducts)
       :busy="deleting"
       @close="toDelete = null"
       @confirm="confirmDelete"
+    />
+
+    <AdminConfirm
+      v-if="confirmAll"
+      :title="t('admin.products.deleteAllTitle')"
+      :body="t('admin.products.confirmDeleteAll', { n: formatCount(displayed.length) }, displayed.length)"
+      :confirm-label="t('admin.products.deleteAll')"
+      danger
+      :busy="deleting"
+      @close="confirmAll = false"
+      @confirm="confirmDeleteAll"
     />
   </div>
 </template>

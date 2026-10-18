@@ -628,7 +628,12 @@
       "deleteTitle": "Supprimer « {name} » ?",
       "confirmDelete": "Cela supprime définitivement le produit avec toutes ses variantes, son stock et ses images. Un produit déjà utilisé dans des ventes, commandes ou transferts ne peut pas être supprimé — désactivez-le plutôt.",
       "deleted": "Produit supprimé",
-      "deleteError": "Impossible de supprimer ce produit"
+      "deleteError": "Impossible de supprimer ce produit",
+      "deleteAll": "Tout supprimer",
+      "deleteAllTitle": "Supprimer tous les produits ?",
+      "confirmDeleteAll": "Cela supprime définitivement {n} produit avec ses variantes, son stock et ses images. Les produits déjà utilisés dans des ventes, commandes ou transferts ne peuvent pas être supprimés et seront conservés. | Cela supprime définitivement {n} produits avec leurs variantes, leur stock et leurs images. Les produits déjà utilisés dans des ventes, commandes ou transferts ne peuvent pas être supprimés et seront conservés.",
+      "bulkDeleted": "{n} produit supprimé | {n} produits supprimés",
+      "bulkPartial": "{removed} supprimé(s), {kept} conservé(s) car utilisés dans des ventes, commandes ou transferts."
     },
     "dashboard": {
       "title": "Tableau de bord",

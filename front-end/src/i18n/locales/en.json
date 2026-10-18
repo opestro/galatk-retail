@@ -628,7 +628,12 @@
       "deleteTitle": "Delete \"{name}\"?",
       "confirmDelete": "This permanently deletes the product with all its variants, stock and images. Products that already have sales, orders or transfers can't be deleted — mark them inactive instead.",
       "deleted": "Product deleted",
-      "deleteError": "Could not delete this product"
+      "deleteError": "Could not delete this product",
+      "deleteAll": "Delete all",
+      "deleteAllTitle": "Delete all products?",
+      "confirmDeleteAll": "This permanently deletes {n} product with all its variants, stock and images. Products already used in sales, orders or transfers can't be deleted and will be kept. | This permanently deletes {n} products with all their variants, stock and images. Products already used in sales, orders or transfers can't be deleted and will be kept.",
+      "bulkDeleted": "{n} product deleted | {n} products deleted",
+      "bulkPartial": "{removed} deleted, {kept} kept because they are used in sales, orders or transfers."
     },
     "dashboard": {
       "title": "Dashboard",
