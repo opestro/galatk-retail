@@ -553,7 +553,8 @@
       "confirmDelete": "Supprimer cette variante ? Cette action est irréversible.",
       "deleteTitle": "Supprimer la variante",
       "stockEditHint": "Modifiez le stock directement — les changements sont enregistrés quand vous quittez le champ.",
-      "stockFor": "Stock de {name}"
+      "stockFor": "Stock de {name}",
+      "noSize": "Sans taille"
     },
     "product": {
       "name": "Nom du produit",
@@ -1017,6 +1018,25 @@
     },
     "confirm": {
       "irreversible": "Cette action est irréversible."
+    },
+    "pricing": {
+      "title": "Tarification",
+      "ruleAll": "Produit complet",
+      "ruleSize": "Par taille",
+      "ruleColor": "Par couleur",
+      "hintAll": "Un seul prix pour toutes les variantes de ce produit.",
+      "hintSize": "Un prix par taille, appliqué à toutes les couleurs.",
+      "hintColor": "Un prix par couleur, appliqué à toutes les tailles.",
+      "wholeProduct": "Toutes les variantes",
+      "mixed": "Variable",
+      "priceFor": "Prix pour {name}",
+      "apply": "Appliquer les prix",
+      "noChange": "Modifiez un prix pour l'appliquer.",
+      "belowCost": "{n} variante est vendue sous son coût | {n} variantes sont vendues sous leur coût",
+      "willChange": "{n} variante sera mise à jour | {n} variantes seront mises à jour",
+      "variantCount": "{n} variante | {n} variantes",
+      "applied": "Prix mis à jour",
+      "applyError": "Certains prix n'ont pas pu être mis à jour"
     }
   },
   "pos": {

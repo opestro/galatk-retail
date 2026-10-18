@@ -553,7 +553,8 @@
       "confirmDelete": "Delete this variant? This cannot be undone.",
       "deleteTitle": "Delete variant",
       "stockEditHint": "Edit stock inline — changes save when you leave the field.",
-      "stockFor": "Stock for {name}"
+      "stockFor": "Stock for {name}",
+      "noSize": "No size"
     },
     "product": {
       "name": "Product name",
@@ -1017,6 +1018,25 @@
     },
     "confirm": {
       "irreversible": "This can't be undone."
+    },
+    "pricing": {
+      "title": "Pricing",
+      "ruleAll": "Whole product",
+      "ruleSize": "By size",
+      "ruleColor": "By color",
+      "hintAll": "One price for every variant of this product.",
+      "hintSize": "One price per size, applied to every color.",
+      "hintColor": "One price per color, applied to every size.",
+      "wholeProduct": "All variants",
+      "mixed": "Mixed",
+      "priceFor": "Price for {name}",
+      "apply": "Apply prices",
+      "noChange": "Edit a price to apply it.",
+      "belowCost": "{n} variant is priced below its cost | {n} variants are priced below their cost",
+      "willChange": "{n} variant will be updated | {n} variants will be updated",
+      "variantCount": "{n} variant | {n} variants",
+      "applied": "Prices updated",
+      "applyError": "Some prices could not be updated"
     }
   },
   "pos": {

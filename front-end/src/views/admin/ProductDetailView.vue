@@ -26,6 +26,7 @@ import ProductEditorShell from '@/components/admin/products/ProductEditorShell.v
 import ProductInformationCard from '@/components/admin/products/ProductInformationCard.vue'
 import ProductImageManager from '@/components/admin/products/ProductImageManager.vue'
 import VariantTable from '@/components/admin/products/VariantTable.vue'
+import PricingRules from '@/components/admin/products/PricingRules.vue'
 import VariantModal from '@/components/admin/products/VariantModal.vue'
 import AdminConfirm from '@/components/admin/AdminConfirm.vue'
 import { useToast } from '@/composables/useToast'
@@ -313,6 +314,22 @@ async function saveEdit() {
   }
 }
 
+async function applyPrices(changes: { id: string; sellPrice: number }[]) {
+  if (!family.value) return
+  variantBusy.value = true
+  error.value = ''
+  const results = await Promise.allSettled(changes.map((c) => updateProduct(c.id, { sellPrice: c.sellPrice })))
+  const failed = results.filter((r) => r.status === 'rejected').length
+  try {
+    applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
+  } catch {
+    // The list below stays stale until the next reload; the toast still reports the outcome.
+  }
+  if (failed) error.value = t('admin.pricing.applyError')
+  else toast.success(t('admin.pricing.applied'))
+  variantBusy.value = false
+}
+
 async function confirmDelete() {
   if (!confirmDeleteId.value || !family.value) return
   variantBusy.value = true
@@ -459,6 +476,10 @@ async function onSetPrimary(imageId: string) {
       </template>
 
       <template #variants>
+        <template v-if="canManage && family.variants.length">
+          <PricingRules :variants="family.variants" :busy="variantBusy" @apply="applyPrices" />
+          <hr class="border-pos-line" />
+        </template>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="section-title">{{ t('admin.variant.sectionTitle') }}</h2>
