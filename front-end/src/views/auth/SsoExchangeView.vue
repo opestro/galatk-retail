@@ -25,7 +25,7 @@ onMounted(async () => {
   try {
     const { data } = await api.post<LoginResponse>('/auth/sso/exchange', { code })
     auth.setSession(data)
-    await router.replace(data.staff.role === 'CASHIER' ? '/pos' : '/admin')
+    await router.replace(auth.homePath)
   } catch (e: unknown) {
     status.value = 'error'
     const ax = e as { response?: { data?: { message?: string } }; message?: string }

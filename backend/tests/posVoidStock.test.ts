@@ -18,7 +18,7 @@ vi.mock('../src/resources/database/initDatabase.js', () => ({
 }))
 
 describe('voidSale stock restoration', () => {
-  const staff = { id: 'cashier-1', role: StaffRole.CASHIER, shopIds: ['shop-1'] }
+  const staff = { id: 'cashier-1', role: StaffRole.CASHIER, permissions: [], shopIds: ['shop-1'] }
   const sale = {
     id: 'sale-1',
     shopId: 'shop-1',

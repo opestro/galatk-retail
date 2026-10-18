@@ -50,7 +50,7 @@ async function loadSales() {
  */
 function canVoid(sale: Sale): boolean {
   if (sale.status !== 'COMPLETED') return false
-  if (auth.isManager) return true
+  if (auth.can('SALE_VOID_ANY')) return true
   const created = new Date(sale.createdAt)
   const now = new Date()
   return (

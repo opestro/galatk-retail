@@ -1,9 +1,9 @@
 import prisma from '../../resources/database/initDatabase.js'
 import { CustomError } from '../../shared/types/error_type.js'
-import { AuthenticatedStaff, assertShopAccess, requireMinRole } from '../../shared/middlewares/shopScope.js'
+import { AuthenticatedStaff, assertShopAccess, requirePermission } from '../../shared/middlewares/shopScope.js'
 import { isValidChargeCategory } from '../../shared/charges/categories.js'
 import { CreateChargeInput } from './types.js'
-import { ShopChargeStatus, StaffRole } from '@prisma/client'
+import { ShopChargeStatus, StaffRole, StaffPermission } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
 
 function parseDateRange(from?: string, to?: string) {
@@ -24,7 +24,7 @@ export async function listCharges(
   to?: string,
 ) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.CHARGES_VIEW)
 
   const { fromDate, toDate } = parseDateRange(from, to)
   const where: {
@@ -54,7 +54,7 @@ export async function createCharge(
   input: CreateChargeInput,
 ) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.CHARGES_MANAGE)
 
   if (!isValidChargeCategory(input.category)) {
     throw new CustomError('VALIDATION_ERROR', 'Invalid charge category', 400)
@@ -90,7 +90,7 @@ export async function voidCharge(
   reason?: string,
 ) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.CHARGES_MANAGE)
 
   const charge = await prisma.shopCharge.findFirst({
     where: { id: chargeId, shopId },

@@ -3,6 +3,7 @@ import prisma from '../../resources/database/initDatabase.js'
 import { verifyToken } from '../auth/jwt.js'
 import { CustomError } from '../types/error_type.js'
 import { AuthenticatedStaff, requirePermission } from './shopScope.js'
+import { effectivePermissions, GROUP_PERMISSIONS_SELECT } from '../auth/permissions.js'
 import { StaffPermission, StaffRole } from '@prisma/client'
 
 declare global {
@@ -38,6 +39,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
 
     const staff = await prisma.staffUser.findUnique({
       where: { id: payload.staffId },
+      include: GROUP_PERMISSIONS_SELECT,
     })
 
     if (!staff || !staff.isActive) {
@@ -51,7 +53,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       email: staff.email,
       name: staff.name,
       role: staff.role,
-      permissions: staff.permissions,
+      permissions: await effectivePermissions(staff.role, staff.permissions, staff.groups),
       shopIds,
     }
 
@@ -65,8 +67,8 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
   }
 }
 
-/** Managers/owners always pass; cashiers need the named permission. */
-export function requirePermissionOrManager(permission: StaffPermission) {
+/** Route guard: owners pass; everyone else needs the named permission. */
+export function requirePermissionMw(permission: StaffPermission) {
   return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.staff) {
       next(new CustomError('UNAUTHORIZED', 'Authentication required', 401))

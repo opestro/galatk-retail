@@ -41,7 +41,7 @@ const awaitingClient = computed(() => props.confirmStage && !cart.selectedClient
 const checkoutModes = computed<Array<{ id: CheckoutMode; label: string }>>(() => [
   { id: 'full', label: 'pos.checkout.full' },
   { id: 'partial', label: 'pos.checkout.partial' },
-  ...(auth.isManager ? [{ id: 'payLater' as const, label: 'pos.checkout.later' }] : []),
+  ...(auth.canPayLater ? [{ id: 'payLater' as const, label: 'pos.checkout.later' }] : []),
 ])
 
 const methods = [
@@ -50,7 +50,7 @@ const methods = [
 ]
 
 function setMode(mode: CheckoutMode) {
-  if (mode === 'payLater' && !auth.isManager) return
+  if (mode === 'payLater' && !auth.canPayLater) return
   cart.setCheckoutMode(mode)
 }
 

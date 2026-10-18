@@ -14,7 +14,7 @@ export async function list(req: Request, res: Response, next: NextFunction) {
 
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
-    const { email, password, name, role, shopIds, permissions } = req.body
+    const { email, password, name, role, shopIds, permissions, groupIds } = req.body
 
     if (!email || !password || !name || !role) {
       throw new CustomError('VALIDATION_ERROR', 'email, password, name, role required', 400)
@@ -26,6 +26,7 @@ export async function create(req: Request, res: Response, next: NextFunction) {
       name,
       role: role as StaffRole,
       permissions,
+      groupIds,
       shopIds: shopIds ?? [],
     })
 
@@ -38,11 +39,12 @@ export async function create(req: Request, res: Response, next: NextFunction) {
 export async function update(req: Request, res: Response, next: NextFunction) {
   try {
     const staffId = String(req.params.staffId)
-    const { role, isActive, shopIds, permissions } = req.body
+    const { role, isActive, shopIds, permissions, groupIds } = req.body
 
     const updated = await StaffService.updateStaff(req.staff!, staffId, {
       role: role as StaffRole | undefined,
       permissions,
+      groupIds,
       isActive,
       shopIds,
     })

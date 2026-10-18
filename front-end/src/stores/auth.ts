@@ -78,14 +78,33 @@ export const useAuthStore = defineStore('auth', () => {
   const isManager = computed(() => staff.value?.role === 'MANAGER' || isOwner.value)
   const isCashier = computed(() => !!staff.value)
 
-  /** Managers and owners hold every permission; cashiers only what an admin granted. */
+  /** Owners hold every permission; everyone else only what their role grants. */
   function can(permission: StaffPermission): boolean {
-    if (isManager.value) return true
+    if (isOwner.value) return true
     return !!staff.value?.permissions?.includes(permission)
   }
-  const canManageCatalog = computed(() => can('MANAGE_CATALOG'))
-  const canEditPrice = computed(() => can('EDIT_PRICE'))
-  const canGiveDiscount = computed(() => can('GIVE_DISCOUNT'))
+  const canManageCatalog = computed(() => can('PRODUCT_VIEW'))
+  const canEditPrice = computed(() => can('SALE_EDIT_PRICE'))
+  const canGiveDiscount = computed(() => can('SALE_DISCOUNT'))
+  const canPayLater = computed(() => can('SALE_PAY_LATER'))
+
+  /** Admin pages in menu order, with the permission each one needs. */
+  const ADMIN_LANDING: Array<[string, StaffPermission]> = [
+    ['/admin', 'DASHBOARD_VIEW'],
+    ['/admin/orders', 'ORDER_VIEW'],
+    ['/admin/products', 'PRODUCT_VIEW'],
+    ['/admin/stock', 'STOCK_VIEW'],
+    ['/admin/inbound', 'INBOUND_VIEW'],
+    ['/admin/clients', 'CLIENT_VIEW'],
+    ['/admin/charges', 'CHARGES_VIEW'],
+    ['/admin/shops', 'SHOPS_MANAGE'],
+    ['/admin/staff', 'STAFF_MANAGE'],
+    ['/admin/settings', 'SETTINGS_MANAGE'],
+  ]
+  /** First admin page this person may open, or null when they have none. */
+  const adminHome = computed(() => ADMIN_LANDING.find(([, p]) => can(p))?.[0] ?? null)
+  /** Where to send someone right after sign-in. */
+  const homePath = computed(() => adminHome.value ?? '/pos')
 
   return {
     token,
@@ -99,6 +118,9 @@ export const useAuthStore = defineStore('auth', () => {
     canManageCatalog,
     canEditPrice,
     canGiveDiscount,
+    canPayLater,
+    adminHome,
+    homePath,
     login,
     fetchMe,
     logout,

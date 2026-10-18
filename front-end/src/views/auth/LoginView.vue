@@ -19,11 +19,7 @@ async function handleSubmit() {
   loading.value = true
   try {
     const data = await auth.login(email.value, password.value)
-    if (data.staff.role === 'CASHIER') {
-      await router.push('/pos')
-    } else {
-      await router.push('/admin')
-    }
+    await router.push(auth.homePath)
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : t('staff.login.errorFallback')
   } finally {

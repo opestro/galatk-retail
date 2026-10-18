@@ -42,21 +42,22 @@ const router = createRouter({
       component: AdminLayout,
       meta: { requiresAuth: true, roles: ['OWNER', 'MANAGER', 'CASHIER'] },
       children: [
-        { path: '', name: 'admin-dashboard', component: () => import('@/views/admin/DashboardView.vue') },
-        { path: 'shops', name: 'admin-shops', component: () => import('@/views/admin/ShopsView.vue') },
-        { path: 'products', name: 'admin-products', component: () => import('@/views/admin/ProductsView.vue'), meta: { permission: 'MANAGE_CATALOG' } },
-        { path: 'products/new', name: 'admin-product-create', component: () => import('@/views/admin/ProductCreateView.vue'), meta: { permission: 'MANAGE_CATALOG' } },
-        { path: 'products/:familyId', name: 'admin-product-detail', component: () => import('@/views/admin/ProductDetailView.vue'), meta: { permission: 'MANAGE_CATALOG' } },
-        { path: 'stock', name: 'admin-stock', component: () => import('@/views/admin/StockView.vue') },
-        { path: 'inbound', name: 'admin-inbound', component: () => import('@/views/admin/InboundTransferView.vue') },
-        { path: 'orders', name: 'admin-orders', component: () => import('@/views/admin/OrdersView.vue') },
-        { path: 'orders/:orderId', name: 'admin-order-detail', component: () => import('@/views/admin/OrderDetailView.vue') },
-        { path: 'staff', name: 'admin-staff', component: () => import('@/views/admin/StaffView.vue') },
-        { path: 'clients', name: 'admin-clients', component: () => import('@/views/admin/ClientsView.vue') },
-        { path: 'clients/:clientId', name: 'admin-client-profile', component: () => import('@/views/admin/ClientProfileView.vue') },
-        { path: 'credit/reminders', name: 'admin-credit-reminders', component: () => import('@/views/admin/CreditRemindersView.vue') },
-        { path: 'charges', name: 'admin-charges', component: () => import('@/views/admin/ChargesView.vue') },
-        { path: 'settings', name: 'admin-settings', component: () => import('@/views/admin/ShopSettingsView.vue') },
+        { path: '', name: 'admin-dashboard', component: () => import('@/views/admin/DashboardView.vue'), meta: { permission: 'DASHBOARD_VIEW' } },
+        { path: 'shops', name: 'admin-shops', component: () => import('@/views/admin/ShopsView.vue'), meta: { permission: 'SHOPS_MANAGE' } },
+        { path: 'products', name: 'admin-products', component: () => import('@/views/admin/ProductsView.vue'), meta: { permission: 'PRODUCT_VIEW' } },
+        { path: 'products/new', name: 'admin-product-create', component: () => import('@/views/admin/ProductCreateView.vue'), meta: { permission: 'PRODUCT_CREATE' } },
+        { path: 'products/:familyId', name: 'admin-product-detail', component: () => import('@/views/admin/ProductDetailView.vue'), meta: { permission: 'PRODUCT_VIEW' } },
+        { path: 'stock', name: 'admin-stock', component: () => import('@/views/admin/StockView.vue'), meta: { permission: 'STOCK_VIEW' } },
+        { path: 'inbound', name: 'admin-inbound', component: () => import('@/views/admin/InboundTransferView.vue'), meta: { permission: 'INBOUND_VIEW' } },
+        { path: 'orders', name: 'admin-orders', component: () => import('@/views/admin/OrdersView.vue'), meta: { permission: 'ORDER_VIEW' } },
+        { path: 'orders/:orderId', name: 'admin-order-detail', component: () => import('@/views/admin/OrderDetailView.vue'), meta: { permission: 'ORDER_VIEW' } },
+        { path: 'staff', name: 'admin-staff', component: () => import('@/views/admin/StaffView.vue'), meta: { permission: 'STAFF_MANAGE' } },
+        { path: 'roles', name: 'admin-roles', component: () => import('@/views/admin/RolesView.vue'), meta: { roles: ['OWNER'] } },
+        { path: 'clients', name: 'admin-clients', component: () => import('@/views/admin/ClientsView.vue'), meta: { permission: 'CLIENT_VIEW' } },
+        { path: 'clients/:clientId', name: 'admin-client-profile', component: () => import('@/views/admin/ClientProfileView.vue'), meta: { permission: 'CLIENT_VIEW' } },
+        { path: 'credit/reminders', name: 'admin-credit-reminders', component: () => import('@/views/admin/CreditRemindersView.vue'), meta: { permission: 'CREDIT_MANAGE' } },
+        { path: 'charges', name: 'admin-charges', component: () => import('@/views/admin/ChargesView.vue'), meta: { permission: 'CHARGES_VIEW' } },
+        { path: 'settings', name: 'admin-settings', component: () => import('@/views/admin/ShopSettingsView.vue'), meta: { permission: 'SETTINGS_MANAGE' } },
         { path: 'network', name: 'admin-network', component: () => import('@/views/admin/NetworkOverviewView.vue'), meta: { roles: ['OWNER'] } },
       ],
     },
@@ -152,21 +153,20 @@ router.beforeEach((to) => {
     return '/staff/login'
   }
 
-  // Cashiers only reach admin pages that declare a permission they were granted.
-  if (auth.staff?.role === 'CASHIER' && to.path.startsWith('/admin')) {
+  // Admin pages that declare a permission are closed to anyone whose role lacks it.
+  if (auth.staff && to.path.startsWith('/admin')) {
     const permission = to.matched.at(-1)?.meta.permission as StaffPermission | undefined
-    if (!permission || !auth.can(permission)) return '/pos'
+    if (permission && !auth.can(permission)) return auth.homePath === to.path ? '/pos' : auth.homePath
   }
 
   const roles = to.meta.roles as string[] | undefined
   if (roles && auth.staff && !roles.includes(auth.staff.role)) {
-    if (auth.staff.role === 'CASHIER') return '/pos'
-    return '/staff/login'
+    return auth.homePath
   }
 
   const childRoles = to.matched.at(-1)?.meta.roles as string[] | undefined
   if (childRoles && auth.staff && !childRoles.includes(auth.staff.role)) {
-    return '/admin'
+    return auth.homePath
   }
 
   return true

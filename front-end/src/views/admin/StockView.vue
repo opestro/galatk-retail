@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ArrowDownToLine, Search, X } from 'lucide-vue-next'
+import { ArrowDownToLine, Search, Trash2, X } from 'lucide-vue-next'
 import { api } from '@/services/api'
-import { apiErrorMessage, setVariantStock } from '@/services/products'
+import { apiErrorMessage, deleteProduct, setVariantStock } from '@/services/products'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
 import type { ShopStockItem } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
+import AdminConfirm from '@/components/admin/AdminConfirm.vue'
 import StockGroupTable from '@/components/admin/stock/StockGroupTable.vue'
 import { formatCount } from '@/utils/formatMoney'
 
@@ -22,6 +23,8 @@ const loading = ref(true)
 const search = ref('')
 const filter = ref<'all' | 'low' | 'out'>('all')
 const draft = ref<Record<string, string>>({})
+const confirmAll = ref(false)
+const deleting = ref(false)
 const qtyState = ref<Record<string, 'idle' | 'saving' | 'error'>>({})
 
 const lowCount = computed(() => stock.value.filter((item) => item.quantity > 0 && item.quantity <= LOW_STOCK).length)
@@ -91,6 +94,21 @@ async function saveQuantity(item: ShopStockItem) {
   }
 }
 
+async function confirmDeleteAll() {
+  const targets = displayed.value
+  if (!targets.length) return
+  deleting.value = true
+  // One by one: variants used in sales/orders are refused by the API and simply stay.
+  const results = await Promise.allSettled(targets.map((item) => deleteProduct(item.productId)))
+  const gone = new Set(targets.filter((_, i) => results[i].status === 'fulfilled').map((item) => item.id))
+  const kept = targets.length - gone.size
+  stock.value = stock.value.filter((item) => !gone.has(item.id))
+  if (kept) toast.error(t('admin.variant.bulkPartial', { removed: formatCount(gone.size), kept: formatCount(kept) }))
+  else toast.success(t('admin.variant.bulkDeleted', { n: formatCount(gone.size) }, gone.size))
+  confirmAll.value = false
+  deleting.value = false
+}
+
 onMounted(loadStock)
 watch(() => auth.selectedShopId, loadStock)
 </script>
@@ -102,6 +120,10 @@ watch(() => auth.selectedShopId, loadStock)
       :subtitle="loading ? '' : t('admin.stock.subtitle', { n: formatCount(stock.length), units: formatCount(totalUnits) })"
     >
       <template #actions>
+        <button v-if="auth.can('PRODUCT_DELETE') && displayed.length" type="button" class="pos-btn-ghost text-pos-err" @click="confirmAll = true">
+          <Trash2 class="h-4 w-4" />
+          {{ t('admin.variant.deleteAll') }}
+        </button>
         <RouterLink to="/admin/inbound" class="pos-btn-primary">
           <ArrowDownToLine class="h-4 w-4" />
           {{ t('admin.dashboard.receiveStock') }}
@@ -155,11 +177,22 @@ watch(() => auth.selectedShopId, loadStock)
         v-model:draft="draft"
         :items="displayed"
         :query="search"
-        :can-edit="auth.isManager"
+        :can-edit="auth.can('STOCK_ADJUST')"
         :low-stock="LOW_STOCK"
         :state="qtyState"
         @save="saveQuantity"
       />
     </div>
+
+    <AdminConfirm
+      v-if="confirmAll"
+      :title="t('admin.variant.deleteAllTitle')"
+      :body="t('admin.variant.confirmDeleteMany', { n: formatCount(displayed.length) }, displayed.length)"
+      :confirm-label="t('admin.variant.deleteAll')"
+      danger
+      :busy="deleting"
+      @close="confirmAll = false"
+      @confirm="confirmDeleteAll"
+    />
   </div>
 </template>

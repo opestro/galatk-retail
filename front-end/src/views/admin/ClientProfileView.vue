@@ -106,7 +106,7 @@ async function run(action: () => Promise<unknown>, success: string, failure: str
 }
 
 function saveClient() {
-  if (!auth.isManager || !client.value) return
+  if (!auth.can('CLIENT_EDIT') || !client.value) return
   const body: Record<string, unknown> = {
     name: editForm.value.name,
     phone: editForm.value.phone,
@@ -130,7 +130,7 @@ function submitPayment() {
 }
 
 function submitAdjustment() {
-  if (!auth.isManager || !adjustmentForm.value.amount) return
+  if (!auth.can('CREDIT_MANAGE') || !adjustmentForm.value.amount) return
   void run(
     () => createClientAdjustment(clientId.value, { amount: adjustmentForm.value.amount, note: adjustmentForm.value.note || undefined }),
     t('admin.clientProfile.adjustmentRecorded'),
@@ -141,7 +141,7 @@ function submitAdjustment() {
 async function confirmVoidPayment() {
   const shopId = auth.selectedShopId
   const paymentId = voidPaymentId.value
-  if (!shopId || !auth.isManager || !paymentId) return
+  if (!shopId || !auth.can('CREDIT_MANAGE') || !paymentId) return
   await run(() => voidClientPayment(shopId, clientId.value, paymentId), t('admin.clientProfile.paymentVoided'), t('admin.clientProfile.voidFailed'))
   if (!error.value) voidPaymentId.value = null
 }
@@ -193,11 +193,11 @@ watch(clientId, () => {
           </span>
         </template>
         <template #actions>
-          <button v-if="auth.isManager" type="button" class="pos-btn-soft" @click="open('edit')">
+          <button v-if="auth.can('CLIENT_EDIT')" type="button" class="pos-btn-soft" @click="open('edit')">
             <Pencil class="h-4 w-4" />
             {{ t('admin.clientProfile.edit') }}
           </button>
-          <PosRowMenu v-if="auth.isManager" :label="t('pos.table.moreActions')">
+          <PosRowMenu v-if="auth.can('CLIENT_EDIT') || auth.can('CREDIT_MANAGE')" :label="t('pos.table.moreActions')">
             <button type="button" role="menuitem" class="pos-menu-item" @click="open('adjustment')">
               <Scale class="h-4 w-4 text-pos-muted" />
               {{ t('admin.clientProfile.adjustment') }}
@@ -245,7 +245,7 @@ watch(clientId, () => {
                   <th scope="col">{{ t('admin.clientProfile.note') }}</th>
                   <th scope="col">{{ t('admin.clientProfile.colBy') }}</th>
                   <th scope="col" class="pos-cell-num">{{ t('pos.table.amount') }}</th>
-                  <th v-if="auth.isManager" scope="col" class="pos-cell-actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
+                  <th v-if="auth.can('CREDIT_MANAGE')" scope="col" class="pos-cell-actions"><span class="sr-only">{{ t('common.actions') }}</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -258,7 +258,7 @@ watch(clientId, () => {
                   <td class="max-w-56 truncate text-pos-muted">{{ entry.note || t('common.emDash') }}</td>
                   <td class="whitespace-nowrap text-pos-ink-2">{{ entry.recordedBy?.name ?? t('common.emDash') }}</td>
                   <td class="pos-cell-num font-semibold" :class="Number(entry.amount) < 0 ? 'text-pos-ok' : 'text-pos-ink'">{{ signedAmount(entry.amount) }}</td>
-                  <td v-if="auth.isManager" class="pos-cell-actions">
+                  <td v-if="auth.can('CREDIT_MANAGE')" class="pos-cell-actions">
                     <PosRowMenu v-if="entry.type === 'PAYMENT' && entry.paymentId && !voidedPayments.has(entry.paymentId)" :label="t('pos.table.moreActions')">
                       <button type="button" role="menuitem" class="pos-menu-item pos-menu-item-danger" @click="voidPaymentId = entry.paymentId">
                         <Ban class="h-4 w-4" />

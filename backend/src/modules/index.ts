@@ -7,6 +7,7 @@ import posRoutes from './pos/index.js'
 import ordersRoutes from './orders/index.js'
 import storefrontRoutes from './storefront/index.js'
 import globalStoreRoutes from './global-store/index.js'
+import rolesRoutes from './roles/index.js'
 import staffRoutes from './staff/index.js'
 import { shopRouter as dashboardShopRouter, networkRouter as dashboardNetworkRouter } from './dashboard/index.js'
 import { shopClientsRouter, clientRouter } from './clients/index.js'
@@ -40,6 +41,7 @@ apiV1.use('/clients', clientCreditRouter)
 apiV1.use('/storefront', storefrontRoutes)
 apiV1.use('/global-store', globalStoreRoutes)
 apiV1.use('/staff', staffRoutes)
+apiV1.use('/roles', rolesRoutes)
 apiV1.use('/dashboard', dashboardNetworkRouter)
 apiV1.use('/integrations', integrationsRoutes)
 apiV1.use('/settings', settingsRoutes)

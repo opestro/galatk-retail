@@ -1,15 +1,23 @@
 export type StaffRole = 'OWNER' | 'MANAGER' | 'CASHIER'
 
-export type StaffPermission = 'MANAGE_CATALOG' | 'EDIT_PRICE' | 'GIVE_DISCOUNT'
+export const STAFF_PERMISSIONS = [
+  'PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_EDIT', 'PRODUCT_EDIT_PRICE', 'PRODUCT_DELETE',
+  'STOCK_VIEW', 'STOCK_ADJUST', 'INBOUND_VIEW', 'INBOUND_CREATE',
+  'ORDER_VIEW', 'ORDER_PROCESS', 'ORDER_EDIT', 'ORDER_CANCEL',
+  'SALE_EDIT_PRICE', 'SALE_DISCOUNT', 'SALE_PAY_LATER', 'SALE_VOID_ANY',
+  'CLIENT_VIEW', 'CLIENT_EDIT', 'CREDIT_MANAGE',
+  'CHARGES_VIEW', 'CHARGES_MANAGE', 'DASHBOARD_VIEW',
+  'STAFF_MANAGE', 'SETTINGS_MANAGE', 'SHOPS_MANAGE',
+] as const
 
-export const STAFF_PERMISSIONS: StaffPermission[] = ['MANAGE_CATALOG', 'EDIT_PRICE', 'GIVE_DISCOUNT']
+export type StaffPermission = (typeof STAFF_PERMISSIONS)[number]
 
 export interface StaffProfile {
   id: string
   email: string
   name: string
   role: StaffRole
-  /** Extra grants for cashiers; owners and managers implicitly have all. */
+  /** Effective permissions: the role's set plus personal grants (owners have all). */
   permissions?: StaffPermission[]
   shopIds: string[]
 }
@@ -118,6 +126,7 @@ export interface Client {
   phone: string
   email: string | null
   address: string | null
+  wilaya: string | null
   notes: string | null
   creditLimit: string | null
   balance: string

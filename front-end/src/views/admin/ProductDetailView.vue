@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { AlertCircle, Plus } from 'lucide-vue-next'
+import { AlertCircle, Plus, Trash2 } from 'lucide-vue-next'
 import type { Product, ProductFamily } from '@/types/api'
 import {
   addFamilyVariant,
   apiErrorMessage,
   deleteFamilyImage,
   deleteProduct,
+  deleteProductFamily,
   familyInStock,
   getProductFamily,
   setPrimaryFamilyImage,
@@ -26,6 +27,7 @@ import ProductEditorShell from '@/components/admin/products/ProductEditorShell.v
 import ProductInformationCard from '@/components/admin/products/ProductInformationCard.vue'
 import ProductImageManager from '@/components/admin/products/ProductImageManager.vue'
 import VariantTable from '@/components/admin/products/VariantTable.vue'
+import PricingRules from '@/components/admin/products/PricingRules.vue'
 import VariantModal from '@/components/admin/products/VariantModal.vue'
 import AdminConfirm from '@/components/admin/AdminConfirm.vue'
 import { useToast } from '@/composables/useToast'
@@ -40,11 +42,15 @@ import {
 
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 const toast = useToast()
 
 const familyId = computed(() => String(route.params.familyId))
-const canManage = computed(() => auth.isManager)
+const canManage = computed(() => auth.can('PRODUCT_EDIT'))
+const canPrice = computed(() => auth.can('PRODUCT_EDIT_PRICE'))
+const canDelete = computed(() => auth.can('PRODUCT_DELETE'))
+const canStock = computed(() => auth.can('STOCK_ADJUST'))
 
 const family = ref<ProductFamily | null>(null)
 const loading = ref(true)
@@ -95,6 +101,8 @@ const modalMode = ref<'add' | 'edit' | null>(null)
 const editingId = ref<string | null>(null)
 const confirmDeleteId = ref<string | null>(null)
 const confirmImageId = ref<string | null>(null)
+const confirmFamily = ref(false)
+const confirmMany = ref<{ ids: string[]; label: string; kind?: 'size' } | null>(null)
 const modalDraft = ref<VariantDraft>(emptyVariantDraft())
 
 function applyFamily(next: ProductFamily) {
@@ -169,7 +177,7 @@ async function saveProduct() {
 }
 
 async function saveStock(variant: Product) {
-  if (!canManage.value) return
+  if (!canStock.value) return
   const shopId = auth.selectedShopId
   if (!shopId) {
     error.value = t('admin.product.selectShopForStockChange')
@@ -285,16 +293,17 @@ async function saveEdit() {
   variantBusy.value = true
   variantError.value = ''
   try {
+    const current = family.value.variants.find((v) => v.id === editingId.value)
     await updateProduct(editingId.value, {
       attributes: attrs,
       unitCost,
-      sellPrice,
+      // Only send the price when it changed, so editing other fields doesn't need the price permission.
+      ...(Number(current?.sellPrice) !== sellPrice ? { sellPrice } : {}),
       availableOnline: modalDraft.value.availableOnline,
       isActive: modalDraft.value.isActive,
     })
     const qty = Number(modalDraft.value.quantity)
-    const current = family.value.variants.find((v) => v.id === editingId.value)
-    if (Number.isInteger(qty) && qty >= 0 && qty !== (current?.shopQuantity ?? 0)) {
+    if (canStock.value && Number.isInteger(qty) && qty >= 0 && qty !== (current?.shopQuantity ?? 0)) {
       if (!auth.selectedShopId) {
         variantError.value = t('admin.product.selectShopForStockChange')
         variantBusy.value = false
@@ -313,6 +322,22 @@ async function saveEdit() {
   }
 }
 
+async function applyPrices(changes: { id: string; sellPrice: number }[]) {
+  if (!family.value) return
+  variantBusy.value = true
+  error.value = ''
+  const results = await Promise.allSettled(changes.map((c) => updateProduct(c.id, { sellPrice: c.sellPrice })))
+  const failed = results.filter((r) => r.status === 'rejected').length
+  try {
+    applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
+  } catch {
+    // The list below stays stale until the next reload; the toast still reports the outcome.
+  }
+  if (failed) error.value = t('admin.pricing.applyError')
+  else toast.success(t('admin.pricing.applied'))
+  variantBusy.value = false
+}
+
 async function confirmDelete() {
   if (!confirmDeleteId.value || !family.value) return
   variantBusy.value = true
@@ -327,6 +352,43 @@ async function confirmDelete() {
   } finally {
     variantBusy.value = false
   }
+}
+
+async function confirmDeleteFamily() {
+  if (!family.value) return
+  variantBusy.value = true
+  error.value = ''
+  try {
+    await deleteProductFamily(family.value.id)
+    allowLeave.value = true
+    toast.success(t('admin.products.deleted'))
+    await router.push({ name: 'admin-products' })
+  } catch (e) {
+    error.value = apiErrorMessage(e, t('admin.products.deleteError'))
+    confirmFamily.value = false
+  } finally {
+    variantBusy.value = false
+  }
+}
+
+async function confirmDeleteMany() {
+  const pending = confirmMany.value
+  if (!pending || !family.value) return
+  variantBusy.value = true
+  error.value = ''
+  // One by one: variants used in sales/orders are refused by the API and simply stay.
+  const results = await Promise.allSettled(pending.ids.map((id) => deleteProduct(id)))
+  const kept = results.filter((r) => r.status === 'rejected').length
+  const removed = results.length - kept
+  try {
+    applyFamily(await getProductFamily(family.value.id, auth.selectedShopId ?? undefined))
+  } catch {
+    // Stale list until the next reload; the message below still reports the outcome.
+  }
+  if (kept) error.value = t('admin.variant.bulkPartial', { removed: formatCount(removed), kept: formatCount(kept) })
+  else toast.success(t('admin.variant.bulkDeleted', { n: formatCount(removed) }, removed))
+  confirmMany.value = null
+  variantBusy.value = false
 }
 
 async function onUpload(files: File[]) {
@@ -414,6 +476,10 @@ async function onSetPrimary(imageId: string) {
               {{ productUnavailable ? t('admin.product.statusUnavailable') : t('admin.product.statusAvailable') }}
             </span>
             <span v-if="isDirty" class="pos-badge-warn">{{ t('admin.product.unsaved') }}</span>
+            <button v-if="canDelete" type="button" class="pos-btn-ghost text-pos-err" @click="confirmFamily = true">
+              <Trash2 class="h-4 w-4" />
+              {{ t('common.delete') }}
+            </button>
             <button
               v-if="canManage"
               type="button"
@@ -459,12 +525,16 @@ async function onSetPrimary(imageId: string) {
       </template>
 
       <template #variants>
+        <template v-if="canPrice && family.variants.length">
+          <PricingRules :variants="family.variants" :busy="variantBusy" @apply="applyPrices" />
+          <hr class="border-pos-line" />
+        </template>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="section-title">{{ t('admin.variant.sectionTitle') }}</h2>
             <p class="mt-0.5 text-[12.5px] text-pos-muted">{{ t('admin.variant.stockEditHint') }}</p>
           </div>
-          <button v-if="auth.canManageCatalog" type="button" class="pos-btn-soft" @click="openAddVariant">
+          <button v-if="auth.can('PRODUCT_CREATE')" type="button" class="pos-btn-soft" @click="openAddVariant">
             <Plus class="h-4 w-4" />
             {{ t('admin.variant.add') }}
           </button>
@@ -472,12 +542,15 @@ async function onSetPrimary(imageId: string) {
         <VariantTable
           :variants="family.variants"
           :can-manage="canManage"
+          :can-delete="canDelete"
+          :can-stock="canStock"
           :stock-draft="stockDraft"
           :stock-state="stockState"
           @update:stock-draft="stockDraft = $event"
           @save-stock="saveStock"
           @edit="startEdit"
           @delete="confirmDeleteId = $event"
+          @delete-many="confirmMany = $event"
         />
       </template>
 
@@ -523,6 +596,34 @@ async function onSetPrimary(imageId: string) {
       :busy="variantBusy"
       @close="confirmDeleteId = null"
       @confirm="confirmDelete"
+    />
+
+    <AdminConfirm
+      v-if="confirmFamily && family"
+      :title="t('admin.products.deleteTitle', { name: family.name })"
+      :body="t('admin.products.confirmDelete')"
+      :confirm-label="t('common.delete')"
+      danger
+      :busy="variantBusy"
+      @close="confirmFamily = false"
+      @confirm="confirmDeleteFamily"
+    />
+
+    <AdminConfirm
+      v-if="confirmMany"
+      :title="
+        confirmMany.kind === 'size'
+          ? t('admin.variant.deleteSizeTitle', { size: confirmMany.label })
+          : confirmMany.label
+            ? t('admin.variant.deleteColorTitle', { color: confirmMany.label })
+            : t('admin.variant.deleteAllTitle')
+      "
+      :body="t('admin.variant.confirmDeleteMany', { n: formatCount(confirmMany.ids.length) }, confirmMany.ids.length)"
+      :confirm-label="t('common.delete')"
+      danger
+      :busy="variantBusy"
+      @close="confirmMany = null"
+      @confirm="confirmDeleteMany"
     />
 
     <AdminConfirm

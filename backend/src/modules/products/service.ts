@@ -416,6 +416,43 @@ export async function removeFamilyImage(familyId: string, imageId: string) {
   return image
 }
 
+export async function deleteFamily(familyId: string) {
+  const family = await prisma.productFamily.findUnique({
+    where: { id: familyId },
+    include: { images: true, products: { select: { id: true } } },
+  })
+  if (!family) {
+    throw new CustomError('PRODUCT_NOT_FOUND', 'Product not found', 404)
+  }
+  const productIds = family.products.map((p) => p.id)
+
+  const [saleLines, orderLines, inboundLines] = await Promise.all([
+    prisma.saleLine.count({ where: { productId: { in: productIds } } }),
+    prisma.onlineOrderLine.count({ where: { productId: { in: productIds } } }),
+    prisma.inboundTransferLine.count({ where: { productId: { in: productIds } } }),
+  ])
+  if (saleLines > 0 || orderLines > 0 || inboundLines > 0) {
+    throw new CustomError(
+      'PRODUCT_IN_USE',
+      'This product has sales, orders or transfers and cannot be deleted. Mark it inactive instead.',
+      409,
+    )
+  }
+
+  try {
+    await prisma.$transaction([
+      prisma.product.deleteMany({ where: { familyId } }),
+      prisma.productFamily.delete({ where: { id: familyId } }),
+    ])
+  } catch (error) {
+    if (isForeignKeyConstraint(error)) {
+      throw new CustomError('PRODUCT_IN_USE', 'This product is still referenced by other records', 409)
+    }
+    throw error
+  }
+  for (const image of family.images) deleteStoredImage(image.filename)
+}
+
 export async function setPrimaryFamilyImage(familyId: string, imageId: string) {
   await getFamilyById(familyId)
   const images = await prisma.productImage.findMany({

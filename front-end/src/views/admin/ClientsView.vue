@@ -3,9 +3,11 @@ import { avatarTone } from '@/utils/avatarTone'
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { AlertCircle, ChevronRight, Plus, Search, UserRound } from 'lucide-vue-next'
+import { AlertCircle, ChevronRight, KeyRound, Plus, Search, UserRound } from 'lucide-vue-next'
+import { ALGERIA_WILAYAS } from '@/data/algeriaWilayas'
 import { useAuthStore } from '@/stores/auth'
 import { listClients, createClient } from '@/services/clientApi'
+import { apiErrorMessage } from '@/services/products'
 import type { Client } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import PosModal from '@/components/pos/PosModal.vue'
@@ -27,7 +29,7 @@ const saving = ref(false)
 const error = ref('')
 
 function emptyForm() {
-  return { name: '', phone: '', email: '', address: '', notes: '', creditLimit: '' as string | number }
+  return { name: '', phone: '', email: '', address: '', wilaya: '', notes: '', creditLimit: '' as string | number, createAccount: false, password: '' }
 }
 const form = ref(emptyForm())
 
@@ -65,17 +67,19 @@ async function handleCreate() {
       phone: form.value.phone,
       email: form.value.email || undefined,
       address: form.value.address || undefined,
+      wilaya: form.value.wilaya || undefined,
       notes: form.value.notes || undefined,
     }
     if (form.value.creditLimit !== '') {
       body.creditLimit = Number(form.value.creditLimit)
     }
+    if (form.value.createAccount) body.password = form.value.password
     await createClient(shopId, body)
     showForm.value = false
     toast.success(t('admin.clients.created'))
     await load()
-  } catch {
-    error.value = t('admin.clients.createFailed')
+  } catch (e) {
+    error.value = apiErrorMessage(e, t('admin.clients.createFailed'))
   } finally {
     saving.value = false
   }
@@ -117,7 +121,7 @@ watch(() => auth.selectedShopId, load)
       :subtitle="loading ? '' : t('admin.clients.subtitle', { n: formatCount(clients.length) }, clients.length)"
     >
       <template #actions>
-        <button v-if="auth.isManager" type="button" class="pos-btn-primary" @click="openForm">
+        <button v-if="auth.can('CLIENT_EDIT')" type="button" class="pos-btn-primary" @click="openForm">
           <Plus class="h-4 w-4" />
           {{ t('admin.clients.add') }}
         </button>
@@ -170,7 +174,10 @@ watch(() => auth.selectedShopId, load)
                   <span v-if="!client.isActive" class="pos-badge-neutral h-5 px-2 text-[11px]">{{ t('admin.clients.inactive') }}</span>
                 </div>
               </td>
-              <td class="whitespace-nowrap text-pos-ink-2"><bdi>{{ client.phone }}</bdi></td>
+              <td class="whitespace-nowrap text-pos-ink-2">
+                <bdi>{{ client.phone }}</bdi>
+                <span v-if="client.wilaya" class="block text-[12px] text-pos-muted">{{ client.wilaya }}</span>
+              </td>
               <td class="pos-cell-num font-semibold" :class="Number(client.balance) > 0 ? 'text-pos-warn' : 'text-pos-ink'">{{ formatMoney(client.balance) }}</td>
               <td>
                 <div v-if="client.creditLimit" class="flex min-w-36 flex-col gap-1">
@@ -208,9 +215,16 @@ watch(() => auth.selectedShopId, load)
         </label>
         <label class="pos-field">
           <span class="pos-label">{{ t('admin.clients.emailLabel') }}</span>
-          <input v-model="form.email" type="email" class="pos-input" :placeholder="t('admin.clients.optional')" />
+          <input v-model="form.email" type="email" :required="form.createAccount" class="pos-input" :placeholder="form.createAccount ? '' : t('admin.clients.optional')" />
         </label>
-        <label class="pos-field sm:col-span-2">
+        <label class="pos-field">
+          <span class="pos-label">{{ t('admin.clients.wilayaLabel') }}</span>
+          <select v-model="form.wilaya" class="pos-input" autocomplete="address-level1">
+            <option value="">{{ t('admin.clients.selectWilaya') }}</option>
+            <option v-for="wilaya in ALGERIA_WILAYAS" :key="wilaya" :value="wilaya">{{ wilaya }}</option>
+          </select>
+        </label>
+        <label class="pos-field">
           <span class="pos-label">{{ t('admin.clients.addressLabel') }}</span>
           <input v-model="form.address" class="pos-input" :placeholder="t('admin.clients.optional')" />
         </label>
@@ -224,6 +238,18 @@ watch(() => auth.selectedShopId, load)
         <label class="pos-field sm:col-span-2">
           <span class="pos-label">{{ t('admin.clients.notesLabel') }}</span>
           <textarea v-model="form.notes" class="pos-input h-auto min-h-20 resize-none py-3" :placeholder="t('admin.clients.optional')" />
+        </label>
+        <label class="pos-notice cursor-pointer items-center bg-pos-sunken text-pos-ink sm:col-span-2">
+          <KeyRound class="h-4 w-4 shrink-0 text-pos-muted" />
+          <span class="flex-1">
+            <span class="block font-medium">{{ t('admin.clients.createAccount') }}</span>
+            <span class="block text-[12.5px] text-pos-muted">{{ t('admin.clients.createAccountHint') }}</span>
+          </span>
+          <input v-model="form.createAccount" type="checkbox" class="h-5 w-5 accent-pos-accent" />
+        </label>
+        <label v-if="form.createAccount" class="pos-field sm:col-span-2">
+          <span class="pos-label">{{ t('admin.clients.passwordLabel') }}</span>
+          <input v-model="form.password" type="password" required minlength="6" autocomplete="new-password" class="pos-input" :placeholder="t('admin.clients.passwordPlaceholder')" />
         </label>
         <p v-if="error" class="pos-notice bg-pos-err-bg text-pos-err sm:col-span-2" role="alert">
           <AlertCircle class="mt-px h-4 w-4 shrink-0" />

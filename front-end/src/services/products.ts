@@ -2,6 +2,26 @@ import { api } from '@/services/api'
 import type { Product, ProductFamily, ProductImage } from '@/types/api'
 
 export const DEFAULT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+/** Orders sizes XS < S < M < L < XL < XXL…, then numbers ascending, then anything else A–Z. */
+export function sizeRank(size: string | undefined): [number, number, string] {
+  const value = (size ?? '').trim().toUpperCase()
+  const letter = /^(\d*)(X*)([SML])$/.exec(value)
+  if (letter) {
+    const [, digits, xs, base] = letter
+    const extra = digits ? Number(digits) : xs!.length
+    return [0, base === 'S' ? -(1 + extra) : base === 'L' ? 1 + extra : 0, value]
+  }
+  const numeric = Number(value.replace(',', '.'))
+  if (value && Number.isFinite(numeric)) return [1, numeric, value]
+  return [2, 0, value]
+}
+
+export function compareSizes(a: string | undefined, b: string | undefined): number {
+  const [ga, na, ta] = sizeRank(a)
+  const [gb, nb, tb] = sizeRank(b)
+  return ga - gb || na - nb || ta.localeCompare(tb)
+}
+
 export const DEFAULT_COLORS = ['Noir', 'Blanc', 'Vert', 'Rouge', 'Bleu', 'Beige', 'Gris', 'Rose', 'Marron']
 
 export interface VariantPayload {
@@ -94,6 +114,10 @@ export async function updateProductFamily(
     shopId,
   })
   return data.data
+}
+
+export async function deleteProductFamily(familyId: string): Promise<void> {
+  await api.delete(`/products/families/${familyId}`)
 }
 
 export async function addFamilyVariant(

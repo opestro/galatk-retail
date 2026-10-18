@@ -1,8 +1,8 @@
 import prisma from '../../resources/database/initDatabase.js'
 import { CustomError } from '../../shared/types/error_type.js'
-import { AuthenticatedStaff, assertShopAccess, requireMinRole } from '../../shared/middlewares/shopScope.js'
+import { AuthenticatedStaff, assertShopAccess, requirePermission } from '../../shared/middlewares/shopScope.js'
 import { incrementShopStock } from '../../shared/stock/stockMutations.js'
-import { StaffRole } from '@prisma/client'
+import { StaffRole, StaffPermission } from '@prisma/client'
 
 export interface InboundTransferLineInput {
   productId: string
@@ -17,7 +17,7 @@ export interface CreateInboundTransferInput {
 
 export async function listShopStock(staff: AuthenticatedStaff, shopId: string) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.STOCK_VIEW)
 
   return prisma.shopStock.findMany({
     where: { shopId },
@@ -32,7 +32,7 @@ export async function createInboundTransfer(
   input: CreateInboundTransferInput,
 ) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.INBOUND_CREATE)
 
   if (!input.lines?.length) {
     throw new CustomError('VALIDATION_ERROR', 'At least one line is required', 400)
@@ -69,7 +69,7 @@ export async function createInboundTransfer(
 
 export async function listInboundTransfers(staff: AuthenticatedStaff, shopId: string) {
   assertShopAccess(staff, shopId)
-  requireMinRole(staff, StaffRole.MANAGER)
+  requirePermission(staff, StaffPermission.INBOUND_VIEW)
 
   return prisma.inboundTransfer.findMany({
     where: { shopId },

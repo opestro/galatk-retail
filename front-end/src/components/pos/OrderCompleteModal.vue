@@ -49,7 +49,7 @@ const creditLimitExceeded = computed(() => {
 })
 
 function onModeChange(mode: 'full' | 'partial' | 'payLater') {
-  if (mode === 'payLater' && !auth.isManager) return
+  if (mode === 'payLater' && !auth.canPayLater) return
   checkoutMode.value = mode
   if (mode === 'full') amountPaid.value = total.value
   if (mode === 'payLater') amountPaid.value = 0
@@ -86,16 +86,16 @@ async function submitComplete(creditLimitOverride = false) {
 }
 
 function handleComplete() {
-  if (checkoutMode.value === 'payLater' || (creditLimitExceeded.value && auth.isManager)) {
+  if (checkoutMode.value === 'payLater' || (creditLimitExceeded.value && auth.canPayLater)) {
     pendingOverride.value = creditLimitExceeded.value
     showManagerConfirm.value = true
     return
   }
-  if (creditLimitExceeded.value && !auth.isManager) {
+  if (creditLimitExceeded.value && !auth.canPayLater) {
     error.value = t('pos.orderComplete.errorCreditLimit')
     return
   }
-  submitComplete(creditLimitExceeded.value && auth.isManager)
+  submitComplete(creditLimitExceeded.value && auth.canPayLater)
 }
 </script>
 
@@ -128,7 +128,7 @@ function handleComplete() {
         <div class="pos-segmented" role="group" :aria-label="$t('pos.orderComplete.paymentRecovery')">
           <button type="button" class="pos-segment" :aria-pressed="checkoutMode === 'full'" @click="onModeChange('full')">{{ $t('pos.checkout.full') }}</button>
           <button type="button" class="pos-segment" :aria-pressed="checkoutMode === 'partial'" @click="onModeChange('partial')">{{ $t('pos.checkout.partial') }}</button>
-          <button v-if="auth.isManager" type="button" class="pos-segment" :aria-pressed="checkoutMode === 'payLater'" @click="onModeChange('payLater')">{{ $t('pos.checkout.later') }}</button>
+          <button v-if="auth.canPayLater" type="button" class="pos-segment" :aria-pressed="checkoutMode === 'payLater'" @click="onModeChange('payLater')">{{ $t('pos.checkout.later') }}</button>
         </div>
       </div>
 

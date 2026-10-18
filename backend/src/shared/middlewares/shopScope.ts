@@ -6,7 +6,7 @@ export interface AuthenticatedStaff {
   email: string
   name: string
   role: StaffRole
-  /** Extra grants for cashiers; managers/owners implicitly hold every permission. */
+  /** Effective permissions: the role's set plus personal grants (owners hold all). */
   permissions: StaffPermission[]
   shopIds: string[]
 }
@@ -40,10 +40,7 @@ export function requireMinRole(staff: AuthenticatedStaff, minRole: StaffRole): v
 }
 
 export function hasPermission(staff: AuthenticatedStaff, permission: StaffPermission): boolean {
-  if (staff.role === StaffRole.OWNER || staff.role === StaffRole.MANAGER) {
-    return true
-  }
-  return staff.permissions.includes(permission)
+  return staff.role === StaffRole.OWNER || staff.permissions.includes(permission)
 }
 
 export function requirePermission(staff: AuthenticatedStaff, permission: StaffPermission): void {

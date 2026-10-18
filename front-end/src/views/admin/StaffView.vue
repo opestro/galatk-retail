@@ -2,10 +2,10 @@
 import { avatarTone } from '@/utils/avatarTone'
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AlertCircle, Pencil, Plus, Users } from 'lucide-vue-next'
+import { AlertCircle, Pencil, Plus, ShieldCheck, Users } from 'lucide-vue-next'
 import { api } from '@/services/api'
 import { apiErrorMessage } from '@/services/products'
-import { STAFF_PERMISSIONS, type Shop, type StaffPermission } from '@/types/api'
+import type { Shop } from '@/types/api'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import PosModal from '@/components/pos/PosModal.vue'
 import PosEmptyState from '@/components/pos/PosEmptyState.vue'
@@ -18,8 +18,8 @@ interface StaffMember {
   email: string
   name: string
   role: string
-  permissions: StaffPermission[]
   isActive: boolean
+  groups: Array<{ id: string; name: string }>
   shopAssignments: Array<{ shop: { id: string; name: string } }>
 }
 
@@ -30,15 +30,17 @@ const auth = useAuthStore()
 const toast = useToast()
 const staff = ref<StaffMember[]>([])
 const shops = ref<Shop[]>([])
+/** Custom groups the owner can hand out (the owner is the only one who can list them). */
+const groups = ref<Array<{ id: string; name: string }>>([])
+const editing = ref<StaffMember | null>(null)
+const editGroupIds = ref<string[]>([])
 const loading = ref(true)
 const showForm = ref(false)
 const saving = ref(false)
 const error = ref('')
-const editing = ref<StaffMember | null>(null)
-const editPermissions = ref<StaffPermission[]>([])
 
 function emptyForm() {
-  return { email: '', password: '', name: '', role: 'CASHIER' as string, shopIds: [] as string[], permissions: [] as StaffPermission[] }
+  return { email: '', password: '', name: '', role: 'CASHIER' as string, shopIds: [] as string[], groupIds: [] as string[] }
 }
 const form = ref(emptyForm())
 
@@ -72,6 +74,10 @@ async function load() {
     ])
     staff.value = staffRes.data.data
     shops.value = shopsRes.data.data
+    if (auth.isOwner) {
+      const rolesRes = await api.get<{ data: { groups: Array<{ id: string; name: string }> } }>('/roles')
+      groups.value = rolesRes.data.data.groups
+    }
   } finally {
     loading.value = false
   }
@@ -106,16 +112,16 @@ async function createStaff() {
 
 function openEdit(member: StaffMember) {
   editing.value = member
-  editPermissions.value = [...member.permissions]
+  editGroupIds.value = member.groups.map((g) => g.id)
   error.value = ''
 }
 
-async function savePermissions() {
+async function saveGroups() {
   if (!editing.value || saving.value) return
   saving.value = true
   error.value = ''
   try {
-    await api.patch(`/staff/${editing.value.id}`, { permissions: editPermissions.value })
+    await api.patch(`/staff/${editing.value.id}`, { groupIds: editGroupIds.value })
     editing.value = null
     toast.success(t('admin.staff.updated'))
     await load()
@@ -136,6 +142,10 @@ onMounted(load)
       :subtitle="loading ? '' : t('admin.staff.subtitle', { n: formatCount(staff.length) }, staff.length)"
     >
       <template #actions>
+        <RouterLink v-if="auth.isOwner" :to="{ name: 'admin-roles' }" class="pos-btn-ghost">
+          <ShieldCheck class="h-4 w-4" />
+          {{ t('admin.nav.roles') }}
+        </RouterLink>
         <button type="button" class="pos-btn-primary" @click="openForm">
           <Plus class="h-4 w-4" />
           {{ t('admin.staff.add') }}
@@ -153,15 +163,15 @@ onMounted(load)
         </div>
       </div>
       <div v-else-if="staff.length" class="overflow-x-auto">
-        <table class="pos-table min-w-[640px]">
+        <table class="pos-table min-w-[560px]">
           <thead>
             <tr>
               <th scope="col">{{ t('admin.staff.colMember') }}</th>
               <th scope="col">{{ t('admin.staff.colRole') }}</th>
               <th scope="col">{{ t('admin.staff.colShops') }}</th>
-              <th scope="col">{{ t('admin.staff.colPerms') }}</th>
+              <th v-if="auth.isOwner" scope="col">{{ t('admin.staff.colGroups') }}</th>
               <th scope="col">{{ t('pos.table.status') }}</th>
-              <th scope="col"><span class="sr-only">{{ t('admin.staff.edit') }}</span></th>
+              <th v-if="auth.isOwner" scope="col"><span class="sr-only">{{ t('admin.staff.edit') }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -185,22 +195,21 @@ onMounted(load)
                   <span v-if="!member.shopAssignments.length" class="text-[12.5px] text-pos-muted">{{ t('common.emDash') }}</span>
                 </div>
               </td>
-              <td>
-                <div v-if="member.role === 'CASHIER'" class="flex flex-wrap gap-1">
-                  <span v-for="perm in member.permissions" :key="perm" class="pos-badge-neutral h-5 px-2 text-[11px]">{{ t(`admin.staff.permissions.${perm}`) }}</span>
-                  <span v-if="!member.permissions.length" class="text-[12.5px] text-pos-muted">{{ t('admin.staff.none') }}</span>
+              <td v-if="auth.isOwner">
+                <div class="flex flex-wrap gap-1">
+                  <span v-for="g in member.groups" :key="g.id" class="pos-badge-info h-5 px-2 text-[11px]">{{ g.name }}</span>
+                  <span v-if="!member.groups.length" class="text-[12.5px] text-pos-muted">{{ t('common.emDash') }}</span>
                 </div>
-                <span v-else class="text-[12.5px] text-pos-muted">{{ t('common.emDash') }}</span>
               </td>
               <td>
                 <span :class="member.isActive ? 'pos-badge-ok' : 'pos-badge-neutral'"><span class="pos-dot" />{{ member.isActive ? t('common.active') : t('admin.clients.inactive') }}</span>
               </td>
-              <td class="text-end">
+              <td v-if="auth.isOwner" class="text-end">
                 <button
-                  v-if="member.role === 'CASHIER'"
+                  v-if="member.role !== 'OWNER' && groups.length"
                   type="button"
                   class="pos-icon-btn"
-                  :aria-label="t('admin.staff.editTitle', { name: member.name })"
+                  :aria-label="t('admin.staff.editGroups', { name: member.name })"
                   @click="openEdit(member)"
                 >
                   <Pencil class="h-4 w-4" />
@@ -245,15 +254,15 @@ onMounted(load)
           </div>
           <p class="pos-field-hint">{{ t(`admin.staff.roleHint.${form.role}`) }}</p>
         </div>
-        <fieldset v-if="form.role === 'CASHIER'" class="pos-field">
-          <legend class="pos-label mb-1.5">{{ t('admin.staff.perms') }}</legend>
-          <div class="flex flex-col gap-2">
-            <label v-for="perm in STAFF_PERMISSIONS" :key="perm" class="flex cursor-pointer items-center gap-2.5 text-[14px] text-pos-ink">
-              <input v-model="form.permissions" type="checkbox" :value="perm" class="h-4 w-4" />
-              {{ t(`admin.staff.permissions.${perm}`) }}
+        <fieldset v-if="auth.isOwner && groups.length && form.role !== 'OWNER'" class="pos-field">
+          <legend class="pos-label mb-1.5">{{ t('admin.staff.groups') }}</legend>
+          <div class="flex flex-wrap gap-2">
+            <label v-for="g in groups" :key="g.id" class="cursor-pointer">
+              <input v-model="form.groupIds" type="checkbox" :value="g.id" class="peer sr-only" />
+              <span class="pos-chip peer-checked:bg-pos-accent peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-pos-accent-glow">{{ g.name }}</span>
             </label>
           </div>
-          <p class="pos-field-hint">{{ t('admin.staff.permsHint') }}</p>
+          <p class="pos-field-hint">{{ t('admin.staff.groupsHint') }}</p>
         </fieldset>
         <fieldset class="pos-field">
           <legend class="pos-label mb-1.5">{{ t('admin.staff.colShops') }}</legend>
@@ -272,23 +281,23 @@ onMounted(load)
       </template>
     </PosModal>
 
-    <PosModal v-if="editing" :title="t('admin.staff.editTitle', { name: editing.name })" @close="editing = null">
-      <form id="staff-edit-form" class="flex flex-col gap-4" @submit.prevent="savePermissions">
+    <PosModal v-if="editing" :title="t('admin.staff.editGroups', { name: editing.name })" @close="editing = null">
+      <form id="staff-groups-form" class="flex flex-col gap-4" @submit.prevent="saveGroups">
         <fieldset class="pos-field">
-          <legend class="pos-label mb-1.5">{{ t('admin.staff.perms') }}</legend>
-          <div class="flex flex-col gap-2">
-            <label v-for="perm in STAFF_PERMISSIONS" :key="perm" class="flex cursor-pointer items-center gap-2.5 text-[14px] text-pos-ink">
-              <input v-model="editPermissions" type="checkbox" :value="perm" class="h-4 w-4" />
-              {{ t(`admin.staff.permissions.${perm}`) }}
+          <legend class="pos-label mb-1.5">{{ t('admin.staff.groups') }}</legend>
+          <div class="flex flex-wrap gap-2">
+            <label v-for="g in groups" :key="g.id" class="cursor-pointer">
+              <input v-model="editGroupIds" type="checkbox" :value="g.id" class="peer sr-only" />
+              <span class="pos-chip peer-checked:bg-pos-accent peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-pos-accent-glow">{{ g.name }}</span>
             </label>
           </div>
-          <p class="pos-field-hint">{{ t('admin.staff.permsHint') }}</p>
+          <p class="pos-field-hint">{{ t('admin.staff.groupsHint') }}</p>
         </fieldset>
         <p v-if="error" class="pos-notice bg-pos-err-bg text-pos-err" role="alert"><AlertCircle class="mt-px h-4 w-4 shrink-0" />{{ error }}</p>
       </form>
       <template #footer>
         <button type="button" class="pos-btn-ghost" @click="editing = null">{{ t('common.cancel') }}</button>
-        <button type="submit" form="staff-edit-form" class="pos-btn-primary" :disabled="saving">{{ saving ? t('common.saving') : t('admin.staff.save') }}</button>
+        <button type="submit" form="staff-groups-form" class="pos-btn-primary" :disabled="saving">{{ saving ? t('common.saving') : t('admin.staff.save') }}</button>
       </template>
     </PosModal>
   </div>

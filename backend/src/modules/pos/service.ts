@@ -1,6 +1,6 @@
 import prisma from '../../resources/database/initDatabase.js'
 import { CustomError } from '../../shared/types/error_type.js'
-import { AuthenticatedStaff, assertShopAccess, requireMinRole, requirePermission } from '../../shared/middlewares/shopScope.js'
+import { AuthenticatedStaff, assertShopAccess, hasPermission, requirePermission } from '../../shared/middlewares/shopScope.js'
 import { decrementShopStock, restoreShopStock } from '../../shared/stock/stockMutations.js'
 import { assertCanVoidSale } from '../../shared/pos/voidRules.js'
 import { assertCreditWithinLimit } from '../../shared/credit/limitCheck.js'
@@ -82,7 +82,7 @@ export async function createSale(staff: AuthenticatedStaff, shopId: string, inpu
           throw new CustomError('VALIDATION_ERROR', 'unitPrice must be a non-negative number', 400)
         }
         if (!override.equals(product.sellPrice)) {
-          requirePermission(staff, StaffPermission.EDIT_PRICE)
+          requirePermission(staff, StaffPermission.SALE_EDIT_PRICE)
           unitPrice = override
         }
       }
@@ -97,7 +97,7 @@ export async function createSale(staff: AuthenticatedStaff, shopId: string, inpu
 
   let discountAmount = new Decimal(0)
   if (input.discount && new Decimal(input.discount.value || 0).gt(0)) {
-    requirePermission(staff, StaffPermission.GIVE_DISCOUNT)
+    requirePermission(staff, StaffPermission.SALE_DISCOUNT)
     const value = new Decimal(input.discount.value)
     if (input.discount.type === 'PERCENT') {
       if (value.gt(100)) {
@@ -121,7 +121,7 @@ export async function createSale(staff: AuthenticatedStaff, shopId: string, inpu
   let creditApprovedById: string | null = null
 
   if (input.payLater) {
-    requireMinRole(staff, StaffRole.MANAGER)
+    requirePermission(staff, StaffPermission.SALE_PAY_LATER)
     if (!input.clientId) {
       throw new CustomError('VALIDATION_ERROR', 'Client is required for pay-later sales', 400)
     }
@@ -180,7 +180,7 @@ export async function createSale(staff: AuthenticatedStaff, shopId: string, inpu
 
     const override = input.creditLimitOverride ?? false
     if (override) {
-      requireMinRole(staff, StaffRole.MANAGER)
+      requirePermission(staff, StaffPermission.SALE_PAY_LATER)
       creditApprovedById = staff.id
     }
 
@@ -325,7 +325,7 @@ export async function voidSale(
       throw new CustomError('SALE_NOT_FOUND', 'Sale not found', 404)
     }
 
-    assertCanVoidSale(staff.role, staff.id, sale)
+    assertCanVoidSale(hasPermission(staff, StaffPermission.SALE_VOID_ANY), staff.id, sale)
 
     for (const portion of sale.creditPortions) {
       if (portion.allocations.length > 0) {
