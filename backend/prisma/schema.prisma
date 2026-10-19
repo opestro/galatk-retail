@@ -193,6 +193,8 @@ model ProductFamily {
   description      String?
   isActive         Boolean  @default(true)
   availableOnline  Boolean  @default(true)
+  /// Soft delete: set instead of removing the row; hidden from every list.
+  deletedAt        DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -232,6 +234,8 @@ model Product {
   attributesKey    String   @default("default")
   isActive         Boolean  @default(true)
   availableOnline  Boolean  @default(true)
+  /// Soft delete: set instead of removing the row; hidden from every list.
+  deletedAt        DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

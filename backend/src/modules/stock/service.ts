@@ -20,7 +20,7 @@ export async function listShopStock(staff: AuthenticatedStaff, shopId: string) {
   requirePermission(staff, StaffPermission.STOCK_VIEW)
 
   return prisma.shopStock.findMany({
-    where: { shopId },
+    where: { shopId, product: { deletedAt: null } },
     include: { product: { include: { family: { select: { id: true, name: true } } } } },
     orderBy: { product: { name: 'asc' } },
   })
@@ -42,7 +42,8 @@ export async function createInboundTransfer(
     if (!line.productId || line.quantity <= 0) {
       throw new CustomError('VALIDATION_ERROR', 'Each line needs productId and positive quantity', 400)
     }
-    await prisma.product.findUniqueOrThrow({ where: { id: line.productId } })
+    const product = await prisma.product.findFirst({ where: { id: line.productId, deletedAt: null } })
+    if (!product) throw new CustomError('PRODUCT_NOT_FOUND', `Product ${line.productId} not found`, 404)
   }
 
   return prisma.$transaction(async (tx) => {

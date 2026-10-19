@@ -3,7 +3,7 @@ import { CustomError } from '../src/shared/types/error_type.js'
 
 const mockPrisma = {
   productFamily: {
-    findUnique: vi.fn(),
+    findFirst: vi.fn(),
   },
   productImage: {
     findMany: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock('../src/shared/stock/stockMutations.js', () => ({
 describe('setPrimaryFamilyImage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockPrisma.productFamily.findUnique.mockResolvedValue({
+    mockPrisma.productFamily.findFirst.mockResolvedValue({
       id: 'fam-1',
       name: 'Cotton',
       images: [],

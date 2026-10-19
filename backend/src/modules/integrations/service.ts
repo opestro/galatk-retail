@@ -59,7 +59,7 @@ export async function upsertIntegrationProduct(
   const sellPrice = input.sellPrice?.trim() || unitCost
 
   const existing = await db.product.findFirst({
-    where: { galatkProductRef },
+    where: { galatkProductRef, deletedAt: null },
   })
 
   // Prefer explicit workshop family; otherwise keep the existing retail family on update
@@ -87,7 +87,7 @@ export async function upsertIntegrationProduct(
   }
 
   const duplicate = await db.product.findFirst({
-    where: { familyId: catalog.id, attributesKey: key },
+    where: { familyId: catalog.id, attributesKey: key, deletedAt: null },
   })
   if (duplicate) {
     return db.product.update({

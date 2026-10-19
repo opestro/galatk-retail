@@ -13,7 +13,7 @@ import {
   skuName,
 } from '../../shared/products/variantAttributes.js'
 import { deleteStoredImage, persistImageBuffer, assertImageFile } from '../../resources/storage/productImages.js'
-import { isUniqueConstraint, isForeignKeyConstraint } from './presenter.js'
+import { isUniqueConstraint } from './presenter.js'
 import {
   CreateFamilyInput,
   CreateProductInput,
@@ -52,7 +52,7 @@ function parseQuantity(value: unknown): number {
 function familyInclude() {
   return {
     images: { orderBy: { sortOrder: 'asc' as const } },
-    products: { orderBy: { name: 'asc' as const } },
+    products: { where: { deletedAt: null }, orderBy: { name: 'asc' as const } },
   }
 }
 
@@ -82,7 +82,7 @@ export async function listProducts(query?: string) {
     : {}
 
   return prisma.product.findMany({
-    where,
+    where: { ...where, deletedAt: null },
     include: { family: true },
     orderBy: { name: 'asc' },
   })
@@ -90,6 +90,7 @@ export async function listProducts(query?: string) {
 
 export async function listFamilies(query?: string) {
   const families = await prisma.productFamily.findMany({
+    where: { deletedAt: null },
     include: familyInclude(),
     orderBy: { name: 'asc' },
   })
@@ -108,8 +109,8 @@ export async function listFamilies(query?: string) {
 }
 
 export async function getFamilyById(familyId: string) {
-  const family = await prisma.productFamily.findUnique({
-    where: { id: familyId },
+  const family = await prisma.productFamily.findFirst({
+    where: { id: familyId, deletedAt: null },
     include: familyInclude(),
   })
   if (!family) {
@@ -141,7 +142,7 @@ async function inboundQuantity(db: Prisma.TransactionClient, shopId: string | un
 
 async function findSkuByAttributes(db: Db, familyId: string, key: string) {
   return db.product.findFirst({
-    where: { familyId, attributesKey: key },
+    where: { familyId, attributesKey: key, deletedAt: null },
   })
 }
 
@@ -359,7 +360,7 @@ export async function updateFamily(familyId: string, input: UpdateFamilyInput) {
   })
 
   if (nextName && nextName !== family.name) {
-    const products = await prisma.product.findMany({ where: { familyId } })
+    const products = await prisma.product.findMany({ where: { familyId, deletedAt: null } })
     for (const product of products) {
       const attrs = attributesFromUnknown(product.attributes)
       await prisma.product.update({
@@ -374,7 +375,7 @@ export async function updateFamily(familyId: string, input: UpdateFamilyInput) {
 
   if (input.isActive !== undefined || input.availableOnline !== undefined) {
     await prisma.product.updateMany({
-      where: { familyId },
+      where: { familyId, deletedAt: null },
       data: {
         ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
         ...(input.availableOnline !== undefined ? { availableOnline: input.availableOnline } : {}),
@@ -416,41 +417,31 @@ export async function removeFamilyImage(familyId: string, imageId: string) {
   return image
 }
 
+/**
+ * Soft delete: the family and its variants stay in the database (sales, orders
+ * and transfers keep pointing at them) but disappear from every list. The
+ * unique slug / attributes key are released so the name can be reused.
+ */
 export async function deleteFamily(familyId: string) {
-  const family = await prisma.productFamily.findUnique({
-    where: { id: familyId },
-    include: { images: true, products: { select: { id: true } } },
+  const family = await getFamilyById(familyId)
+  const now = new Date()
+  const variants = await prisma.product.findMany({
+    where: { familyId, deletedAt: null },
+    select: { id: true, attributesKey: true },
   })
-  if (!family) {
-    throw new CustomError('PRODUCT_NOT_FOUND', 'Product not found', 404)
-  }
-  const productIds = family.products.map((p) => p.id)
 
-  const [saleLines, orderLines, inboundLines] = await Promise.all([
-    prisma.saleLine.count({ where: { productId: { in: productIds } } }),
-    prisma.onlineOrderLine.count({ where: { productId: { in: productIds } } }),
-    prisma.inboundTransferLine.count({ where: { productId: { in: productIds } } }),
+  await prisma.$transaction([
+    ...variants.map((variant) =>
+      prisma.product.update({
+        where: { id: variant.id },
+        data: { deletedAt: now, attributesKey: `${variant.attributesKey}#deleted-${variant.id}` },
+      }),
+    ),
+    prisma.productFamily.update({
+      where: { id: familyId },
+      data: { deletedAt: now, slug: `${family.slug}#deleted-${family.id}` },
+    }),
   ])
-  if (saleLines > 0 || orderLines > 0 || inboundLines > 0) {
-    throw new CustomError(
-      'PRODUCT_IN_USE',
-      'This product has sales, orders or transfers and cannot be deleted. Mark it inactive instead.',
-      409,
-    )
-  }
-
-  try {
-    await prisma.$transaction([
-      prisma.product.deleteMany({ where: { familyId } }),
-      prisma.productFamily.delete({ where: { id: familyId } }),
-    ])
-  } catch (error) {
-    if (isForeignKeyConstraint(error)) {
-      throw new CustomError('PRODUCT_IN_USE', 'This product is still referenced by other records', 409)
-    }
-    throw error
-  }
-  for (const image of family.images) deleteStoredImage(image.filename)
 }
 
 export async function setPrimaryFamilyImage(familyId: string, imageId: string) {
@@ -517,8 +508,8 @@ export async function createProduct(input: CreateProductInput) {
 }
 
 export async function getProductById(productId: string) {
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
+  const product = await prisma.product.findFirst({
+    where: { id: productId, deletedAt: null },
     include: { family: true },
   })
   if (!product) {
@@ -537,7 +528,7 @@ export async function updateProduct(productId: string, input: UpdateProductInput
 
   if (product.familyId && nextKey !== product.attributesKey) {
     const clash = await prisma.product.findFirst({
-      where: { familyId: product.familyId, attributesKey: nextKey, NOT: { id: productId } },
+      where: { familyId: product.familyId, attributesKey: nextKey, deletedAt: null, NOT: { id: productId } },
     })
     if (clash) {
       throw new CustomError(
@@ -580,35 +571,13 @@ export async function updateProduct(productId: string, input: UpdateProductInput
   }
 }
 
+/** Soft delete: hides the variant everywhere but keeps its history intact. */
 export async function deleteProduct(productId: string) {
-  await getProductById(productId)
-
-  const [saleLines, orderLines, inboundLines] = await Promise.all([
-    prisma.saleLine.count({ where: { productId } }),
-    prisma.onlineOrderLine.count({ where: { productId } }),
-    prisma.inboundTransferLine.count({ where: { productId } }),
-  ])
-
-  if (saleLines > 0 || orderLines > 0 || inboundLines > 0) {
-    throw new CustomError(
-      'VARIANT_IN_USE',
-      'This variant cannot be deleted because it is used in sales, orders, or inbound transfers',
-      409,
-    )
-  }
-
-  try {
-    await prisma.product.delete({ where: { id: productId } })
-  } catch (error) {
-    if (isForeignKeyConstraint(error)) {
-      throw new CustomError(
-        'VARIANT_IN_USE',
-        'This variant cannot be deleted because it is still referenced by other records',
-        409,
-      )
-    }
-    throw error
-  }
+  const product = await getProductById(productId)
+  await prisma.product.update({
+    where: { id: productId },
+    data: { deletedAt: new Date(), attributesKey: `${product.attributesKey}#deleted-${product.id}` },
+  })
 }
 
 export async function setVariantStock(productId: string, shopId: string, quantity: number) {

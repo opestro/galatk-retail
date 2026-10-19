@@ -12,7 +12,7 @@ export { lookupCustomerByPhone }
 
 const familyCatalogInclude = {
   images: { orderBy: { sortOrder: 'asc' as const } },
-  products: { orderBy: { name: 'asc' as const } },
+  products: { where: { deletedAt: null }, orderBy: { name: 'asc' as const } },
 }
 
 export async function listGlobalShops() {
@@ -34,7 +34,7 @@ async function loadCatalogContext() {
   const [shops, families] = await Promise.all([
     prisma.shop.findMany(),
     prisma.productFamily.findMany({
-      where: { isActive: true, availableOnline: true },
+      where: { isActive: true, availableOnline: true, deletedAt: null },
       include: familyCatalogInclude,
       orderBy: { name: 'asc' },
     }),
@@ -78,18 +78,18 @@ export async function getGlobalProduct(idOrSlug: string): Promise<PublicCatalogP
   }
 
   let family = await prisma.productFamily.findFirst({
-    where: { OR: [{ id: trimmed }, { slug: trimmed }] },
+    where: { deletedAt: null, OR: [{ id: trimmed }, { slug: trimmed }] },
     include: familyCatalogInclude,
   })
 
   if (!family) {
-    const sku = await prisma.product.findUnique({
-      where: { id: trimmed },
+    const sku = await prisma.product.findFirst({
+      where: { id: trimmed, deletedAt: null },
       select: { familyId: true },
     })
     if (sku?.familyId) {
-      family = await prisma.productFamily.findUnique({
-        where: { id: sku.familyId },
+      family = await prisma.productFamily.findFirst({
+        where: { id: sku.familyId, deletedAt: null },
         include: familyCatalogInclude,
       })
     }
