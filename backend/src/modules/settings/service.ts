@@ -125,7 +125,7 @@ export async function addBannerImage(file: {
     throw new CustomError('VALIDATION_ERROR', `You can add at most ${BANNER_IMAGE_MAX} banner images`, 400)
   }
   assertBannerImageFile(file)
-  const stored = persistImageBuffer(file.buffer, file.mimetype, BANNER_RELATIVE_DIR)
+  const stored = await persistImageBuffer(file.buffer, file.mimetype, BANNER_RELATIVE_DIR)
   const lastOrder = current.images.at(-1)?.sortOrder ?? -1
 
   await prisma.siteBannerImage.create({
@@ -151,7 +151,7 @@ export async function removeBannerImage(imageId: string): Promise<SiteSettingsWi
   }
 
   await prisma.siteBannerImage.delete({ where: { id: image.id } })
-  deleteStoredImage(image.filename, BANNER_RELATIVE_DIR)
+  await deleteStoredImage(image.filename, BANNER_RELATIVE_DIR)
   return loadSettings()
 }
 
