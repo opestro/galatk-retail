@@ -1,4 +1,3 @@
-import fs from 'node:fs'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { CustomError } from '../../shared/types/error_type.js'
@@ -9,21 +8,9 @@ const RELATIVE_DIR = 'product-images'
 /** Homepage / storefront hero images, separate from SKU photos. */
 export const BANNER_RELATIVE_DIR = 'banners'
 
-export function uploadsRoot(): string {
-  return path.join(process.cwd(), 'uploads')
-}
-
-export function productImagesDir(): string {
-  return path.join(uploadsRoot(), RELATIVE_DIR)
-}
-
-export function bannersDir(): string {
-  return path.join(uploadsRoot(), BANNER_RELATIVE_DIR)
-}
-
-export function ensureUploadDirs(): void {
-  fs.mkdirSync(productImagesDir(), { recursive: true })
-  fs.mkdirSync(bannersDir(), { recursive: true })
+// Lazy import keeps the helpers above usable without a database connection (tests, scripts).
+async function db() {
+  return (await import('../database/initDatabase.js')).default
 }
 
 export function publicImageUrl(filename: string, relativeDir = RELATIVE_DIR): string {
@@ -49,21 +36,22 @@ export function assertImageFile(file: { mimetype?: string; size?: number } | und
   }
 }
 
-export function persistImageBuffer(
+// ponytail: image bytes live in Postgres (no disk survives a deploy); move to object storage if the catalog grows into GBs.
+export async function persistImageBuffer(
   buffer: Buffer,
   mimeType: string,
   relativeDir = RELATIVE_DIR,
-): { filename: string; url: string } {
-  ensureUploadDirs()
+): Promise<{ filename: string; url: string }> {
   const filename = `${randomUUID()}${extensionForMime(mimeType)}`
-  fs.writeFileSync(path.join(uploadsRoot(), relativeDir, filename), buffer)
+  await (await db()).storedImage.create({ data: { id: `${relativeDir}/${filename}`, mimeType, data: new Uint8Array(buffer) } })
   return { filename, url: publicImageUrl(filename, relativeDir) }
 }
 
-export function deleteStoredImage(filename: string, relativeDir = RELATIVE_DIR): void {
-  const safe = path.basename(filename)
-  const full = path.join(uploadsRoot(), relativeDir, safe)
-  if (fs.existsSync(full)) {
-    fs.unlinkSync(full)
-  }
+export async function deleteStoredImage(filename: string, relativeDir = RELATIVE_DIR): Promise<void> {
+  await (await db()).storedImage.deleteMany({ where: { id: `${relativeDir}/${path.basename(filename)}` } })
+}
+
+/** Bytes behind a public /uploads/<dir>/<filename> URL, or null when unknown. */
+export async function loadStoredImage(relativeDir: string, filename: string) {
+  return (await db()).storedImage.findUnique({ where: { id: `${relativeDir}/${path.basename(filename)}` } })
 }

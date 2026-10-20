@@ -389,7 +389,7 @@ export async function updateFamily(familyId: string, input: UpdateFamilyInput) {
 export async function addFamilyImage(familyId: string, file: { buffer: Buffer; mimetype: string; size: number }) {
   await getFamilyById(familyId)
   assertImageFile(file)
-  const stored = persistImageBuffer(file.buffer, file.mimetype)
+  const stored = await persistImageBuffer(file.buffer, file.mimetype)
   const last = await prisma.productImage.findFirst({
     where: { familyId },
     orderBy: { sortOrder: 'desc' },
@@ -413,7 +413,7 @@ export async function removeFamilyImage(familyId: string, imageId: string) {
     throw new CustomError('PRODUCT_NOT_FOUND', 'Image not found', 404)
   }
   await prisma.productImage.delete({ where: { id: imageId } })
-  deleteStoredImage(image.filename)
+  await deleteStoredImage(image.filename)
   return image
 }
 
