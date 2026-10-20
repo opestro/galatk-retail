@@ -142,8 +142,8 @@ export async function checkoutForShop(
         throw new CustomError('VALIDATION_ERROR', 'Quantity must be a positive integer', 400)
       }
 
-      const product = await prisma.product.findUnique({
-        where: { id: line.productId },
+      const product = await prisma.product.findFirst({
+        where: { id: line.productId, deletedAt: null },
         include: { family: true },
       })
       if (
@@ -263,7 +263,7 @@ export async function listStorefrontProducts(slug: string) {
   const stock = await prisma.shopStock.findMany({
     where: {
       shopId: shop.id,
-      product: { isActive: true, availableOnline: true },
+      product: { isActive: true, availableOnline: true, deletedAt: null },
     },
     include: { product: true },
   })
@@ -588,7 +588,7 @@ export async function addOrderLine(
   const order = await getOrderById(staff, shopId, orderId)
   assertOrderLinesEditable(order.status, Boolean(order.fulfillmentSale))
 
-  const product = await prisma.product.findUnique({ where: { id: input.productId } })
+  const product = await prisma.product.findFirst({ where: { id: input.productId, deletedAt: null } })
   if (!product || !product.isActive) {
     throw new CustomError('PRODUCT_NOT_FOUND', 'Product not found', 404)
   }

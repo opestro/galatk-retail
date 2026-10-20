@@ -42,7 +42,7 @@ describe('listStorefrontProducts', () => {
     expect(mockPrisma.shopStock.findMany).toHaveBeenCalledWith({
       where: {
         shopId: 'shop-1',
-        product: { isActive: true, availableOnline: true },
+        product: { isActive: true, availableOnline: true, deletedAt: null },
       },
       include: { product: true },
     })

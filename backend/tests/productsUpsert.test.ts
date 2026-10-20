@@ -33,7 +33,7 @@ const existingSku = {
 
 const mockPrisma = {
   productFamily: {
-    findUnique: vi.fn(),
+    findFirst: vi.fn(),
     update: vi.fn(),
   },
   product: {
@@ -54,7 +54,7 @@ vi.mock('../src/resources/database/initDatabase.js', () => ({
 describe('upsertFamilyVariant', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockPrisma.productFamily.findUnique.mockResolvedValue(family)
+    mockPrisma.productFamily.findFirst.mockResolvedValue(family)
     mockPrisma.$transaction.mockImplementation(async (fn: (tx: typeof mockPrisma) => unknown) => fn(mockPrisma as never))
   })
 
@@ -98,7 +98,7 @@ describe('upsertFamilyVariant', () => {
   })
 
   it('rejects editing into a duplicate combination', async () => {
-    mockPrisma.product.findUnique.mockResolvedValue({
+    mockPrisma.product.findFirst.mockResolvedValueOnce({
       ...existingSku,
       id: 'sku-vert-l',
       attributesKey: 'color:vert|size:l',

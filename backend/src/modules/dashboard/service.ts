@@ -49,7 +49,7 @@ export async function getShopSummary(staff: AuthenticatedStaff, shopId: string) 
       },
     }),
     prisma.shopStock.findMany({
-      where: { shopId, quantity: { lte: LOW_STOCK_THRESHOLD } },
+      where: { shopId, quantity: { lte: LOW_STOCK_THRESHOLD }, product: { deletedAt: null } },
       include: { product: { select: { id: true, name: true } } },
     }),
   ])

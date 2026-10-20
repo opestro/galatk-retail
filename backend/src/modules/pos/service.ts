@@ -36,7 +36,7 @@ export async function listPosProducts(staff: AuthenticatedStaff, shopId: string)
   assertShopAccess(staff, shopId)
 
   const stock = await prisma.shopStock.findMany({
-    where: { shopId, quantity: { gt: 0 }, product: { isActive: true } },
+    where: { shopId, quantity: { gt: 0 }, product: { isActive: true, deletedAt: null } },
     include: {
       product: {
         include: { family: { include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } } } },
@@ -68,7 +68,7 @@ export async function createSale(staff: AuthenticatedStaff, shopId: string, inpu
 
   const products = await Promise.all(
     input.lines.map(async (line) => {
-      const product = await prisma.product.findUnique({ where: { id: line.productId } })
+      const product = await prisma.product.findFirst({ where: { id: line.productId, deletedAt: null } })
       if (!product || !product.isActive) {
         throw new CustomError('PRODUCT_NOT_FOUND', `Product ${line.productId} not found`, 404)
       }
